@@ -6,6 +6,7 @@ export class ControlsHelp {
     const ps=info.label==='PS5'||info.label==='PlayStation';
     document.getElementById('gamepad-jump').textContent=ps?'Croix (×)':info.label==='Xbox'?'A':'A / Croix';
     document.getElementById('gamepad-boost').textContent=ps?'R2':info.label==='Xbox'?'RT':'RT / R2';
+    document.getElementById('gamepad-shoot').textContent=ps?'Carré (□)':info.label==='Xbox'?'X':'X / Carré';
     this.keyboard.classList.toggle('last-input',input.lastMethod==='keyboard');
     this.gamepad.classList.toggle('last-input',input.lastMethod==='gamepad');
     this.keyboard.dataset.active=String(input.lastMethod==='keyboard');this.gamepad.dataset.active=String(input.lastMethod==='gamepad');

@@ -88,14 +88,15 @@ export function collideBall(ball, solids) {
 export function ballOutsideArena(ball){
   return ball.x+ball.r<0||ball.x-ball.r>C.width||ball.y+ball.r<100||ball.y-ball.r>C.floor;
 }
-export function hitPlayer(ball,p) {
+export function hitPlayer(ball,p,restitution=.88) {
   const hit = circleContact(ball,{ x:p.x-p.w/2,y:p.y-p.h/2,w:p.w,h:p.h });
   if (!hit) return false;
   ball.x += hit.nx*hit.depth; ball.y += hit.ny*hit.depth;
   const relative = (ball.vx-p.vx)*hit.nx+(ball.vy-p.vy)*hit.ny;
   if (relative < 0) {
-    // Identical masses and restitution for both skins; impulse derives only from motion.
-    const impulse = -(1+0.88)*relative / (1+0.18);
+    // Ordinary contacts retain their original restitution. A controlled touch
+    // can cushion the bounce; separation, masses and Heavy's response stay intact.
+    const impulse = -(1+restitution)*relative / (1+0.18);
     ball.vx += impulse*hit.nx; ball.vy += impulse*hit.ny;
     p.vx -= impulse*0.18*hit.nx; p.vy -= impulse*0.18*hit.ny;
     ball.flash=0.12;

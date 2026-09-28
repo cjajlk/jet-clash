@@ -1,0 +1,29 @@
+/* Only the gameplay surface changes on touch-capable devices. PC HUD untouched. */
+.touch-capable .game-shell:not(:fullscreen){min-height:0}
+.touch-capable:not(.touch-match) .overlay{overflow-y:auto}
+.touch-capable:not(.touch-match) .game-shell{min-height:440px}
+.touch-match{overflow:hidden;overscroll-behavior:none}
+.touch-match>.topbar,.touch-match main>:not(#game-shell){visibility:hidden}
+.touch-match #game-shell{position:fixed;inset:0;margin:auto;width:min(100vw,177.7778dvh);height:auto;max-height:100dvh;aspect-ratio:16/9;border:0;border-radius:0;z-index:20;box-shadow:none;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.touch-match #arena{object-fit:contain;touch-action:none}
+.touch-match #game-shell:fullscreen{width:100vw;height:100dvh;background:#090c18}
+.touch-match .hud{top:max(6px,env(safe-area-inset-top));transform:translateX(-50%) scale(.7);transform-origin:top center}
+.touch-match .fuel-hud{bottom:auto;top:68px;left:calc(12px + env(safe-area-inset-left));right:calc(12px + env(safe-area-inset-right))}
+.touch-match .fuel-hud>div{width:80px}.touch-match .fuel-hud label{font-size:6px}.touch-match progress{height:6px}
+#touch-controls{position:fixed;inset:0;pointer-events:none;z-index:7;--stick:clamp(86px,23dvh,132px);--button:clamp(48px,13dvh,66px);--edge:16px;--bottom:18px}
+#touch-controls [data-touch],.touch-fullscreen{position:absolute;pointer-events:auto;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.touch-stick{width:var(--stick);height:var(--stick);border-radius:50%;background:#09264065;border:2px solid #80ebff90;box-shadow:inset 0 0 16px #39d6ff20}
+.touch-move{left:calc(var(--edge) + env(safe-area-inset-left));bottom:calc(var(--bottom) + env(safe-area-inset-bottom))}
+.touch-aim{right:calc(var(--edge) + env(safe-area-inset-right));bottom:calc(var(--bottom) + env(safe-area-inset-bottom))}
+.touch-knob{position:absolute;left:31%;top:31%;width:38%;height:38%;border-radius:50%;background:#77e8ff70;border:1px solid #b8f9ff;pointer-events:none}
+.touch-label{position:absolute;bottom:8px;width:100%;text-align:center;font-size:8px;font-weight:700;color:#b7f5ff;pointer-events:none;letter-spacing:.5px}
+.touch-button{width:var(--button);height:var(--button);border-radius:50%;padding:0;font-size:11px;letter-spacing:1px;color:#e5fdff;background:#103954a8;border:2px solid #79e5ffb0;text-shadow:0 1px 3px #000}
+.touch-button.pressed,.touch-stick.pressed{background:#1a819b95;border-color:#d4ffff;box-shadow:0 0 15px #48dfff70}
+.touch-jump{left:calc(var(--edge) + env(safe-area-inset-left));bottom:calc(var(--bottom) + var(--stick) + 12px + env(safe-area-inset-bottom))}
+.touch-boost{left:calc(var(--edge) + var(--stick) + 12px + env(safe-area-inset-left));bottom:calc(var(--bottom) + 8px + env(safe-area-inset-bottom))}
+.touch-shoot{right:calc(var(--edge) + var(--stick) + 12px + env(safe-area-inset-right));bottom:calc(var(--bottom) + 8px + env(safe-area-inset-bottom))}
+.touch-fullscreen{right:calc(10px + env(safe-area-inset-right));top:calc(6px + env(safe-area-inset-top));width:44px;height:44px;padding:0;font-size:25px;background:#10223980;border-color:#6fe9ff60}
+.touch-notice{position:absolute;right:60px;top:14px;font-size:10px;max-width:190px;color:#cdfaff;background:#102239c0}
+#touch-rotate{position:fixed;inset:0;z-index:12;background:#090f23fa;display:grid;align-content:center;justify-items:center;gap:18px;padding:24px;text-align:center;color:#a1f4ff;touch-action:none}
+#touch-rotate strong{font-size:24px}#touch-rotate span{font-size:15px;line-height:1.7;color:#d2e5ff}
+@media (max-height:380px) and (orientation:landscape){#touch-controls{--edge:12px;--bottom:12px}.touch-match .hud{transform:translateX(-50%) scale(.6)}.touch-match .fuel-hud{top:52px}}

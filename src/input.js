@@ -1,3 +1,4 @@
+import { BallInput } from './ball-input.js';
 import { GamepadInput } from './gamepad-input.js';
 
 export class KeyboardInput {
@@ -23,11 +24,13 @@ export class KeyboardInput {
 export class PlayerInput {
   constructor(target=window,source=navigator){
     this.lastMethod='keyboard';
+    this.ball=new BallInput(target,source,method=>{this.lastMethod=method;});
     this.keyboard=new KeyboardInput(target,()=>{this.lastMethod='keyboard';});
     this.gamepad=new GamepadInput(target,source,()=>{this.lastMethod='gamepad';});
     target.addEventListener('blur',()=>this.gamepad.clear());
   }
-  clear(){this.keyboard.clear();this.gamepad.clear();}
+  clear(){this.keyboard.clear();this.gamepad.clear();this.ball.clear();}
+  readBallControls(){return this.ball.read(this.gamepad.index);}
   read(){
     const pad=this.gamepad.read(),keyboard=this.keyboard.read();
     if(!this.gamepad.status.supported)this.lastMethod='keyboard';

@@ -21,11 +21,26 @@ export class Renderer{
     c.drawImage(im,mirrored?im.width-sourceX-sourceWidth:sourceX,sourceY,sourceWidth,sourceHeight,0,C.goalBottom,width,height);
     c.restore();
   }
+  aimIndicator(ball,indicator){
+    if(!indicator)return;const c=this.ctx;c.save();c.translate(ball.x,ball.y);c.rotate(Math.atan2(indicator.y,indicator.x));
+    c.lineJoin='round';c.shadowColor='#43dcff';c.shadowBlur=6+8*indicator.charge;
+    for(let i=0;i<3;i++){const x=ball.r+14+i*13;c.beginPath();c.moveTo(x-6,-6);c.lineTo(x,0);c.lineTo(x-6,6);c.strokeStyle='#052135';c.lineWidth=6;c.stroke();c.strokeStyle=`rgba(150,250,255,${.85+.15*indicator.charge})`;c.lineWidth=3+indicator.charge;c.stroke();}c.restore();
+  }
+  controlIndicator(ball,control){
+    if(!control?.available)return;const c=this.ctx,r=ball.r+7;c.save();
+    c.beginPath();c.arc(ball.x,ball.y,r,0,Math.PI*2);c.strokeStyle='#70edff80';c.lineWidth=2;c.stroke();
+    if(control.charging){
+      const charge=control.chargeFraction;c.beginPath();c.arc(ball.x,ball.y,r,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(.03,charge));
+      c.strokeStyle='#c4ffff';c.lineWidth=4;c.shadowColor='#43dcff';c.shadowBlur=10;c.stroke();
+    }c.restore();
+  }
   render(m){const c=this.ctx;c.clearRect(0,0,C.width,C.height);const bg=this.images.background;if(bg){const s=Math.max(C.width/bg.width,C.height/bg.height);c.drawImage(bg,(C.width-bg.width*s)/2,0,bg.width*s,bg.height*s);}c.fillStyle='#080c2350';c.fillRect(0,0,C.width,C.height);
     const grad=c.createLinearGradient(0,C.floor,0,C.height);grad.addColorStop(0,'#131735cc');grad.addColorStop(1,'#080e22');c.fillStyle=grad;c.fillRect(0,C.floor,C.width,C.height-C.floor);c.strokeStyle='#71ddff90';c.lineWidth=2;c.beginPath();c.moveTo(0,C.floor);c.lineTo(C.width,C.floor);c.stroke();
     this.goalRamp('rampLeft');this.goalRamp('rampRight',true);
     this.fit('left',0,C.goalTop-1,181,C.goalBottom-C.goalTop+2);this.fit('right',C.width-198,C.goalTop-1,198,C.goalBottom-C.goalTop+2);this.fit('platform',285,380,230,96);this.fit('platform',765,380,230,96);this.fit('obstacle',496,570,288,89);
     for(const p of [m.player,m.bot]){const pose=p.boosting?'jetpack':!p.grounded?'jump':Math.abs(p.vx)>45?'sprint':'walk';const h=96;this.fit(`${p.skin}_${pose}`,p.x-43,p.y+p.h/2-h,86,h,p.facing<0);}
     const b=m.ball;c.save();c.translate(b.x,b.y);c.rotate(b.angle);this.fit(b.flash>0?'impact':'ball',-b.r,-b.r,b.r*2,b.r*2);c.restore();
+    this.aimIndicator(b,m.control?.indicator);
+    this.controlIndicator(b,m.control);
   }
 }

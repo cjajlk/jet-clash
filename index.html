@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JetClash · La Cour de l’Aube</title><link rel="stylesheet" href="styles/main.css"></head>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>JetClash · La Cour de l’Aube</title><link rel="stylesheet" href="styles/main.css"><link rel="stylesheet" href="styles/touch.css"></head>
 <body>
 <header class="topbar"><a class="brand" href="#">JET<span>CLASH</span></a><span class="build">ÉTAPE 2 · PROTOTYPE JOUABLE</span><span id="profile">Niveau 1 · 0 XP</span></header>
 <main>
@@ -14,8 +14,8 @@
 <section id="result" class="overlay result" hidden aria-labelledby="result-title"><div class="result-card"><p class="eyebrow">MATCH TERMINÉ</p><h2 id="result-title"></h2><p id="result-score"></p><p id="xp-earned"></p><p id="xp-breakdown"></p><p id="result-level"></p><div class="result-actions"><button id="replay" class="primary">REJOUER</button><button id="back-menu">RETOUR MENU</button></div></div></section>
 </div>
 <footer class="input-help">
-<div id="keyboard-help" class="controls last-input" aria-label="Commandes clavier"><strong>CLAVIER</strong><span><kbd>←</kbd><kbd>→</kbd> ou <kbd>Q</kbd><kbd>D</kbd> / <kbd>A</kbd><kbd>D</kbd> Déplacement</span><span><kbd>Espace</kbd> Saut</span><span><kbd>Maj</kbd> Jetpack</span><span class="hint">Frappe par contact · Balle toujours libre</span></div>
-<div id="gamepad-help" class="controls" aria-label="Commandes manette" hidden><strong>MANETTE</strong><span><kbd>Stick gauche</kbd> Déplacement</span><span><kbd id="gamepad-jump">Croix (×)</kbd> Saut</span><span><kbd id="gamepad-boost">R2</kbd> maintenu : jetpack</span></div>
+<div id="keyboard-help" class="controls last-input" aria-label="Commandes clavier"><strong>CLAVIER</strong><span><kbd>←</kbd><kbd>→</kbd> ou <kbd>Q</kbd><kbd>D</kbd> / <kbd>A</kbd><kbd>D</kbd> Déplacement</span><span><kbd>Espace</kbd> Saut</span><span><kbd>Maj</kbd> Jetpack</span><span class="hint">I/J/K/L : visée · F : frappe (maintenir pour charger)</span></div>
+<div id="gamepad-help" class="controls" aria-label="Commandes manette" hidden><strong>MANETTE</strong><span><kbd>Stick gauche</kbd> Déplacement</span><span><kbd id="gamepad-jump">Croix (×)</kbd> Saut</span><span><kbd id="gamepad-boost">R2</kbd> maintenu : jetpack</span><span>Stick droit : visée</span><span><kbd id="gamepad-shoot">Carré</kbd> : frappe / maintenir pour charger</span></div>
 <p id="controller-status" class="controller-status" role="status" aria-live="polite">PS5 : branche ta manette, puis appuie sur Croix pour la détecter. Le clavier reste disponible.</p>
 </footer>
 <p id="save-warning" class="warning" role="status" hidden></p><p class="footnote">Fluid & Heavy · Capacités identiques · Égalité à 00:00 : prochain but gagnant</p>
