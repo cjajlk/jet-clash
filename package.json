@@ -1,0 +1,9 @@
+{
+  "name": "jetclash-etape-2",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Nouvelle implémentation Étape 2, sans récupération des anciens modules.",
+  "scripts": { "start": "node tools/serve.mjs", "test": "node --test tests/*.test.mjs" },
+  "engines": { "node": ">=18" }
+}

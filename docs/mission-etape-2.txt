@@ -1,0 +1,349 @@
+JETCLASH — ÉTAPE 2
+MISSION : construire la première boucle complète jouable.
+
+Je te fournis :
+1. JetClash_demarrage_Etape_2.zip
+2. JetClash_assets_propres.zip
+
+Le document maître validé de JetClash existe déjà et l’Étape 1 est considérée comme verrouillée.
+
+IMPORTANT :
+- Ne pas redéfinir le concept.
+- Ne pas ajouter de fonctionnalités non demandées.
+- Ne pas modifier les assets graphiques.
+- Utiliser les vrais assets fournis, pas des rectangles ou personnages temporaires.
+- Ne pas inventer d’anciens fichiers techniques prétendument retrouvés.
+- Si une information indispensable manque, le signaler avant de l’inventer.
+
+==================================================
+1 — OBJECTIF
+==================================================
+
+Créer une première version réellement jouable de JetClash avec une boucle complète :
+
+MENU
+→ choix de difficulté
+→ lancement
+→ PRE_ROUND / compte à rebours
+→ PLAYING
+→ but
+→ GOAL_SCORED
+→ remise en jeu
+→ reprise du match
+→ fin du chrono
+→ POST_MATCH
+→ résultat
+→ récompenses
+→ REJOUER ou RETOUR MENU.
+
+Le match doit pouvoir être joué du début à la fin sans rechargement de page.
+
+==================================================
+2 — MATCH
+==================================================
+
+Mode initial :
+Joueur contre BOT.
+
+Durée :
+5 minutes.
+
+Arène :
+La Cour de l’Aube.
+
+Deux buts :
+- gauche / bleu
+- droite / rouge
+
+Utiliser :
+- Fluid pour le joueur ;
+- Heavy pour le bot ;
+- la balle énergétique fournie ;
+- le fond d’arène ;
+- plateformes ;
+- obstacle central ;
+- buts ;
+- HUD disponibles dans le pack d’assets.
+
+Fluid et Heavy doivent avoir exactement les mêmes capacités physiques.
+Aucun avantage statistique lié au personnage.
+
+==================================================
+3 — GAMEPLAY JOUEUR
+==================================================
+
+Implémenter uniquement le cœur nécessaire :
+
+- déplacement horizontal ;
+- saut ;
+- jetpack ;
+- gravité ;
+- collisions avec le sol et les plateformes ;
+- déplacement aérien ;
+- interaction physique avec la balle ;
+- frappe/contact avec la balle.
+
+La balle doit rester LIBRE.
+
+INTERDIT :
+- balle collée au personnage ;
+- possession automatique ;
+- téléportation de la balle ;
+- assistance artificielle donnant l’impression que le joueur porte la balle.
+
+Le contrôle doit venir du mouvement, du placement et des contacts physiques.
+
+==================================================
+4 — JETPACK
+==================================================
+
+Ajouter une jauge de jetpack.
+
+Le jetpack :
+- permet de prendre de la hauteur ;
+- consomme la jauge pendant son utilisation ;
+- se recharge lorsqu’il n’est pas utilisé ;
+- doit fonctionner au sol et en l’air selon les règles physiques retenues.
+
+Utiliser les effets visuels fournis lorsque possible.
+
+==================================================
+5 — BALLE
+==================================================
+
+La balle doit avoir :
+
+- gravité ;
+- inertie ;
+- rebonds ;
+- collisions avec joueurs ;
+- collisions avec sol ;
+- collisions avec plateformes ;
+- collisions avec obstacle central ;
+- collisions avec limites pertinentes de l’arène.
+
+Les contacts du joueur ou du bot doivent pouvoir modifier naturellement sa trajectoire.
+
+Pas de script forçant artificiellement la balle vers un but.
+
+==================================================
+6 — BOT
+==================================================
+
+Créer un bot fonctionnel avec trois niveaux :
+
+FACILE
+NORMAL
+ÉLITE
+
+Pour cette première version, rester simple.
+
+Le bot doit :
+- chercher la balle ;
+- se déplacer ;
+- sauter ;
+- utiliser son jetpack ;
+- tenter de pousser/frapper la balle vers le but adverse ;
+- essayer de revenir défendre lorsque nécessaire.
+
+Les trois difficultés peuvent différer par :
+- délai de réaction ;
+- précision ;
+- anticipation ;
+- agressivité.
+
+Ne jamais donner au bot :
+- vitesse supérieure ;
+- jetpack supérieur ;
+- puissance supérieure ;
+- physique différente.
+
+==================================================
+7 — BUTS
+==================================================
+
+Détecter correctement lorsqu’une balle entre dans un but.
+
+Lors d’un but :
+
+1. empêcher tout double comptage ;
+2. passer en GOAL_SCORED ;
+3. afficher brièvement le but ;
+4. mettre à jour le score ;
+5. replacer Fluid ;
+6. replacer Heavy ;
+7. replacer la balle au centre ;
+8. lancer un petit compte à rebours ;
+9. reprendre PLAYING.
+
+==================================================
+8 — CHRONO ET FIN DE MATCH
+==================================================
+
+Chrono initial :
+05:00.
+
+À 00:00 :
+- arrêter réellement le gameplay ;
+- empêcher les nouveaux buts ;
+- déterminer le résultat ;
+- passer une seule fois en POST_MATCH.
+
+Pour cette première implémentation :
+
+si les scores sont égaux à 00:00,
+utiliser une MORT SUBITE :
+le prochain but gagne.
+
+Afficher clairement la mort subite.
+
+==================================================
+9 — RÉCOMPENSES
+==================================================
+
+À la fin d’un match :
+
++100 XP pour avoir terminé le match.
++50 XP supplémentaires en cas de victoire.
++10 XP par but marqué.
+
+Seuil de niveau :
+1000 XP.
+
+Les récompenses doivent être attribuées UNE SEULE FOIS.
+
+Prévoir une protection contre :
+- double fin de match ;
+- double attribution XP ;
+- double événement de but.
+
+Sauvegarder localement le profil nécessaire.
+
+Ne pas construire maintenant toute la boutique ou le pass de saison.
+
+==================================================
+10 — HUD
+==================================================
+
+Afficher au minimum :
+
+- score joueur ;
+- score bot ;
+- chrono ;
+- jauge jetpack joueur ;
+- jauge jetpack bot si pertinente ;
+- compte à rebours ;
+- message de but ;
+- mort subite ;
+- écran résultat.
+
+Utiliser les assets HUD fournis lorsqu’ils sont adaptés.
+
+Si un élément fourni n’est pas suffisamment exploitable,
+créer l’élément en HTML/CSS dans le même style plutôt que de déformer un asset.
+
+==================================================
+11 — COMMANDES
+==================================================
+
+Prévoir PC en priorité.
+
+Choisir des commandes clavier simples et les documenter clairement dans le README.
+
+La structure du code doit permettre plus tard d’ajouter :
+- commandes mobiles ;
+- manette.
+
+Mais NE PAS les développer dans cette étape.
+
+==================================================
+12 — HORS PÉRIMÈTRE
+==================================================
+
+NE PAS développer maintenant :
+
+- multijoueur réseau ;
+- boutique complète ;
+- pass saison complet ;
+- classement mondial ;
+- nouvelles arènes ;
+- nouveaux personnages ;
+- Dash ;
+- Wave ;
+- Lift ;
+- Grab ;
+- capacités spéciales ;
+- nouveaux assets ;
+- intégration CJEngine ;
+- fonctionnalités non nécessaires à la boucle de match.
+
+==================================================
+13 — ARCHITECTURE
+==================================================
+
+Conserver une architecture claire et modulaire.
+
+Séparer autant que raisonnablement possible :
+
+- configuration ;
+- état du jeu ;
+- profil/sauvegarde ;
+- joueur ;
+- bot ;
+- balle ;
+- physique/collisions ;
+- arène ;
+- buts ;
+- HUD ;
+- boucle de match.
+
+Ne pas créer une architecture inutilement complexe.
+
+==================================================
+14 — TESTS
+==================================================
+
+Avant de considérer l’Étape 2 terminée, tester au minimum :
+
+- chargement du menu ;
+- lancement d’un match ;
+- compte à rebours ;
+- déplacement joueur ;
+- saut ;
+- jetpack ;
+- recharge jetpack ;
+- collisions ;
+- comportement de balle ;
+- but joueur ;
+- but bot ;
+- absence de double but ;
+- remise en jeu ;
+- chrono ;
+- mort subite ;
+- fin de match ;
+- XP ;
+- absence de double récompense ;
+- rejouer ;
+- retour menu.
+
+==================================================
+15 — LIVRAISON
+==================================================
+
+À la fin :
+
+1. donner la liste exacte des fichiers créés/modifiés ;
+2. expliquer brièvement l’architecture ;
+3. donner les commandes retenues ;
+4. donner le résultat des tests ;
+5. signaler tout point restant imparfait ;
+6. créer un ZIP complet de la version jouable ;
+7. NE PAS faire de commit GitHub ni de push pour l’instant.
+
+IMPORTANT :
+La validation finale appartient à CJ sur test réel.
+
+On ne poursuivra vers aucune nouvelle fonctionnalité avant son retour de test.
+
+Commence maintenant par inspecter les deux ZIP et l’état réel des fichiers.
+Ensuite construis uniquement cette Étape 2.

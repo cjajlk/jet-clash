@@ -1,0 +1,105 @@
+JETCLASH — PACK ASSETS PROPRES
+
+Assets conservés : 50
+Découpes écartées : 44
+
+Les petites étiquettes/textes issus de la planche ont été laissés de côté.
+Les PNG conservés n'ont pas été retouchés : seuls le tri, le renommage et le classement ont été effectués.
+
+ARBORESCENCE RETENUE :
+- assets/characters/fluid/fluid_jump.png
+- assets/characters/fluid/fluid_jetpack.png
+- assets/characters/fluid/fluid_idle.png
+- assets/characters/fluid/fluid_walk.png
+- assets/characters/fluid/fluid_sprint.png
+- assets/characters/fluid/fluid_attack.png
+- assets/characters/heavy/heavy_jump.png
+- assets/characters/heavy/heavy_jetpack.png
+- assets/characters/heavy/heavy_idle.png
+- assets/characters/heavy/heavy_walk.png
+- assets/characters/heavy/heavy_sprint.png
+- assets/characters/heavy/heavy_attack.png
+- assets/ball/ball_idle.png
+- assets/ball/ball_glow.png
+- assets/ball/ball_trail_blue.png
+- assets/ball/ball_trail_red.png
+- assets/ball/ball_impact.png
+- assets/ball/ball_explosion.png
+- assets/fx/fluid/jetpack_flame_01.png
+- assets/fx/fluid/jetpack_flame_02.png
+- assets/fx/fluid/jetpack_boost.png
+- assets/fx/heavy/jetpack_flame_01.png
+- assets/fx/heavy/jetpack_flame_02.png
+- assets/fx/heavy/jetpack_boost.png
+- assets/fx/fluid/dash.png
+- assets/fx/fluid/turn.png
+- assets/fx/fluid/ground_impact.png
+- assets/fx/fluid/strike.png
+- assets/fx/fluid/energy_wave.png
+- assets/fx/heavy/dash.png
+- assets/fx/heavy/ground_impact.png
+- assets/fx/heavy/energy_wave.png
+- assets/fx/heavy/strike.png
+- assets/arena/arena_background.png
+- assets/arena/platform_small.png
+- assets/arena/platform_medium.png
+- assets/arena/platform_large.png
+- assets/arena/center_obstacle.png
+- assets/arena/goal_left_blue.png
+- assets/arena/goal_right_red.png
+- assets/arena/decor/pillar.png
+- assets/arena/decor/panel.png
+- assets/arena/decor/crate_decor.png
+- assets/arena/decor/banner.png
+- assets/hud/hud_reference.png
+- assets/hud/player_score_and_dash_icon.png
+- assets/hud/timer_and_jetpack_icon.png
+- assets/hud/jetpack_bar_player.png
+- assets/hud/jetpack_bar_bot.png
+- assets/hud/countdown_3_2_1_go.png
+
+FICHIERS SOURCE ÉCARTÉS :
+- asset_01.png
+- asset_04.png
+- asset_15.png
+- asset_16.png
+- asset_17.png
+- asset_18.png
+- asset_19.png
+- asset_20.png
+- asset_21.png
+- asset_22.png
+- asset_23.png
+- asset_24.png
+- asset_25.png
+- asset_26.png
+- asset_28.png
+- asset_29.png
+- asset_41.png
+- asset_42.png
+- asset_43.png
+- asset_44.png
+- asset_45.png
+- asset_46.png
+- asset_47.png
+- asset_48.png
+- asset_50.png
+- asset_59.png
+- asset_60.png
+- asset_61.png
+- asset_62.png
+- asset_63.png
+- asset_64.png
+- asset_65.png
+- asset_66.png
+- asset_67.png
+- asset_69.png
+- asset_75.png
+- asset_76.png
+- asset_77.png
+- asset_78.png
+- asset_79.png
+- asset_81.png
+- asset_91.png
+- asset_93.png
+- asset_94.png
