@@ -2,7 +2,7 @@ import { CONFIG as C } from './config.js';
 import { createPlayer, drive } from './player.js';
 import { createBall, integrateBall } from './ball.js';
 import { solids, resetPositions } from './arena.js';
-import { movePlayer, collideBall, hitPlayer } from './physics.js';
+import { movePlayer, collideBall, hitPlayer, ballOutsideArena } from './physics.js';
 import { Bot } from './bot.js';
 import { goalScorer } from './goals.js';
 export const STATES=Object.freeze({ MENU:'MENU', PRE_ROUND:'PRE_ROUND', PLAYING:'PLAYING', GOAL_SCORED:'GOAL_SCORED', POST_MATCH:'POST_MATCH' });
@@ -16,7 +16,7 @@ export class Match {
     this.difficulty=difficulty; this.ai=new Bot(difficulty);
     this.id=globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
     this.score={player:0,bot:0}; this.remaining=C.duration; this.overtime=false;
-    this.finished=false; this.result=null; this.reward=0; this.elapsed=0; this.lastGoal=null; this.prepare();
+    this.finished=false; this.result=null; this.reward=0; this.elapsed=0; this.lastGoal=null; this.boundaryRecoveries=0; this.prepare();
   }
   prepare() { resetPositions(this.player,this.bot,this.ball); this.ai.reset(); this.state=STATES.PRE_ROUND; this.phase=C.countdown; }
   menu() { this.state=STATES.MENU; this.player.boosting=false; this.bot.boosting=false; }
@@ -37,13 +37,21 @@ export class Match {
         this.overtime=true;
       }
     }
+    if(this.recoverOutsideBall())return;
     drive(this.player,input,dt); drive(this.bot,this.ai.update(this.bot,this.ball,dt),dt);
     movePlayer(this.player,solids,dt); movePlayer(this.bot,solids,dt);
     integrateBall(this.ball,dt);
+    if(this.recoverOutsideBall())return;
     collideBall(this.ball,solids);
     hitPlayer(this.ball,this.player); hitPlayer(this.ball,this.bot);
     collideBall(this.ball,solids);
+    if(this.recoverOutsideBall())return;
     const scorer=goalScorer(this.ball); if (scorer) this.goal(scorer);
+  }
+  recoverOutsideBall(){
+    if(!ballOutsideArena(this.ball))return false;
+    // Ultimate safety only: ordinary collisions must keep this counter at zero.
+    this.boundaryRecoveries++;this.lastGoal=null;this.prepare();return true;
   }
   goal(scorer) {
     if (this.state!==STATES.PLAYING || this.finished || !['player','bot'].includes(scorer)) return false;

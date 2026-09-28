@@ -26,7 +26,30 @@ Toujours utiliser la même adresse et le même navigateur pour retrouver son pro
 | Recharge | Relâcher Maj |
 | Frappe | Contact physique avec la balle, sans touche spéciale |
 
-Cliquer sur l’arène si nécessaire pour lui rendre le focus. Aucun contrôle mobile ou manette à cette étape. Une pause automatique protège le match quand la fenêtre perd le focus ; le jeu reprend au retour. Les commandes maintenues sont alors relâchées automatiquement.
+Cliquer sur l’arène si nécessaire pour lui rendre le focus. Une pause automatique protège le match quand la fenêtre perd le focus ; le jeu reprend au retour. Les touches clavier sont alors relâchées automatiquement. Pour reprendre une commande manette qui était maintenue, ramener d’abord le stick et les boutons au repos.
+
+### Manette PS5 / DualSense sur PC
+
+La manette est une deuxième méthode d’entrée : le clavier conserve toutes ses commandes.
+
+| Action | PS5 | Xbox / mapping standard |
+| --- | --- | --- |
+| Déplacement | Stick gauche horizontal | Stick gauche horizontal |
+| Saut | Croix (×) | A |
+| Jetpack | R2 maintenu | RT maintenu |
+| Arrêt du jetpack | Relâcher R2 | Relâcher RT |
+
+Brancher la manette au PC, ouvrir le jeu et appuyer sur Croix si elle n’apparaît pas immédiatement. Le navigateur peut attendre une première action sur la manette avant de l’exposer au jeu. Les boutons de lancement et de résultat continuent à s’utiliser avec la souris ou le clavier ; aucune navigation de menus à la manette n’a été ajoutée.
+
+Le jeu utilise `navigator.getGamepads()` à chaque image et les événements de connexion/déconnexion. Il accepte le mapping `standard` du navigateur : axe 0, bouton 0 (Croix/A), bouton 7 (R2/RT). Une disposition non reconnue est signalée sans interpréter arbitrairement les boutons ; le clavier reste fonctionnel. Utiliser la page du serveur local dans un navigateur autorisant la Gamepad API. Si elle est indisponible dans une fenêtre intégrée, ouvrir la même adresse dans Edge ou Chrome.
+
+Zone morte du stick : 18 %, puis amplitude analogique renormalisée jusqu’à 1. Seuil d’activation de gâchette : valeur supérieure à 12 % ou état pressé du navigateur. R2 commande le jetpack tant qu’il est maintenu, dans les limites normales de la jauge existante ; il ne modifie ni puissance ni consommation. En cas d’entrées simultanées, les directions clavier sont prioritaires et les actions saut/jetpack des deux méthodes se combinent. Débrancher la manette relâche ses commandes ; rebrancher permet de reprendre sans recharger.
+
+L’aide clavier reste toujours visible. L’aide PS5 affiche Croix et R2 à la détection, et la dernière méthode utilisée est mise en évidence. Les labels Xbox sont A et RT ; une manette standard non identifiée affiche A / Croix et RT / R2.
+
+Vérifications du support manette : 13 tests dédiés réussis ; suite complète à 111 tests réussis. Parcours Edge avec Gamepad API simulée : connexion avant lancement et en jeu, stick, absence de dérive, Croix, R2 maintenu/relâché, coexistence clavier, déconnexion/reconnexion et aide PS5. Aucun test matériel DualSense n’est revendiqué : la validation finale avec la vraie manette appartient à CJ. Aucun réglage de gameplay, physique, IA ou arène n’a changé pour cette intégration.
+
+Références techniques : [Gamepad API — utilisation](https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API/Using_the_Gamepad_API), [mapping standard W3C](https://w3c.github.io/gamepad/#remapping).
 
 ## Règles mises en œuvre
 
@@ -56,14 +79,15 @@ Les 50 PNG proviennent de `JetClash_assets_propres.zip`, copiés sans modificati
 | src/config.js | Paramètres communs et trois difficultés |
 | src/match.js | États, transitions, chrono et fin de match unique |
 | src/profile-store.js | Profil, XP et sauvegarde locale idempotente |
-| src/player.js / src/input.js | Capacités partagées et adaptation du clavier |
+| src/player.js / src/input.js | Capacités partagées et combinaison clavier/manette |
+| src/gamepad-input.js / src/controls-help.js | Lecture Gamepad API, zone morte, détection et aide contextuelle |
 | src/bot.js | Décisions du bot, appliquées par les mêmes capacités |
 | src/ball.js / src/physics.js | Intégration, rebonds et impulsions de contact |
 | src/arena.js / src/goals.js | Géométrie, placements et détection des buts |
 | src/renderer.js / src/hud.js | Rendu Canvas des vrais assets et interface HTML |
 | src/main.js | Assemblage, pause et boucle fixe à 120 pas/seconde |
 
-Les futures entrées mobile/manette pourront produire le même objet `{axis, jump, boost}` ; elles ne sont pas implémentées. Aucun framework ni moteur externe n’est requis.
+Le clavier et la manette produisent le même objet `{axis, jump, boost}`. Les commandes mobiles restent hors périmètre. Aucun framework ni moteur externe n’est requis.
 
 ## Tests et limites
 

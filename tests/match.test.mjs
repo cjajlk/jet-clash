@@ -15,7 +15,7 @@ function advance(m,seconds,input={}){for(let i=0;i<Math.ceil(seconds/C.step);i++
 function playing(){const m=make();m.start();advance(m,3.02);assert.equal(m.state,S.PLAYING);return m;}
 test('menu, lancement et compte à rebours sans consommation du chrono',()=>{const m=make();assert.equal(m.state,S.MENU);m.start('elite');advance(m,2);assert.equal(m.state,S.PRE_ROUND);assert.equal(m.remaining,300);advance(m,1.02);assert.equal(m.state,S.PLAYING);assert.equal(m.difficulty,'elite');});
 test('déplacement, saut, jetpack, recharge et égalité des capacités',()=>{
-  const a=createPlayer('fluid'),b=createPlayer('heavy');for(const p of [a,b]){p.y=606;p.grounded=true;for(let i=0;i<30;i++){drive(p,{axis:1},C.step);movePlayer(p,solids,C.step);}assert.ok(p.x>0);drive(p,{jump:true},C.step);assert.ok(p.vy<0);const fuel=p.fuel;drive(p,{boost:true},C.step);assert.ok(p.fuel<fuel);const low=p.fuel;drive(p,{},C.step);assert.ok(p.fuel>low);}
+  const a=createPlayer('fluid'),b=createPlayer('heavy');for(const p of [a,b]){p.x=300;p.y=606;p.grounded=true;for(let i=0;i<30;i++){drive(p,{axis:1},C.step);movePlayer(p,solids,C.step);}assert.ok(p.x>0);drive(p,{jump:true},C.step);assert.ok(p.vy<0);const fuel=p.fuel;drive(p,{boost:true},C.step);assert.ok(p.fuel<fuel);const low=p.fuel;drive(p,{},C.step);assert.ok(p.fuel>low);}
   assert.equal(a.vx,b.vx);assert.equal(a.vy,b.vy);assert.equal(a.fuel,b.fuel);
 });
 test('sol, plateformes, dessous de plateforme et obstacle bloquent le joueur',()=>{
@@ -24,7 +24,9 @@ test('sol, plateformes, dessous de plateforme et obstacle bloquent le joueur',()
 });
 test('balle : gravité, inertie, rebonds, plateformes, obstacle et limites',()=>{
   const ball=createBall();ball.vx=150;integrateBall(ball,.1);assert.ok(ball.x>640&&ball.vy>0);
-  for(const r of solids){Object.assign(ball,{x:r.x+r.w/2,y:r.y-ball.r+2,vx:20,vy:150});collideBall(ball,[r]);assert.ok(ball.vy<0);assert.ok(Math.abs(ball.y-(r.y-ball.r))<.001);}
+  // Goal boundaries have sloping collision surfaces, not horizontal shelves.
+  // Their fieldward response is covered by goal-boundaries.test.mjs.
+  for(const r of solids.filter(s=>!s.goalBoundary)){Object.assign(ball,{x:r.x+r.w/2,y:r.y-ball.r+2,vx:20,vy:150});collideBall(ball,[r]);assert.ok(ball.vy<0);assert.ok(Math.abs(ball.y-(r.y-ball.r))<.001);}
   Object.assign(ball,{x:2,y:200,vx:-50,vy:0});collideBall(ball,[]);assert.ok(ball.vx>0);Object.assign(ball,{x:1279,y:200,vx:50});collideBall(ball,[]);assert.ok(ball.vx<0);
 });
 test('contact physique symétrique, sans attraction ni possession',()=>{
