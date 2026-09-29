@@ -8,7 +8,7 @@ const assert=require('node:assert/strict');
       page.on('pageerror',e=>errors.push(e.message));
       await page.addInitScript(()=>{window.pad={index:0,id:'DualSense Wireless Controller',connected:true,mapping:'standard',axes:[0,0,0,0],buttons:Array.from({length:17},()=>({value:0}))};Object.defineProperty(navigator,'getGamepads',{value:()=>[window.pad]});});
       await page.goto('http://127.0.0.1:4173/?test=1');await page.waitForFunction(()=>!document.querySelector('#start').disabled);
-      await page.locator('#start').tap();await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING');
+      await page.locator('#mobile-play').tap();await page.locator('#mobile-duel').tap();await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING');
       assert.equal(await page.locator('[data-touch="aim"]').count(),0);
       const boxes={};for(const control of ['move','jump','boost','shoot'])boxes[control]=await page.locator(`[data-touch="${control}"]`).boundingBox();
       for(const [name,b] of Object.entries(boxes)){
