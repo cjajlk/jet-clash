@@ -1,5 +1,7 @@
 import { CONFIG as C } from './config.js';
-export const solids = [
+// Reversible CJ trial: set false to restore the original interior.
+export const OPEN_ARENA = true;
+export const classicSolids = [
   { x: 0, y: C.floor, w: C.width, h: 100, kind: 'floor' },
   { x: 290, y: 392, w: 220, h: 24, kind: 'platform' },
   { x: 770, y: 392, w: 220, h: 24, kind: 'platform' },
@@ -31,6 +33,7 @@ export const solids = [
     {x:1062,y:C.floor},{x:C.goalRight,y:C.goalBottom},{x:C.width,y:C.goalBottom},{x:C.width,y:C.floor},
   ] },
 ];
+export const solids = OPEN_ARENA ? classicSolids.filter(s=>!['platform','obstacle'].includes(s.kind)) : classicSolids;
 export function resetPositions(player, bot, ball) {
   for (const [body, x] of [[player, 300], [bot, 980]]) {
     Object.assign(body, { x, y: C.floor - C.playerHeight / 2, vx: 0, vy: 0,

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CONFIG as C } from '../src/config.js';
-import { solids } from '../src/arena.js';
+// Retain collision regression coverage for the reversible original layout.
+import { classicSolids as solids } from '../src/arena.js';
 import { createBall, integrateBall } from '../src/ball.js';
 import { createPlayer, drive } from '../src/player.js';
 import { collideBall, movePlayer, hitPlayer, circleContact } from '../src/physics.js';

@@ -14,7 +14,7 @@ let storage;try{storage=localStorage;}catch{}
 const match=new Match(new ProfileStore(storage));const start=document.getElementById('start');let ready=false;
 mobile.onCancel=()=>{match.control.release();input.clear();};
 const launch=()=>{if(!ready)return;input.clear();mobile.clear();match.start(document.getElementById('difficulty').value);mobileMenu.update(match,ready);hud.update(match);canvas.focus();};
-const mobileMenu=new MobileMenu({enabled:mobile.enabled,onLaunch:difficulty=>{document.getElementById('difficulty').value=difficulty;launch();}});
+const mobileMenu=new MobileMenu({enabled:true,onLaunch:difficulty=>{document.getElementById('difficulty').value=difficulty;launch();}});
 mobileMenu.update(match,false,'Chargement de l’arène…');
 start.addEventListener('click',launch);document.getElementById('replay').addEventListener('click',launch);document.getElementById('back-menu').addEventListener('click',()=>{input.clear();match.menu();hud.update(match);});
 let last=performance.now(),accumulator=0,paused=false,touchCancelled=false,touchReleaseAim=null;

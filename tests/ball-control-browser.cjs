@@ -13,7 +13,7 @@ const assert=require('node:assert/strict');
     await page.waitForFunction(()=>!document.querySelector('#start').disabled);
     // CJ regression: aiming throughout launch must not lock the new controls.
     await page.evaluate(()=>window.pad.axes[3]=-1);
-    await page.click('#start');await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING');
+    await page.click('#mobile-play');await page.click('#mobile-duel');await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING');
     // Capture the actual shot impulse, before gravity/browser scheduling changes it.
     await page.evaluate(()=>{
       const control=window.__jetclash.match.control,apply=control.applyShot.bind(control);

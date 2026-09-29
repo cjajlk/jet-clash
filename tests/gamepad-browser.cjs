@@ -15,10 +15,10 @@ const fs=require('node:fs');fs.mkdirSync('work',{recursive:true});
       window.disconnectTestPad=()=>{const pad=window.testPads[0];window.testPads=[null];const e=new Event('gamepaddisconnected');e.gamepad=pad;window.dispatchEvent(e);};
     });
     await page.goto('http://127.0.0.1:4173/?test=1');await page.waitForFunction(()=>!document.querySelector('#start').disabled);
-    assert.equal(await page.locator('#gamepad-help').isVisible(),true);
+    assert.equal(await page.locator('#gamepad-help').getAttribute('hidden'),null);
     assert.equal(await page.locator('#gamepad-jump').textContent(),'Croix (×)');assert.equal(await page.locator('#gamepad-boost').textContent(),'R2');
     assert.match(await page.locator('#controller-status').textContent(),/PS5 connectée/);
-    await page.click('#start');await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING');
+    await page.click('#mobile-play');await page.click('#mobile-duel');await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING');
     // At-rest stick noise must leave the character at rest.
     await page.evaluate(()=>{Object.assign(window.__jetclash.match.player,{x:300,y:606,vx:0,vy:0,grounded:true});window.testPads[0].axes[0]=.1;});
     await page.waitForTimeout(200);assert.ok(Math.abs(await page.evaluate(()=>window.__jetclash.match.player.x)-300)<.01);

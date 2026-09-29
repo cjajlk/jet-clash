@@ -10,7 +10,7 @@ const assert=require('node:assert/strict');
       Object.defineProperty(navigator,'getGamepads',{value:()=>[window.pad]});
     });
     await page.goto('http://127.0.0.1:4173/?test=1');await page.waitForFunction(()=>!document.querySelector('#start').disabled);
-    await page.click('#start');await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING');
+    await page.click('#mobile-play');await page.click('#mobile-duel');await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING');
     await page.evaluate(()=>{
       const m=window.__jetclash.match;m.control.reset();
       Object.assign(m.player,{x:300,y:606,vx:0,vy:0,grounded:true,facing:1});

@@ -1,5 +1,5 @@
 import { CONFIG as C } from './config.js';
-import { solids } from './arena.js';
+import { solids, OPEN_ARENA } from './arena.js';
 import { MobileCamera } from './mobile-camera.js';
 const paths={background:'arena/arena_background.png',left:'arena/goal_left_blue.png',right:'arena/goal_right_red.png',rampLeft:'arena/goal_ramp_left_blue.png',rampRight:'arena/goal_ramp_right_red.png',platform:'arena/platform_large.png',obstacle:'arena/center_obstacle.png',ball:'ball/ball_idle.png',impact:'ball/ball_glow.png'};
 for(const skin of ['fluid','heavy'])for(const pose of ['walk','jump','jetpack','sprint'])paths[`${skin}_${pose}`]=`characters/${skin}/${skin}_${pose}.png`;
@@ -41,7 +41,7 @@ export class Renderer{
     const bg=this.images.background;if(bg){const s=Math.max(C.width/bg.width,C.height/bg.height);c.drawImage(bg,(C.width-bg.width*s)/2,0,bg.width*s,bg.height*s);}c.fillStyle='#080c2350';c.fillRect(0,0,C.width,C.height);
     const grad=c.createLinearGradient(0,C.floor,0,C.height);grad.addColorStop(0,'#131735cc');grad.addColorStop(1,'#080e22');c.fillStyle=grad;c.fillRect(0,C.floor,C.width,C.height-C.floor);c.strokeStyle='#71ddff90';c.lineWidth=2;c.beginPath();c.moveTo(0,C.floor);c.lineTo(C.width,C.floor);c.stroke();
     this.goalRamp('rampLeft');this.goalRamp('rampRight',true);
-    this.fit('left',0,C.goalTop-1,181,C.goalBottom-C.goalTop+2);this.fit('right',C.width-198,C.goalTop-1,198,C.goalBottom-C.goalTop+2);this.fit('platform',285,380,230,96);this.fit('platform',765,380,230,96);this.fit('obstacle',496,570,288,89);
+    this.fit('left',0,C.goalTop-1,181,C.goalBottom-C.goalTop+2);this.fit('right',C.width-198,C.goalTop-1,198,C.goalBottom-C.goalTop+2);if(!OPEN_ARENA){this.fit('platform',285,380,230,96);this.fit('platform',765,380,230,96);this.fit('obstacle',496,570,288,89);}
     for(const p of [m.player,m.bot]){const pose=p.boosting?'jetpack':!p.grounded?'jump':Math.abs(p.vx)>45?'sprint':'walk';const h=96;
       c.save();if(mobile&&!p.grounded&&p.touchDirection){c.translate(p.x,p.y);c.rotate(Math.atan2(p.touchDirection.y,p.touchDirection.x)+Math.PI/2);c.translate(-p.x,-p.y);}
       this.fit(`${p.skin}_${pose}`,p.x-43,p.y+p.h/2-h,86,h,p.facing<0);c.restore();}

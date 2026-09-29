@@ -65,7 +65,7 @@ const assert=require('node:assert/strict');
       console.log(`Mobile V2 ${viewport.width}x${viewport.height} PASS: jump, NE jet, airborne shot, drag/release, full charge, pressure duel, 3 pointers, PS5, camera and rotation.`);await context.close();
     }
     const page=await browser.newPage({viewport:{width:1440,height:1080}});
-    await page.goto('http://127.0.0.1:4173/?test=1');await page.waitForFunction(()=>!document.querySelector('#start').disabled);await page.click('#start');await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING');
+    await page.goto('http://127.0.0.1:4173/?test=1');await page.waitForFunction(()=>!document.querySelector('#start').disabled);await page.click('#mobile-play');await page.click('#mobile-duel');await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING');
     assert.equal(await page.evaluate(()=>window.__jetclash.renderer.camera.zoom),1);assert.equal(await page.locator('#touch-controls').isVisible(),false);
     console.log('Desktop 1440x1080 PASS: original framing 1x, no touch overlay.');
   }finally{await browser.close();}

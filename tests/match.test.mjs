@@ -6,7 +6,8 @@ import { ProfileStore } from '../src/profile-store.js';
 import { createPlayer, drive } from '../src/player.js';
 import { createBall, integrateBall } from '../src/ball.js';
 import { movePlayer, collideBall, hitPlayer } from '../src/physics.js';
-import { solids } from '../src/arena.js';
+// Retain collision regression coverage for the reversible original layout.
+import { classicSolids as solids } from '../src/arena.js';
 import { goalScorer } from '../src/goals.js';
 import { Bot } from '../src/bot.js';
 const memory=()=>{const data=new Map();return {getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v)};};
