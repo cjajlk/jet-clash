@@ -6,11 +6,10 @@ export class TouchControls {
     this.enabled=navigator.maxTouchPoints>0||matchMedia('(any-pointer: coarse)').matches;
     document.body.classList.toggle('touch-capable',this.enabled);
     this.layer=document.createElement('div');this.layer.id='touch-controls';this.layer.hidden=true;
-    this.layer.innerHTML=`<div class="touch-stick touch-move" data-touch="move" role="group" aria-label="Joystick déplacement"><span class="touch-knob"></span><span class="touch-label">DÉPLACEMENT</span></div>
-      <div class="touch-stick touch-aim" data-touch="aim" role="group" aria-label="Joystick visée"><span class="touch-knob"></span><span class="touch-label">VISÉE</span></div>
+    this.layer.innerHTML=`<div class="touch-stick touch-move" data-touch="move" role="group" aria-label="Joystick directionnel 360 degrés"><span class="touch-knob"></span></div>
       <button type="button" class="touch-button touch-jump" data-touch="jump">SAUT</button>
       <button type="button" class="touch-button touch-boost" data-touch="boost">JET</button>
-      <button type="button" class="touch-button touch-shoot" data-touch="shoot">TIR</button>
+      <button type="button" class="touch-button touch-shoot" data-touch="shoot" aria-label="Tir : maintenir pour charger, glisser pour viser, relâcher pour frapper">TIR</button>
       <button type="button" class="touch-fullscreen" aria-label="Plein écran">⛶</button>
       <span class="touch-notice" role="status"></span>`;
     this.rotate=document.createElement('div');this.rotate.id='touch-rotate';this.rotate.hidden=true;
@@ -31,21 +30,30 @@ export class TouchControls {
     for(const name of ['contextmenu','dragstart'])shell.addEventListener(name,e=>{if(this.active)e.preventDefault();});
   }
   bind(el){
+    const origins=new Map();
     const coordinates=e=>{
+      if(el.dataset.touch==='shoot'){
+        const origin=origins.get(e.pointerId)||{x:e.clientX,y:e.clientY};
+        // 48 CSS pixels of travel, with the existing .18 radial deadzone (~9px).
+        return {x:(e.clientX-origin.x)/48,y:(e.clientY-origin.y)/48};
+      }
       const r=el.getBoundingClientRect(),radius=r.width*.35;
       const x=(e.clientX-r.left-r.width/2)/radius,y=(e.clientY-r.top-r.height/2)/radius;
       const length=Math.max(1,Math.hypot(x,y));return {x:x/length,y:y/length};
     };
     el.addEventListener('pointerdown',e=>{
       if(!this.active||this.portrait||e.pointerType==='mouse'&&e.button!==0)return;
-      e.preventDefault();const {x,y}=coordinates(e);
+      e.preventDefault();origins.set(e.pointerId,{x:e.clientX,y:e.clientY});const {x,y}=coordinates(e);
       if(this.input.start(e.pointerId,el.dataset.touch,x,y)){el.setPointerCapture(e.pointerId);this.paint();}
     });
     el.addEventListener('pointermove',e=>{
       if(!this.input.pointers.has(e.pointerId))return;e.preventDefault();const {x,y}=coordinates(e);this.input.move(e.pointerId,x,y);this.paint();
     });
     for(const name of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(name,e=>{
-      if(!this.input.pointers.has(e.pointerId))return;e.preventDefault();this.input.end(e.pointerId,name!=='pointerup');this.paint();
+      if(!this.input.pointers.has(e.pointerId)){origins.delete(e.pointerId);return;}
+      e.preventDefault();
+      if(name==='pointerup'&&el.dataset.touch==='shoot'){const {x,y}=coordinates(e);this.input.move(e.pointerId,x,y);}
+      this.input.end(e.pointerId,name!=='pointerup');origins.delete(e.pointerId);this.paint();
     });
   }
   paint(){
