@@ -1,6 +1,14 @@
 import { CONFIG as C } from './config.js';
 import { circlePolygonContact, boxPolygonContact } from './collision-shapes.js';
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function setSupport(p, ny) {
+  if (ny < -.5) { p.grounded = true; p.contactSurface = 'floor'; }
+  else if (ny > .5) { p.grounded = true; p.contactSurface = 'ceiling'; }
+}
+function rechargeSupport(p) {
+  if (p.contactSurface === 'floor' && p.footY > .65) { p.jumpReady = true; p.impulseReady = true; }
+  if (p.contactSurface === 'ceiling' && p.footY < -.65) { p.jumpReady = true; p.impulseReady = true; }
+}
 function overlaps(p, r) { return !r.vertices && p.x + p.w/2 > r.x && p.x - p.w/2 < r.x+r.w && p.y+p.h/2 > r.y && p.y-p.h/2 < r.y+r.h; }
 function resolvePlayerRamps(p,solids){
   for(const shape of solids){
@@ -9,11 +17,12 @@ function resolvePlayerRamps(p,solids){
     p.x+=hit.nx*hit.depth;p.y+=hit.ny*hit.depth;
     const normal=p.vx*hit.nx+p.vy*hit.ny;
     if(normal<0){p.vx-=normal*hit.nx;p.vy-=normal*hit.ny;}
-    if(hit.ny<-.5)p.grounded=true;
+    setSupport(p,hit.ny);
   }
 }
 export function movePlayer(p, solids, dt) {
   p.x += p.vx * dt;
+  p.grounded = false; p.contactSurface = null;
   resolvePlayerRamps(p,solids);
   for (const r of solids) if (overlaps(p, r)) {
     if (p.vx > 0) p.x = r.x - p.w/2;
@@ -24,19 +33,20 @@ export function movePlayer(p, solids, dt) {
   p.y += p.vy * dt; p.grounded = false;
   resolvePlayerRamps(p,solids);
   for (const r of solids) if (overlaps(p,r)) {
-    if (p.vy >= 0) { p.y = r.y-p.h/2; p.grounded = true; }
-    else p.y = r.y+r.h+p.h/2;
+    if (p.vy >= 0) { p.y = r.y-p.h/2; setSupport(p,-1); }
+    else { p.y = r.y+r.h+p.h/2; setSupport(p,1); }
     p.vy = 0;
+    rechargeSupport(p);
   }
-  if (p.y < 100 + p.h/2) { p.y = 100+p.h/2; p.vy = Math.max(0,p.vy); }
+  if (p.y < 100 + p.h/2) { p.y = 100+p.h/2; p.vy = Math.max(0,p.vy); setSupport(p,1); rechargeSupport(p); }
   // The sides behind the goal mouths are scoring space for the ball, not a
   // character corridor. Finish every step with closed floor/ceiling/end limits.
   for(let pass=0;pass<4;pass++){
     const left=C.goalLeft+p.w/2,right=C.goalRight-p.w/2;
     if(p.x<left){p.x=left;p.vx=Math.max(0,p.vx);}
     if(p.x>right){p.x=right;p.vx=Math.min(0,p.vx);}
-    if(p.y+p.h/2>C.floor){p.y=C.floor-p.h/2;p.vy=Math.min(0,p.vy);p.grounded=true;}
-    if(p.y-p.h/2<100){p.y=100+p.h/2;p.vy=Math.max(0,p.vy);}
+    if(p.y+p.h/2>C.floor){p.y=C.floor-p.h/2;p.vy=Math.min(0,p.vy);setSupport(p,-1);rechargeSupport(p);}
+    if(p.y-p.h/2<100){p.y=100+p.h/2;p.vy=Math.max(0,p.vy);setSupport(p,1);rechargeSupport(p);}
     resolvePlayerRamps(p,solids.filter(s=>s.goalBoundary));
   }
 }

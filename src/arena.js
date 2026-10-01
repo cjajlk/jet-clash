@@ -20,24 +20,26 @@ export const classicSolids = [
   ]},
   // Invisible 45-degree slopes, joined to each base as a single solid polygon.
   // Keep the approved rendering outline in vertices. The invisible collision
-  // continues the same incline inside the goal, removing the inaccessible sill.
-  // At the scoring line x=82 the surface still meets exactly y=508.
-  { x:0,y:C.goalBottom,w:218,h:C.floor-C.goalBottom,kind:'goalBase',goalBoundary:true,contactEdges:[0],collisionVertices:[
-    {x:0,y:C.goalBottom-C.goalLeft},{x:218,y:C.floor},{x:0,y:C.floor},
+  // continues the same incline inside the goal, but leaves a gap before the mouth.
+  // At the scoring line x=82 the surface now stops at the raised ramp end.
+  { x:0,y:C.goalRampBottom,w:218,h:C.floor-C.goalRampBottom,kind:'goalBase',goalBoundary:true,contactEdges:[0],collisionVertices:[
+    {x:0,y:C.goalRampBottom-C.goalLeft},{x:218,y:C.floor},{x:0,y:C.floor},
   ],vertices:[
-    {x:0,y:C.goalBottom},{x:C.goalLeft,y:C.goalBottom},{x:218,y:C.floor},{x:0,y:C.floor},
+    {x:0,y:C.goalRampBottom},{x:C.goalLeft,y:C.goalRampBottom},{x:218,y:C.floor},{x:0,y:C.floor},
   ] },
-  { x:1062,y:C.goalBottom,w:218,h:C.floor-C.goalBottom,kind:'goalBase',goalBoundary:true,contactEdges:[0],collisionVertices:[
-    {x:1062,y:C.floor},{x:C.width,y:C.goalBottom-C.goalLeft},{x:C.width,y:C.floor},
+  { x:1062,y:C.goalRampBottom,w:218,h:C.floor-C.goalRampBottom,kind:'goalBase',goalBoundary:true,contactEdges:[0],collisionVertices:[
+    {x:1062,y:C.floor},{x:C.width,y:C.goalRampBottom-C.goalLeft},{x:C.width,y:C.floor},
   ],vertices:[
-    {x:1062,y:C.floor},{x:C.goalRight,y:C.goalBottom},{x:C.width,y:C.goalBottom},{x:C.width,y:C.floor},
+    {x:1062,y:C.floor},{x:C.goalRight,y:C.goalRampBottom},{x:C.width,y:C.goalRampBottom},{x:C.width,y:C.floor},
   ] },
 ];
 export const solids = OPEN_ARENA ? classicSolids.filter(s=>!['platform','obstacle'].includes(s.kind)) : classicSolids;
 export function resetPositions(player, bot, ball) {
   for (const [body, x] of [[player, 300], [bot, 980]]) {
     Object.assign(body, { x, y: C.floor - C.playerHeight / 2, vx: 0, vy: 0,
-      grounded: true, fuel: 100, boosting: false, jumpHeld: false });
+      grounded: true, contactSurface: 'floor', footX: 0, footY: 1, controlX: 1, controlY: 0,
+      rotateHeld: false, jumpReady: true, impulseReady: true, impulseCooldown: 0, flipIntent: 0,
+      fuel: 100, boosting: false, jumpHeld: false });
   }
   player.facing = 1; bot.facing = -1;
   Object.assign(ball, { x: 640, y: 278, vx: 0, vy: 0, angle: 0, flash: 0 });

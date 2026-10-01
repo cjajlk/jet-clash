@@ -32,9 +32,15 @@ const assert=require('node:assert/strict');
         await page.screenshot({path:`work/menu-mobile-${route}-${viewport.width}x${viewport.height}.png`});
       }
       await page.locator('.mm-gear').tap();assert.equal(await root.getAttribute('data-route'),'options');await page.locator('[data-back]').tap();assert.equal(await root.getAttribute('data-route'),'home');
+      await page.locator('.mm-gear').tap();assert.ok(await page.locator('select[data-setting]').count()>0);await page.locator('[data-back]').tap();
+      await page.locator('.mm-gear').tap();await page.locator('select[data-action="movementStick"]').selectOption('left');await page.locator('select[data-action="layout"]').selectOption('mirrored');await page.locator('[data-back]').tap();
+      await page.reload();await page.waitForFunction(()=>!document.querySelector('#start').disabled);
+      await page.locator('.mm-gear').tap();assert.equal(await page.locator('select[data-action="movementStick"]').inputValue(),'left');assert.equal(await page.locator('select[data-action="layout"]').inputValue(),'mirrored');await page.locator('[data-back]').tap();
       assert.equal(await page.evaluate(()=>localStorage.getItem('jetclash.etape2.profile.v1')),saved);
       await page.locator('#mobile-play').tap();assert.equal(await root.getAttribute('data-route'),'modes');
       await page.locator('[data-difficulty="easy"]').tap();await page.screenshot({path:`work/menu-mobile-modes-${viewport.width}x${viewport.height}.png`});
+      await page.locator('#mobile-training').tap();await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING'&&window.__jetclash.match.training===true);
+      assert.equal(await page.evaluate(()=>window.__jetclash.match.bot),null);assert.equal(await page.locator('#timer').isHidden(),true);await page.locator('#back-menu').tap();await root.waitFor({state:'visible'});
       await page.locator('#mobile-duel').tap();await page.waitForFunction(()=>window.__jetclash.match.state!=='MENU');
       assert.equal(await root.isVisible(),false);assert.equal(await page.evaluate(()=>window.__jetclash.match.difficulty),'easy');
       if(viewport.height>viewport.width){await page.locator('#touch-rotate').waitFor({state:'visible'});assert.equal(await page.locator('#touch-controls').isVisible(),false);await page.setViewportSize({width:844,height:390});}

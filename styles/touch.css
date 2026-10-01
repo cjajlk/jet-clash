@@ -10,7 +10,7 @@
 .touch-match .hud{top:max(6px,env(safe-area-inset-top));transform:translateX(-50%) scale(.7);transform-origin:top center}
 .touch-match .fuel-hud{bottom:auto;top:68px;left:calc(12px + env(safe-area-inset-left));right:calc(12px + env(safe-area-inset-right))}
 .touch-match .fuel-hud>div{width:80px}.touch-match .fuel-hud label{font-size:6px}.touch-match progress{height:6px}
-#touch-controls{position:fixed;inset:0;pointer-events:none;z-index:7;--stick:clamp(78px,21dvh,108px);--button:clamp(48px,13dvh,62px);--edge:16px;--bottom:16px;--gap:10px}
+#touch-controls{position:fixed;inset:0;pointer-events:none;z-index:7;--stick:clamp(78px,21dvh,108px);--button:clamp(48px,13dvh,62px);--rot:clamp(34px,9.5dvh,44px);--edge:16px;--bottom:16px;--gap:10px}
 #touch-controls [data-touch],.touch-fullscreen{position:absolute;pointer-events:auto;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .touch-stick{width:var(--stick);height:var(--stick);border-radius:50%;background:#09264065;border:2px solid #80ebff90;box-shadow:inset 0 0 16px #39d6ff20}
 .touch-move{left:calc(var(--edge) + env(safe-area-inset-left));bottom:calc(var(--bottom) + env(safe-area-inset-bottom))}
@@ -18,10 +18,18 @@
 .touch-button{width:var(--button);height:var(--button);border-radius:50%;padding:0;font-size:11px;letter-spacing:1px;color:#e5fdff;background:#103954a8;border:2px solid #79e5ffb0;text-shadow:0 1px 3px #000}
 .touch-button.pressed,.touch-stick.pressed{background:#1a819b95;border-color:#d4ffff;box-shadow:0 0 15px #48dfff70}
 .touch-jump{right:calc(var(--edge) + var(--button) + var(--gap) + env(safe-area-inset-right));bottom:calc(var(--bottom) + env(safe-area-inset-bottom))}
+.touch-rot{width:var(--rot);height:var(--rot);right:calc(var(--edge) + var(--button) * 2 + var(--gap) * 2 + env(safe-area-inset-right));bottom:calc(var(--bottom) + (var(--button) - var(--rot)) / 2 + env(safe-area-inset-bottom));font-size:10px}
 .touch-boost{right:calc(var(--edge) + env(safe-area-inset-right));bottom:calc(var(--bottom) + env(safe-area-inset-bottom))}
 .touch-shoot{right:calc(var(--edge) + (var(--button) + var(--gap)) / 2 + env(safe-area-inset-right));bottom:calc(var(--bottom) + var(--button) + var(--gap) + env(safe-area-inset-bottom))}
+.touch-reset{left:calc(var(--edge) + env(safe-area-inset-left));top:calc(var(--edge) + env(safe-area-inset-top));width:var(--rot);height:var(--rot);font-size:9px}
 .touch-fullscreen{right:calc(10px + env(safe-area-inset-right));top:calc(6px + env(safe-area-inset-top));width:44px;height:44px;padding:0;font-size:25px;background:#10223980;border-color:#6fe9ff60}
 .touch-notice{position:absolute;right:60px;top:14px;font-size:10px;max-width:190px;color:#cdfaff;background:#102239c0}
+#touch-controls[data-layout="mirrored"] .touch-move{left:auto;right:calc(var(--edge) + env(safe-area-inset-right))}
+#touch-controls[data-layout="mirrored"] .touch-jump{right:auto;left:calc(var(--edge) + var(--button) + var(--gap) + env(safe-area-inset-left))}
+#touch-controls[data-layout="mirrored"] .touch-rot{right:auto;left:calc(var(--edge) + var(--button) * 2 + var(--gap) * 2 + env(safe-area-inset-left))}
+#touch-controls[data-layout="mirrored"] .touch-boost{right:auto;left:calc(var(--edge) + env(safe-area-inset-left))}
+#touch-controls[data-layout="mirrored"] .touch-shoot{right:auto;left:calc(var(--edge) + (var(--button) + var(--gap)) / 2 + env(safe-area-inset-left))}
+#touch-controls[data-layout="mirrored"] .touch-reset{left:auto;right:calc(var(--edge) + env(safe-area-inset-right))}
 #touch-rotate{position:fixed;inset:0;z-index:12;background:#090f23fa;display:grid;align-content:center;justify-items:center;gap:18px;padding:24px;text-align:center;color:#a1f4ff;touch-action:none}
 #touch-rotate strong{font-size:24px}#touch-rotate span{font-size:15px;line-height:1.7;color:#d2e5ff}
 @media (max-height:380px) and (orientation:landscape){#touch-controls{--edge:12px;--bottom:12px}.touch-match .hud{transform:translateX(-50%) scale(.6)}.touch-match .fuel-hud{top:52px}}

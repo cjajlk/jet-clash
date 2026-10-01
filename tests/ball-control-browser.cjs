@@ -11,26 +11,26 @@ const assert=require('node:assert/strict');
     });
     await page.goto('http://127.0.0.1:4173/?test=1');
     await page.waitForFunction(()=>!document.querySelector('#start').disabled);
-    // CJ regression: aiming throughout launch must not lock the new controls.
-    await page.evaluate(()=>window.pad.axes[3]=-1);
+    // CJ regression: principal-stick movement throughout launch must not lock the new controls.
+    await page.evaluate(()=>window.pad.axes[2]=1);
     await page.click('#mobile-play');await page.click('#mobile-duel');await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING');
     // Capture the actual shot impulse, before gravity/browser scheduling changes it.
     await page.evaluate(()=>{
       const control=window.__jetclash.match.control,apply=control.applyShot.bind(control);
       control.applyShot=(ball,shot)=>{apply(ball,shot);window.lastShot={vx:ball.vx,vy:ball.vy};};
     });
-    assert.equal(await page.evaluate(()=>window.__jetclash.input.readBallControls().aimY),-1);
-    assert.match(await page.locator('#gamepad-shoot').textContent(),/Carré/);
-    // Approach a free ball with Square already held, using actual simulated input.
+    assert.equal(await page.evaluate(()=>window.__jetclash.input.readBallControls().aimIntent),false);
+    assert.match(await page.locator('#gamepad-shoot').textContent(),/L2/);
+    // Approach a free ball with L2 already held, using actual simulated input.
     await page.evaluate(()=>{
       const m=window.__jetclash.match;m.control.reset();
       Object.assign(m.player,{x:250,y:606,vx:0,vy:0,grounded:true,facing:1});
       Object.assign(m.ball,{x:320,y:625,vx:0,vy:0});Object.assign(m.bot,{x:1000,y:300});
-      window.pad.axes[0]=.467;window.pad.buttons[2].value=1;
+      window.pad.axes[2]=.467;window.pad.buttons[6].value=1;
     });
     await page.waitForFunction(()=>window.__jetclash.match.control.charge===.7);
     await page.screenshot({path:'work/ball-control-approach-charge.png'});
-    await page.evaluate(()=>{window.pad.axes[0]=0;window.pad.buttons[2].value=0;});
+    await page.evaluate(()=>{window.pad.axes[2]=0;window.pad.buttons[6].value=0;});
     await page.waitForFunction(()=>!window.__jetclash.match.control.owned);
     await page.waitForFunction(()=>window.lastShot?.vy<-850);
     const arrange=async()=>{
@@ -38,23 +38,23 @@ const assert=require('node:assert/strict');
         const m=window.__jetclash.match;m.control.reset();window.lastShot=null;
         Object.assign(m.player,{x:300,y:606,vx:0,vy:0,grounded:true,facing:1});
         Object.assign(m.ball,{x:339,y:625,vx:0,vy:0});Object.assign(m.bot,{x:1000,y:300,vx:0,vy:0});
-        window.pad.axes=[0,0,0,0];window.pad.buttons[2].value=0;
+        window.pad.axes=[0,0,0,0];window.pad.buttons[6].value=0;
       });
       await page.waitForFunction(()=>window.__jetclash.match.control.owned);
     };
     await arrange();assert.equal(await page.evaluate(()=>window.__jetclash.match.control.indicator),null);
-    await page.evaluate(()=>{window.pad.axes[2]=1;window.pad.axes[3]=-1;});
+    await page.evaluate(()=>{window.pad.axes[2]=1;});
     await page.waitForFunction(()=>window.__jetclash.match.control.indicator?.y<0);
     await page.screenshot({path:'work/ball-control-aim.png'});
-    await page.evaluate(()=>window.pad.buttons[2].value=1);await page.waitForTimeout(60);
-    await page.evaluate(()=>window.pad.buttons[2].value=0);
+    await page.evaluate(()=>window.pad.buttons[6].value=1);await page.waitForTimeout(60);
+    await page.evaluate(()=>window.pad.buttons[6].value=0);
     await page.waitForFunction(()=>!window.__jetclash.match.control.owned);
     const normal=await page.evaluate(()=>{const m=window.__jetclash.match;return Math.hypot(m.ball.vx,m.ball.vy);});
     assert.ok(normal>400);assert.equal(await page.evaluate(()=>window.__jetclash.match.control.indicator),null);
-    await arrange();await page.evaluate(()=>{window.pad.axes[3]=-1;window.pad.buttons[2].value=1;});
+    await arrange();await page.evaluate(()=>{window.pad.buttons[6].value=1;});
     await page.waitForFunction(()=>window.__jetclash.match.control.charge===.7);
     await page.screenshot({path:'work/ball-control-charge.png'});
-    await page.evaluate(()=>window.pad.buttons[2].value=0);
+    await page.evaluate(()=>window.pad.buttons[6].value=0);
     await page.waitForFunction(()=>!window.__jetclash.match.control.owned);
     await page.waitForFunction(()=>window.lastShot?.vy<-850);
     await arrange();await page.keyboard.down('KeyI');await page.keyboard.down('KeyF');
@@ -62,11 +62,11 @@ const assert=require('node:assert/strict');
     assert.ok(await page.evaluate(()=>window.__jetclash.match.control.indicator.y<0));
     await page.keyboard.up('KeyF');await page.keyboard.up('KeyI');
     await page.waitForFunction(()=>!window.__jetclash.match.control.owned);
-    await arrange();await page.evaluate(()=>window.pad.buttons[2].value=1);
+    await arrange();await page.evaluate(()=>window.pad.buttons[6].value=1);
     await page.waitForFunction(()=>window.__jetclash.match.control.charging);
     await page.evaluate(()=>window.__jetclash.setPaused(true));
     assert.equal(await page.evaluate(()=>window.__jetclash.match.control.charging),false);
-    await page.evaluate(()=>{window.pad.buttons[2].value=0;window.__jetclash.setPaused(false);});
+    await page.evaluate(()=>{window.pad.buttons[6].value=0;window.__jetclash.setPaused(false);});
     await page.waitForTimeout(80);assert.ok(await page.evaluate(()=>Math.abs(window.__jetclash.match.ball.vx)<100));
     // Loss of possession immediately removes visible aim.
     await arrange();await page.evaluate(()=>{window.pad.axes[2]=1;});

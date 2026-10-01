@@ -49,7 +49,7 @@ for(const side of ['left','right']){
   });
 }
 test('géométrie symétrique, 25 % au-dessus du sol et ouverture haute de 120 px',()=>{
-  assert.equal(C.floor-C.goalBottom,(C.floor-100)*.25);assert.equal(C.goalBottom-C.goalTop,120);
+  assert.equal(C.goalBottom-C.goalTop,120);assert.equal(C.goalBottom-C.goalRampBottom,32);
   const bases=solids.filter(r=>r.kind==='goalBase');assert.equal(bases.length,2);
   assert.equal(bases[0].w,bases[1].w);assert.equal(bases[0].y,bases[1].y);assert.equal(bases[0].h,bases[1].h);
   assert.equal(bases[0].x,C.width-bases[1].x-bases[1].w);

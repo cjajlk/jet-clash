@@ -5,7 +5,7 @@ import { aimDirection } from './ball-control.js';
 export class TouchInput {
   constructor(){this.pointers=new Map();this.cancelled=false;this.releaseAim=null;}
   start(id,control,x=0,y=0){
-    if(this.pointers.has(id)||!['move','aim','jump','boost','shoot'].includes(control))return false;
+    if(this.pointers.has(id)||!['move','aim','jump','boost','shoot','rot'].includes(control))return false;
     if(['move','aim'].includes(control)&&[...this.pointers.values()].some(p=>p.control===control))return false;
     if(control==='shoot')this.releaseAim=null;
     this.pointers.set(id,{control,x,y});return true;
@@ -25,7 +25,8 @@ export class TouchInput {
     const drag=aimDirection(shot?.x,shot?.y,STICK_DEADZONE),releaseAim=this.releaseAim;
     const direction=drag||releaseAim||aimDirection(aim?.x,aim?.y,STICK_DEADZONE),cancelShot=this.cancelled;this.cancelled=false;this.releaseAim=null;
     return {axis:stickAxis(move?.x),aimX:direction?.x||0,aimY:direction?.y||0,
-      jump:pointers.some(p=>p.control==='jump'),boost:pointers.some(p=>p.control==='boost'),shoot:pointers.some(p=>p.control==='shoot'),
+      aimIntent:!!direction,
+      jump:pointers.some(p=>p.control==='jump'),boost:pointers.some(p=>p.control==='boost'),shoot:pointers.some(p=>p.control==='shoot'),rotate:pointers.some(p=>p.control==='rot'),
       moveActive:!!move,aimActive:!!(aim||drag||releaseAim),cancelShot,releaseAim,
       direction:aimDirection(move?.x,move?.y,STICK_DEADZONE)};
   }
@@ -36,6 +37,7 @@ export function combineTouch(base,touch){
   // keyboard/gamepad immediately; action buttons combine without disabling them.
   return {...base,...(touch.direction?{touchDirection:touch.direction}:{}),axis:touch.moveActive?touch.axis:base.axis,
     aimX:touch.aimActive?touch.aimX:base.aimX,aimY:touch.aimActive?touch.aimY:base.aimY,
-    jump:base.jump||touch.jump,boost:base.boost||touch.boost,shoot:base.shoot||touch.shoot,
+    aimIntent:base.aimIntent||touch.aimIntent,
+    jump:base.jump||touch.jump,boost:base.boost||touch.boost,shoot:base.shoot||touch.shoot,rotate:base.rotate||touch.rotate,
     cancelShot:base.cancelShot||touch.cancelShot};
 }

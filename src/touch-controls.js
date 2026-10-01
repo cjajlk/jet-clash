@@ -1,21 +1,26 @@
 import { TouchInput } from './touch-input.js';
+import { controlSettings } from './control-settings.js';
 
 export class TouchControls {
   constructor(shell){
-    this.input=new TouchInput();this.shell=shell;this.active=false;this.portrait=false;this.onCancel=()=>{};
+    this.input=new TouchInput();this.shell=shell;this.active=false;this.portrait=false;this.onCancel=()=>{};this.onReset=()=>{};
     this.enabled=navigator.maxTouchPoints>0||matchMedia('(any-pointer: coarse)').matches;
     document.body.classList.toggle('touch-capable',this.enabled);
     this.layer=document.createElement('div');this.layer.id='touch-controls';this.layer.hidden=true;
     this.layer.innerHTML=`<div class="touch-stick touch-move" data-touch="move" role="group" aria-label="Joystick directionnel 360 degrés"><span class="touch-knob"></span></div>
       <button type="button" class="touch-button touch-jump" data-touch="jump">SAUT</button>
+      <button type="button" class="touch-button touch-rot" data-touch="rot">ROT</button>
       <button type="button" class="touch-button touch-boost" data-touch="boost">JET</button>
       <button type="button" class="touch-button touch-shoot" data-touch="shoot" aria-label="Tir : maintenir pour charger, glisser pour viser, relâcher pour frapper">TIR</button>
+      <button type="button" class="touch-button touch-reset" data-touch="reset">RESET</button>
       <button type="button" class="touch-fullscreen" aria-label="Plein écran">⛶</button>
       <span class="touch-notice" role="status"></span>`;
     this.rotate=document.createElement('div');this.rotate.id='touch-rotate';this.rotate.hidden=true;
     this.rotate.innerHTML='<strong>Tourne ton téléphone</strong><span>JetClash se joue en paysage.<br>Le match est en pause.</span>';
     shell.append(this.layer,this.rotate);
     for(const el of this.layer.querySelectorAll('[data-touch]'))this.bind(el);
+    const reset=this.layer.querySelector('[data-touch="reset"]');
+    if(reset)reset.addEventListener('click',()=>{if(this.active&&this.training)this.onReset();});
     this.layer.querySelector('.touch-fullscreen').addEventListener('click',async()=>{
       const notice=this.layer.querySelector('.touch-notice');
       try{
@@ -64,12 +69,17 @@ export class TouchControls {
     }
   }
   clear(){this.input.clear();this.paint();}
-  update(state){
+  update(state,mode='touch',training=false){
     const active=this.enabled&&['PRE_ROUND','PLAYING','GOAL_SCORED'].includes(state);
     const portrait=active&&innerHeight>innerWidth;
-    if(active!==this.active||portrait!==this.portrait){this.clear();this.onCancel();}
+    const gamepad=mode==='gamepad';
+    if(active!==this.active||portrait!==this.portrait||gamepad!==this.gamepadMode){this.clear();this.onCancel();}
     this.active=active;this.portrait=portrait;
-    document.body.classList.toggle('touch-match',active);
-    this.layer.hidden=!active||portrait;this.rotate.hidden=!portrait;
+    this.gamepadMode=gamepad;
+    this.training=training;
+    this.layer.dataset.layout=controlSettings.touch.layout;
+    document.body.classList.toggle('touch-match',active&&!portrait&&!gamepad);
+    this.layer.hidden=!active||portrait||gamepad;this.rotate.hidden=!portrait||gamepad;
+    const reset=this.layer.querySelector('[data-touch="reset"]');if(reset)reset.hidden=!training||portrait||gamepad;
   }
 }

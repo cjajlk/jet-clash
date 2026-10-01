@@ -1,3 +1,4 @@
+import { controlSettings } from './control-settings.js';
 const neutral=()=>({axis:0,jump:false,boost:false});
 export const STICK_DEADZONE=.18;
 export const TRIGGER_THRESHOLD=.12;
@@ -20,7 +21,7 @@ function button(pad,index,threshold){
 export class GamepadInput {
   constructor(target=window,source=navigator,onActivity=()=>{}){
     this.source=source;this.onActivity=onActivity;this.index=null;
-    this.previous=neutral();this.axisAtActivity=0;this.needsNeutral=false;
+    this.previous=neutral();this.previousReset=false;this.axisAtActivity=0;this.needsNeutral=false;
     this.status={available:typeof source.getGamepads==='function',connected:false,supported:false,label:'Manette'};
     // Events discard stale input immediately. Polling also covers pads connected
     // before the page loaded, sparse slots, and a missed connection event.
@@ -31,7 +32,7 @@ export class GamepadInput {
   }
   clear(){
     this.needsNeutral=this.needsNeutral||!!(this.previous.axis||this.previous.jump||this.previous.boost);
-    this.previous=neutral();this.axisAtActivity=0;
+    this.previous=neutral();this.previousReset=false;this.axisAtActivity=0;
   }
   read(){
     let pads=[];
@@ -45,14 +46,16 @@ export class GamepadInput {
     if(!this.status.supported){this.index=null;this.previous=neutral();this.axisAtActivity=0;this.needsNeutral=false;return neutral();}
     if(this.index!==pad.index){this.previous=neutral();this.axisAtActivity=0;this.needsNeutral=false;}
     this.index=pad.index;
-    // W3C standard mapping: horizontal left stick=axis 0,
+    const useLeft=controlSettings.gamepad.movementStick==='left';
+    // W3C standard mapping: the selected stick drives movement,
     // south face button (Cross/A)=0, right lower trigger (R2/RT)=7.
-    const state={axis:stickAxis(pad.axes?.[0]),jump:button(pad,0,.5),boost:button(pad,7,TRIGGER_THRESHOLD)};
+    const state={axis:stickAxis(pad.axes?.[useLeft?0:2]),jump:button(pad,controlSettings.gamepad.jump,.5),boost:button(pad,controlSettings.gamepad.boost,TRIGGER_THRESHOLD),rotate:button(pad,controlSettings.gamepad.rotate,.5),resetBall:button(pad,controlSettings.gamepad.resetBall,.5)};
     if(this.needsNeutral){if(!state.axis&&!state.jump&&!state.boost)this.needsNeutral=false;return neutral();}
     const moved=state.axis!==0&&(this.axisAtActivity===0||Math.sign(state.axis)!==Math.sign(this.axisAtActivity)||Math.abs(state.axis-this.axisAtActivity)>.08);
-    if(moved||state.jump&&!this.previous.jump||state.boost&&!this.previous.boost){this.onActivity();this.axisAtActivity=state.axis;}
+    if(moved||state.jump&&!this.previous.jump||state.boost&&!this.previous.boost||state.rotate&&!this.previous.rotate){this.onActivity();this.axisAtActivity=state.axis;}
     if(state.axis===0)this.axisAtActivity=0;
-    this.previous=state;
-    return state;
+    const resetBall=state.resetBall&&!this.previousReset;
+    this.previous=state;this.previousReset=state.resetBall;
+    return {...state,resetBall};
   }
 }

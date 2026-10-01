@@ -13,8 +13,9 @@ const mobile=new TouchControls(document.getElementById('game-shell'));
 let storage;try{storage=localStorage;}catch{}
 const match=new Match(new ProfileStore(storage));const start=document.getElementById('start');let ready=false;
 mobile.onCancel=()=>{match.control.release();input.clear();};
-const launch=()=>{if(!ready)return;input.clear();mobile.clear();match.start(document.getElementById('difficulty').value);mobileMenu.update(match,ready);hud.update(match);canvas.focus();};
-const mobileMenu=new MobileMenu({enabled:true,onLaunch:difficulty=>{document.getElementById('difficulty').value=difficulty;launch();}});
+mobile.onReset=()=>{if(match.training)match.resetTrainingBall();};
+const launch=payload=>{if(!ready)return;input.clear();mobile.clear();const mode=payload?.mode||'duel';if(mode==='training')match.start('training');else{const difficulty=payload?.difficulty||document.getElementById('difficulty').value;document.getElementById('difficulty').value=difficulty;match.start(difficulty);}mobileMenu.update(match,ready);hud.update(match);canvas.focus();};
+const mobileMenu=new MobileMenu({enabled:true,onLaunch:payload=>launch(payload)});
 mobileMenu.update(match,false,'Chargement de l’arène…');
 start.addEventListener('click',launch);document.getElementById('replay').addEventListener('click',launch);document.getElementById('back-menu').addEventListener('click',()=>{input.clear();match.menu();hud.update(match);});
 let last=performance.now(),accumulator=0,paused=false,touchCancelled=false,touchReleaseAim=null;
@@ -23,7 +24,7 @@ window.addEventListener('blur',()=>setPaused(true));window.addEventListener('foc
 try{await renderer.load();ready=true;start.disabled=false;start.textContent='ENTRER DANS L’ARÈNE →';document.getElementById('load-status').textContent='5 MIN · MORT SUBITE EN CAS D’ÉGALITÉ';}catch(error){document.getElementById('load-status').textContent=`Asset inaccessible : ${error.message}. Vérifie que le ZIP est entièrement extrait.`;start.textContent='CHARGEMENT IMPOSSIBLE';}
 function frame(now){
   const delta=Math.min((now-last)/1000,0.1);last=now;
-  mobileMenu.update(match,ready,document.getElementById('load-status').textContent);mobile.update(match.state);
+  mobileMenu.update(match,ready,document.getElementById('load-status').textContent);
   const touch=mobile.input.read();touchCancelled ||= touch.cancelShot;
   if(touch.releaseAim)touchReleaseAim=touch.releaseAim;
   if(touch.cancelShot||touch.shoot)touchReleaseAim=null;
@@ -32,6 +33,10 @@ function frame(now){
   const released=touchReleaseAim?{aimX:touchReleaseAim.x,aimY:touchReleaseAim.y,aimActive:true}:{};
   const controls=combineTouch({...input.read(),...input.readBallControls()},{...touch,...released,cancelShot:touchCancelled});
   controlsHelp.update(input);
+  const gamepadActive=input.gamepad.status.connected&&input.lastMethod==='gamepad';
+  const touchActive=mobile.input.pointers.size>0||touch.moveActive||touch.aimActive||touch.jump||touch.boost||touch.shoot||touch.rotate||touch.releaseAim;
+  if(controls.resetBall&&match.training)match.resetTrainingBall();
+  mobile.update(match.state,gamepadActive&&!touchActive?'gamepad':'touch',match.training);
   if(ready&&!paused&&!mobile.portrait){
     accumulator+=delta;
     while(accumulator>=C.step){match.update(C.step,controls);accumulator-=C.step;touchCancelled=false;touchReleaseAim=null;}

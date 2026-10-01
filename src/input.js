@@ -1,10 +1,12 @@
 import { BallInput } from './ball-input.js';
 import { GamepadInput } from './gamepad-input.js';
+import { KEY_OPTIONS, controlSettings } from './control-settings.js';
 
 export class KeyboardInput {
   constructor(target=window,onActivity=()=>{}) {
     this.keys=new Set();
-    this.codes=new Set(['ArrowLeft','ArrowRight','KeyA','KeyQ','KeyD','Space','ArrowUp','KeyW','KeyZ','ShiftLeft','ShiftRight']);
+    this.previousReset=false; // Initialize one-shot reset tracking for keyboard input
+    this.codes=new Set(KEY_OPTIONS.map(option=>option.code));
     target.addEventListener('keydown',e=>{
       if (!this.codes.has(e.code) || /^(INPUT|SELECT|BUTTON|TEXTAREA)$/.test(e.target.tagName)) return;
       e.preventDefault(); this.keys.add(e.code);onActivity();
@@ -12,11 +14,13 @@ export class KeyboardInput {
     target.addEventListener('keyup',e=>this.keys.delete(e.code));
     target.addEventListener('blur',()=>this.clear());
   }
-  clear() { this.keys.clear(); }
+  clear() { this.keys.clear(); this.previousReset=false; }
   read() {
-    const any=(...keys)=>keys.some(k=>this.keys.has(k));
-    return { axis:Number(any('ArrowRight','KeyD'))-Number(any('ArrowLeft','KeyA','KeyQ')),
-      jump:any('Space','ArrowUp','KeyW','KeyZ'), boost:any('ShiftLeft','ShiftRight') };
+    const bindings=controlSettings.keyboard;
+    const any=(action)=>bindings[action].some(k=>this.keys.has(k));
+    const resetBall=any('resetBall')&&!this.previousReset;this.previousReset=any('resetBall');
+    return { axis:Number(any('moveRight'))-Number(any('moveLeft')),
+      jump:any('jump'), boost:any('boost'), rotate:any('rotate'), resetBall };
   }
 }
 
@@ -34,9 +38,9 @@ export class PlayerInput {
   read(){
     const pad=this.gamepad.read(),keyboard=this.keyboard.read();
     if(!this.gamepad.status.supported)this.lastMethod='keyboard';
-    const directionHeld=['ArrowLeft','ArrowRight','KeyA','KeyQ','KeyD'].some(code=>this.keyboard.keys.has(code));
+    const directionHeld=[...controlSettings.keyboard.moveLeft,...controlSettings.keyboard.moveRight].some(code=>this.keyboard.keys.has(code));
     // Keyboard directions retain priority when held; buttons combine by OR.
     // A connected or held controller therefore never disables keyboard controls.
-    return {axis:directionHeld?keyboard.axis:pad.axis,jump:keyboard.jump||pad.jump,boost:keyboard.boost||pad.boost};
+    return {axis:directionHeld?keyboard.axis:pad.axis,jump:keyboard.jump||pad.jump,boost:keyboard.boost||pad.boost,rotate:keyboard.rotate||pad.rotate,resetBall:keyboard.resetBall||pad.resetBall};
   }
 }

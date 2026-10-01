@@ -19,6 +19,53 @@ test('déplacement, saut, jetpack, recharge et égalité des capacités',()=>{
   const a=createPlayer('fluid'),b=createPlayer('heavy');for(const p of [a,b]){p.x=300;p.y=606;p.grounded=true;for(let i=0;i<30;i++){drive(p,{axis:1},C.step);movePlayer(p,solids,C.step);}assert.ok(p.x>0);drive(p,{jump:true},C.step);assert.ok(p.vy<0);const fuel=p.fuel;drive(p,{boost:true},C.step);assert.ok(p.fuel<fuel);const low=p.fuel;drive(p,{},C.step);assert.ok(p.fuel>low);}
   assert.equal(a.vx,b.vx);assert.equal(a.vy,b.vy);assert.equal(a.fuel,b.fuel);
 });
+test('saut : premier appui, maintien sans répétition, second appui aérien et consommation unique',()=>{
+  const p=createPlayer('fluid');p.grounded=true;drive(p,{jump:true},C.step);assert.ok(p.vy<0);const afterGround=p.vy;drive(p,{jump:true},C.step);assert.equal(p.vy,afterGround+C.gravity*C.step);drive(p,{jump:false},C.step);const beforeAir=p.vy;drive(p,{jump:true},C.step);assert.ok(p.vy<beforeAir);assert.equal(p.impulseReady,false);const afterAir=p.vy;drive(p,{jump:false},C.step);drive(p,{jump:true},C.step);assert.equal(p.vy,afterAir+C.gravity*C.step);
+});
+test('double saut : orientation quasi verticale reste neutre et orientation forte devient flip',()=>{
+  const neutral=createPlayer('fluid');neutral.grounded=false;neutral.jumpReady=false;neutral.impulseReady=true;neutral.footX=.08;neutral.footY=.99;drive(neutral,{jump:true},C.step);assert.equal(neutral.vx,0);assert.ok(neutral.vy<0);
+  const flip=createPlayer('fluid');flip.grounded=false;flip.jumpReady=false;flip.impulseReady=true;flip.footX=1;flip.footY=0;flip.rotateHeld=true;drive(flip,{jump:true,rotate:true},C.step);assert.ok(flip.vx>0);assert.ok(flip.impulseReady===false);
+});
+test('orientation aérienne progressive et impulsion courte distincte du Jetpack',()=>{
+  const p=createPlayer('fluid');p.grounded=false;p.jumpReady=false;p.impulseReady=true;p.footX=0;p.footY=1;p.x=300;p.y=260;
+  drive(p,{aimX:1,aimY:-1,jump:true},C.step);
+  assert.ok(p.vx>0);assert.ok(p.vy<0);assert.equal(p.impulseReady,false);assert.ok(p.impulseCooldown>0);assert.ok(p.footY>0&&p.footY<1);
+});
+test('orientation aérienne : retour vertical progressif quand l’entrée devient neutre',()=>{
+  const p=createPlayer('fluid');p.grounded=false;p.x=300;p.y=260;
+  for(let i=0;i<36;i++)drive(p,{aimX:1,aimY:-1},C.step);
+  const tilted=p.footY;
+  assert.ok(tilted>0);
+  for(let i=0;i<24;i++)drive(p,{},C.step);
+  assert.ok(p.footY>tilted);
+  assert.ok(p.footY>0);
+});
+test('orientation aérienne : le tête-en-bas volontaire reste possible après maintien suffisant',()=>{
+  const p=createPlayer('fluid');p.grounded=false;p.x=300;p.y=260;
+  for(let i=0;i<72;i++)drive(p,{aimX:0,aimY:-1},C.step);
+  assert.ok(p.flipIntent>=C.airFlipIntentTime);
+  assert.ok(p.footY<0);
+});
+test('rotation dédiée : le stick dirige l’orientation seulement quand ROT est maintenu',()=>{
+  const p=createPlayer('fluid');p.grounded=false;p.x=300;p.y=260;
+  for(let i=0;i<24;i++)drive(p,{axis:1},C.step);
+  assert.ok(p.footY>0.7);
+  const lean=p.footY;
+  drive(p,{axis:1,rotate:true},C.step);
+  assert.ok(p.rotateHeld);
+  assert.ok(p.footY>=lean);
+  for(let i=0;i<36;i++)drive(p,{axis:0,rotate:true,aimX:0,aimY:-1},C.step);
+  assert.ok(p.flipIntent>=C.airFlipIntentTime);
+  assert.ok(p.footY<0);
+  drive(p,{axis:1},C.step);
+  assert.equal(p.rotateHeld,false);
+});
+test('sol et plafond : recharge seulement quand les pieds sont orientés vers la surface',()=>{
+  const floor=createPlayer('fluid');floor.grounded=false;floor.jumpReady=false;floor.impulseReady=false;floor.footX=0;floor.footY=1;floor.y=C.floor-floor.h/2-1;floor.vy=200;movePlayer(floor,solids,.02);assert.ok(floor.jumpReady&&floor.impulseReady);
+  const ceiling=createPlayer('fluid');ceiling.grounded=false;ceiling.jumpReady=false;ceiling.impulseReady=false;ceiling.footX=0;ceiling.footY=-1;ceiling.y=100+ceiling.h/2+1;ceiling.vy=-200;movePlayer(ceiling,solids,.02);assert.ok(ceiling.jumpReady&&ceiling.impulseReady);
+  const shoulder=createPlayer('fluid');shoulder.grounded=false;shoulder.jumpReady=false;shoulder.impulseReady=false;shoulder.footX=1;shoulder.footY=0;shoulder.y=100+shoulder.h/2+1;shoulder.vy=-200;movePlayer(shoulder,solids,.02);assert.equal(shoulder.jumpReady,false);
+});
+test('JET ne recharge pas le saut aérien',()=>{const p=createPlayer('fluid');p.grounded=false;p.jumpReady=false;p.impulseReady=true;drive(p,{boost:true},C.step);assert.equal(p.impulseReady,true);assert.equal(p.jumpReady,false);});
 test('sol, plateformes, dessous de plateforme et obstacle bloquent le joueur',()=>{
   for(const rect of solids.filter(r=>['floor','platform','obstacle'].includes(r.kind))){const p=createPlayer('fluid');p.x=rect.x+rect.w/2;p.y=rect.y-p.h/2-1;p.vy=200;movePlayer(p,[rect],.02);assert.equal(p.y,rect.y-p.h/2);assert.ok(p.grounded);}
   const p=createPlayer('fluid'),r=solids[1];p.x=r.x+50;p.y=r.y+r.h+p.h/2+1;p.vy=-200;movePlayer(p,[r],.02);assert.equal(p.y,r.y+r.h+p.h/2);assert.equal(p.vy,0);

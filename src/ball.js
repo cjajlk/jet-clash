@@ -1,5 +1,5 @@
 import { CONFIG as C } from './config.js';
-export function createBall() { return { x: 640, y: 278, vx: 0, vy: 0, r: C.ballRadius, angle: 0, flash: 0 }; }
+export function createBall() { return { x: 640, y: 278, vx: 0, vy: 0, r: C.ballRadius * C.ballScale, angle: 0, flash: 0 }; }
 export function integrateBall(ball, dt) {
   ball.vy += C.gravity * dt;
   ball.vx *= Math.exp(-0.13 * dt);
