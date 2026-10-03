@@ -33,10 +33,9 @@ function frame(now){
   const released=touchReleaseAim?{aimX:touchReleaseAim.x,aimY:touchReleaseAim.y,aimActive:true}:{};
   const controls=combineTouch({...input.read(),...input.readBallControls()},{...touch,...released,cancelShot:touchCancelled});
   controlsHelp.update(input);
-  const gamepadActive=input.gamepad.status.connected&&input.lastMethod==='gamepad';
-  const touchActive=mobile.input.pointers.size>0||touch.moveActive||touch.aimActive||touch.jump||touch.boost||touch.shoot||touch.rotate||touch.releaseAim;
+  const gamepadActive=input.gamepad.status.connected;
   if(controls.resetBall&&match.training)match.resetTrainingBall();
-  mobile.update(match.state,gamepadActive&&!touchActive?'gamepad':'touch',match.training);
+  mobile.update(match.state,gamepadActive?'gamepad':'touch',match.training);
   if(ready&&!paused&&!mobile.portrait){
     accumulator+=delta;
     while(accumulator>=C.step){match.update(C.step,controls);accumulator-=C.step;touchCancelled=false;touchReleaseAim=null;}

@@ -1,33 +1,29 @@
-# Correctif unique — buts surélevés
+# Correctif — cages verticales agrandies
 
 Projet : E:\cj_project\jet clash. Correctif du 28 septembre 2026, à valider visuellement par CJ. Aucun commit ni push.
 
-## Position exacte
+## Position et dimensions actuelles
 
 Repère du Canvas : 1280 × 720, origine en haut à gauche ; y augmente vers le bas. Hauteur jouable : de y=100 à y=644, soit 544 px.
 
-Les deux ouvertures sont remontées de 136 px, sans changement de taille :
+Les cages encadrent une ouverture haute et plus large que la balle :
 
-- Haut : y=388 (anciennement 524).
-- Bas : y=508 (anciennement 644).
-- Centre vertical : y=448.
-- Hauteur d’ouverture : 120 px, inchangée.
-- Bas à 136 px du sol, soit exactement 25 % de la hauteur jouable. Les plateformes latérales restent à y=392.
-- Lignes de but inchangées : x=82 à gauche, x=1198 à droite.
-- Rendu bleu : boîte de placement x=0, y=387, largeur 181, hauteur 122.
-- Rendu rouge : boîte de placement x=1082, y=387, largeur 198, hauteur 122.
-
-Ces boîtes de placement sont inchangées en largeur et hauteur ; les PNG sont ajustés en conservant leur proportion exactement comme auparavant. Les deux rendus sont translatés de 136 px vers le haut. Les PNG originaux sont inchangés.
+- Haut : y=300 ; bas : y=570 ; hauteur : 270 px.
+- Profondeur de chaque ouverture : 150 px.
+- Diamètre de la balle : 95 px ; l’ouverture est supérieure dans les deux dimensions.
+- Ligne de but : x=150 à gauche et x=1130 à droite.
+- Les sprites de but sont tournés verticalement et occupent la même zone que les ouvertures de collision et de score.
+- Les rampes rejoignent le sol à x=260 et x=1020, en restant sous une pente de 0,7 et sans rebord caché dans la bouche du but.
 
 ## Détection et collisions
 
-Zone géométrique gauche : x=0..82, y=388..508. Zone droite : x=1198..1280, y=388..508. Toute la balle doit franchir la ligne et être strictement entre les deux bords horizontaux ; une tangence avec un bord n’est pas un but.
+Zone géométrique gauche : x=0..150, y=300..570. Zone droite : x=1130..1280, y=300..570. Toute la balle doit franchir la ligne et être strictement entre les bords verticaux ; une tangence avec un bord n’est pas un but.
 
-Pour le rayon actuel de 19 px, la détection exige :
+Pour le rayon actuel de 47,5 px, la détection exige :
 
-- Centre de balle : 407 < y < 489.
-- But gauche, point pour Heavy : x + 19 ≤ 82, donc x ≤ 63.
-- But droit, point pour Fluid : x − 19 ≥ 1198, donc x ≥ 1217.
+- Centre de balle : 347,5 < y < 522,5.
+- But gauche, point pour Heavy : x + 47,5 ≤ 150, donc x ≤ 102,5.
+- But droit, point pour Fluid : x − 47,5 ≥ 1130, donc x ≥ 1177,5.
 
 Socles solides et visibles : gauche [0,82] × [508,644] ; droite [1198,1280] × [508,644]. Les toits existants suivent les cages : gauche [0,82] × [373,388] ; droite [1198,1280] × [373,388]. Ces rectangles passent par les collisions existantes de balle et de personnage. Aucun paramètre du moteur physique n’a changé.
 

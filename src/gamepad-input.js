@@ -1,5 +1,5 @@
 import { controlSettings } from './control-settings.js';
-const neutral=()=>({axis:0,jump:false,boost:false});
+const neutral=()=>({axis:0,jump:false,boost:false,rotate:false,resetBall:false});
 export const STICK_DEADZONE=.18;
 export const TRIGGER_THRESHOLD=.12;
 
@@ -31,7 +31,7 @@ export class GamepadInput {
     });
   }
   clear(){
-    this.needsNeutral=this.needsNeutral||!!(this.previous.axis||this.previous.jump||this.previous.boost);
+    this.needsNeutral=this.needsNeutral||!!(this.previous.axis||this.previous.jump||this.previous.boost||this.previous.rotate);
     this.previous=neutral();this.previousReset=false;this.axisAtActivity=0;
   }
   read(){
@@ -47,10 +47,9 @@ export class GamepadInput {
     if(this.index!==pad.index){this.previous=neutral();this.axisAtActivity=0;this.needsNeutral=false;}
     this.index=pad.index;
     const useLeft=controlSettings.gamepad.movementStick==='left';
-    // W3C standard mapping: the selected stick drives movement,
-    // south face button (Cross/A)=0, right lower trigger (R2/RT)=7.
+    // W3C standard mapping: Cross/A=0, Circle/B=1 and Square/X=2.
     const state={axis:stickAxis(pad.axes?.[useLeft?0:2]),jump:button(pad,controlSettings.gamepad.jump,.5),boost:button(pad,controlSettings.gamepad.boost,TRIGGER_THRESHOLD),rotate:button(pad,controlSettings.gamepad.rotate,.5),resetBall:button(pad,controlSettings.gamepad.resetBall,.5)};
-    if(this.needsNeutral){if(!state.axis&&!state.jump&&!state.boost)this.needsNeutral=false;return neutral();}
+    if(this.needsNeutral){if(!state.axis&&!state.jump&&!state.boost&&!state.rotate)this.needsNeutral=false;return neutral();}
     const moved=state.axis!==0&&(this.axisAtActivity===0||Math.sign(state.axis)!==Math.sign(this.axisAtActivity)||Math.abs(state.axis-this.axisAtActivity)>.08);
     if(moved||state.jump&&!this.previous.jump||state.boost&&!this.previous.boost||state.rotate&&!this.previous.rotate){this.onActivity();this.axisAtActivity=state.axis;}
     if(state.axis===0)this.axisAtActivity=0;

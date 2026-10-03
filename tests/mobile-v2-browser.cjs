@@ -49,10 +49,10 @@ const assert=require('node:assert/strict');
       await page.waitForFunction(()=>window.__jetclash.match.control.charge===.7);
       assert.ok(await page.evaluate(()=>window.__jetclash.match.control.indicator?.x>0));
       await up(3);await page.waitForFunction(()=>window.shots.length===1);await page.waitForFunction(()=>window.__jetclash.match.ball.y<570);await cancel();
-      await page.evaluate(()=>{window.__jetclash.match.ai.update=window.originalAI;window.pad.axes[0]=-1;window.pad.buttons[7].value=1;});
+      await page.evaluate(()=>{window.__jetclash.match.ai.update=window.originalAI;window.pad.axes[0]=-1;window.pad.buttons[1].value=1;});
       await page.waitForFunction(()=>window.__jetclash.match.player.vx<0&&window.__jetclash.match.player.boosting);
       assert.equal(await page.locator('#touch-controls').isVisible(),false);assert.equal(await page.evaluate(()=>window.__jetclash.match.player.touchDirection),undefined);
-      await page.evaluate(()=>{window.pad.connected=false;window.pad.axes[0]=0;window.pad.buttons[7].value=0;});
+      await page.evaluate(()=>{window.pad.connected=false;window.pad.axes[0]=0;window.pad.buttons[1].value=0;});
       await page.waitForFunction(()=>!window.__jetclash.input.gamepad.status.connected);
       await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING'&&document.querySelector('#touch-controls').offsetParent!==null);
       // Losing a pointer/orientation must cancel, not fire a queued shot.

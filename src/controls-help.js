@@ -11,12 +11,13 @@ export class ControlsHelp {
     const info=input.gamepad.status,key=JSON.stringify([info,input.lastMethod,controlSettings.keyboard,controlSettings.gamepad,controlSettings.touch]);if(key===this.last)return;this.last=key;
     this.gamepad.hidden=!info.supported;
     const padBindings=controlSettings.gamepad,keyboardBindings=controlSettings.keyboard;
-    this.keyboard.innerHTML=`<strong>CLAVIER</strong><span>${labelForCode(keyboardBindings.moveLeft[0])} / ${labelForCode(keyboardBindings.moveRight[0])} Déplacement</span><span>${labelForCode(keyboardBindings.jump[0])} Saut</span><span>${labelForCode(keyboardBindings.boost[0])} Jetpack</span><span class="hint">${labelForCode(keyboardBindings.aimUp[0])}/${labelForCode(keyboardBindings.aimLeft[0])}/${labelForCode(keyboardBindings.aimDown[0])}/${labelForCode(keyboardBindings.aimRight[0])} Visée · ${labelForCode(keyboardBindings.shoot[0])} Tir · ${labelForCode(keyboardBindings.rotate[0])} ROT</span>`;
+    this.keyboard.innerHTML=`<strong>CLAVIER</strong><span>${labelForCode(keyboardBindings.moveLeft[0])} / ${labelForCode(keyboardBindings.moveRight[0])} Déplacement</span><span>${labelForCode(keyboardBindings.jump[0])} Saut</span><span>${labelForCode(keyboardBindings.boost[0])} Jetpack</span><span class="hint">${labelForCode(keyboardBindings.aimUp[0])}/${labelForCode(keyboardBindings.aimLeft[0])}/${labelForCode(keyboardBindings.aimDown[0])}/${labelForCode(keyboardBindings.aimRight[0])} Visée · ${labelForCode(keyboardBindings.shoot[0])} Tir · ${labelForCode(keyboardBindings.rotate[0])} Flip</span>`;
     const moveLabel=padBindings.movementStick==='left'?'Stick gauche':'Stick droit';
     const moveEl=document.getElementById('gamepad-move');if(moveEl)moveEl.textContent=moveLabel;
     document.getElementById('gamepad-jump').textContent=labelForButton(padBindings.jump);
     document.getElementById('gamepad-boost').textContent=labelForButton(padBindings.boost);
     document.getElementById('gamepad-shoot').textContent=labelForButton(padBindings.shoot);
+    const flip=document.getElementById('gamepad-flip');if(flip)flip.textContent=labelForButton(padBindings.rotate);
     this.keyboard.classList.toggle('last-input',input.lastMethod==='keyboard');
     this.gamepad.classList.toggle('last-input',input.lastMethod==='gamepad');
     this.keyboard.dataset.active=String(input.lastMethod==='keyboard');this.gamepad.dataset.active=String(input.lastMethod==='gamepad');

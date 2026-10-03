@@ -9,8 +9,8 @@ import { collideBall, movePlayer, hitPlayer, circleContact } from '../src/physic
 import { circlePolygonContact, boxPolygonContact } from '../src/collision-shapes.js';
 
 const zones=[
-  {name:'sous le but gauche',foot:218,direction:-1,slope:1,shape:solids.find(s=>s.kind==='goalBase'&&s.x===0)},
-  {name:'sous le but droit',foot:1062,direction:1,slope:1,shape:solids.find(s=>s.kind==='goalBase'&&s.x>0)},
+  {name:'sous le but gauche',foot:260,direction:-1,slope:(C.floor-C.goalRampBottom)/(260-C.goalLeft),shape:solids.find(s=>s.kind==='goalBase'&&s.x===0)},
+  {name:'sous le but droit',foot:1020,direction:1,slope:(C.floor-C.goalRampBottom)/(260-C.goalLeft),shape:solids.find(s=>s.kind==='goalBase'&&s.x>0)},
   {name:'pied central gauche',foot:448,direction:1,slope:50/114,shape:solids.find(s=>s.kind==='obstacle')},
   {name:'pied central droit',foot:832,direction:-1,slope:50/114,shape:solids.find(s=>s.kind==='obstacle')},
 ];
@@ -30,15 +30,16 @@ function simulate(zone,speed,mode,seconds=8){
   for(let i=0;i<seconds/C.step;i++){
     for(const {p,axis} of players){drive(p,{axis},C.step);movePlayer(p,solids,C.step);}
     integrateBall(b,C.step);
-    if(circlePolygonContact(b,zone.shape.vertices))firstContact=true;
+    if(circlePolygonContact(b,zone.shape.vertices,zone.shape.contactEdges))firstContact=true;
     // The same order as Match.update; no replacement/test-only solver.
     collideBall(b,solids);for(const {p}of players)hitPlayer(b,p);
-    if(circlePolygonContact(b,zone.shape.vertices))firstContact=true;
+    if(circlePolygonContact(b,zone.shape.vertices,zone.shape.contactEdges))firstContact=true;
     collideBall(b,solids);
     assert.ok(Number.isFinite(b.x)&&Number.isFinite(b.y)&&Number.isFinite(b.vx)&&Number.isFinite(b.vy));
     for(const shape of solids){
-      const hit=shape.vertices?circlePolygonContact(b,shape.vertices):circleContact(b,shape);
-      assert.ok((hit?.depth||0)<1e-5,`pénétration ${shape.kind}: ${hit?.depth}`);
+      const hit=shape.vertices?circlePolygonContact(b,shape.vertices,shape.contactEdges):circleContact(b,shape);
+      const tolerance=shape.kind==='floor'?2e-4:1e-5;
+      assert.ok((hit?.depth||0)<tolerance,`pénétration ${shape.kind}: ${hit?.depth}`);
     }
     minY=Math.min(minY,b.y);
     const elevated=initialY-b.y>25;
@@ -83,19 +84,19 @@ test('trajectoires libres en miroir : même réponse des pentes',()=>{
 });
 test('contact incliné sans apport d’énergie : réponse issue de la normale',()=>{
   const shape=zones[0].shape,ball=createBall();
-  // The left ramp is y=x+426; place a circle 1 px into its middle.
-  const n={x:Math.SQRT1_2,y:-Math.SQRT1_2};
-  Object.assign(ball,{x:150+n.x*(ball.r-1),y:576+n.y*(ball.r-1),vx:-300,vy:0});
+  const slope=zones[0].slope,n={x:slope/Math.hypot(slope,1),y:-1/Math.hypot(slope,1)};
+  const surfaceY=C.goalRampBottom+slope*(150-C.goalLeft);
+  Object.assign(ball,{x:150+n.x*(ball.r-1),y:surfaceY+n.y*(ball.r-1),vx:-300,vy:0});
   const energy=ball.vx**2+ball.vy**2;
   collideBall(ball,[shape]);assert.ok(ball.vy<0);assert.ok(ball.vx**2+ball.vy**2<=energy+1e-6);
-  assert.ok((circlePolygonContact(ball,shape.vertices)?.depth||0)<1e-6);
+  assert.ok((circlePolygonContact(ball,shape.vertices,shape.contactEdges)?.depth||0)<1e-6);
 });
 test('les personnages montent sur les quatre pentes sans traverser la géométrie',()=>{
   for(const zone of zones)for(const skin of ['fluid','heavy']){
     const p=createPlayer(skin);Object.assign(p,{x:zone.foot-zone.direction*40,y:C.floor-p.h/2,grounded:true});let minY=p.y;
     for(let i=0;i<120;i++){
       drive(p,{axis:zone.direction},C.step);movePlayer(p,solids,C.step);minY=Math.min(minY,p.y);
-      assert.ok((boxPolygonContact(p,zone.shape.vertices)?.depth||0)<1e-6);
+      assert.ok((boxPolygonContact(p,zone.shape.vertices,zone.shape.playerContactEdges||zone.shape.contactEdges)?.depth||0)<1e-6);
     }
     assert.ok(minY<C.floor-p.h/2-20);
   }

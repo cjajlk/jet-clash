@@ -5,13 +5,13 @@ import { aimDirection,BallControl } from '../src/ball-control.js';
 import { createPlayer,drive } from '../src/player.js';
 import { createBall } from '../src/ball.js';
 import { CONFIG as C } from '../src/config.js';
-const base={axis:0,jump:false,boost:false,shoot:false,rotate:false,aimX:0,aimY:0,cancelShot:false};
+const base={aimIntent:false,axis:0,jump:false,boost:false,shoot:false,rotate:false,aimX:0,aimY:0,cancelShot:false};
 test('tactile : joystick gauche progressif, borné et zone morte identique manette',()=>{const t=new TouchInput();t.start(1,'move',.1,0);assert.equal(t.read().axis,0);t.move(1,.59,0);assert.ok(Math.abs(t.read().axis-.5)<1e-9);t.move(1,-2,0);assert.equal(t.read().axis,-1);});
 test('tactile : joystick revient au neutre au relâchement',()=>{const t=new TouchInput();t.start(1,'move',1,0);t.end(1);assert.equal(t.read().axis,0);assert.equal(t.read().moveActive,false);});
 for(const [name,x,y]of [['droite',1,0],['gauche',-1,0],['haut',0,-1],['diagonale',1,-1],['bas',0,1]])test(`tactile : visée ${name} identique au stick droit`,()=>{const t=new TouchInput();t.start(2,'aim',x,y);const i=t.read(),a=aimDirection(x,y);assert.equal(i.aimX,a.x);assert.equal(i.aimY,a.y);});
 test('tactile : zone morte radiale de visée et relâchement',()=>{const t=new TouchInput();t.start(2,'aim',.1,.1);assert.equal(t.read().aimX,0);t.move(2,1,0);assert.equal(t.read().aimX,1);t.end(2);assert.equal(t.read().aimActive,false);});
 test('tactile : SAUT pilote la même physique et aucun saut permanent',()=>{const t=new TouchInput(),a=createPlayer('fluid'),b=createPlayer('fluid');a.grounded=b.grounded=true;t.start(3,'jump');drive(a,t.read(),C.step);drive(b,{jump:true},C.step);assert.deepEqual(a,b);t.end(3);assert.equal(t.read().jump,false);});
-test('tactile : SAUT au sol puis second appui aérien utilisent le même bouton',()=>{const t=new TouchInput(),p=createPlayer('fluid');p.grounded=true;t.start(3,'jump');drive(p,t.read(),C.step);const afterGround=p.vy;t.end(3);drive(p,t.read(),C.step);t.start(4,'jump');drive(p,t.read(),C.step);assert.ok(p.vy<afterGround);});
+test('tactile : SAUT au sol puis second appui aérien utilisent le même bouton',()=>{const t=new TouchInput(),p=createPlayer('fluid');p.grounded=true;t.start(3,'jump');drive(p,t.read(),C.step);const afterGround=p.vy;t.end(3);drive(p,t.read(),C.step);t.start(4,'jump');drive(p,t.read(),C.step);assert.ok(p.vy<=afterGround);assert.equal(p.impulseReady,false);});
 test('tactile : JET actif pendant maintien et arrêt au relâchement',()=>{const t=new TouchInput();t.start(4,'boost');for(let i=0;i<100;i++)assert.equal(t.read().boost,true);t.end(4);assert.equal(t.read().boost,false);});
 test('tactile : ROT ajouté au canal tactile et combiné indépendamment',()=>{const t=new TouchInput();t.start(5,'rot');const i=t.read();assert.equal(i.rotate,true);assert.equal(combineTouch(base,i).rotate,true);t.end(5);assert.equal(t.read().rotate,false);});
 test('tactile : déplacement + JET + visée + TIR simultanés',()=>{const t=new TouchInput();t.start(1,'move',1,0);t.start(2,'aim',1,-1);t.start(3,'boost');t.start(4,'shoot');const i=t.read();assert.ok(i.axis===1&&i.boost&&i.shoot&&i.aimX>0&&i.aimY<0);assert.equal(t.pointers.size,4);});
@@ -24,7 +24,7 @@ test('tactile : manette/clavier toujours utilisables sans doigts',()=>{const t=n
 test('tactile : coexistence par canal et reprise immédiate de la manette',()=>{const t=new TouchInput(),pad={...base,axis:-1,jump:true,aimY:-1,shoot:true};t.start(1,'move',1,0);t.start(2,'boost');const i=combineTouch(pad,t.read());assert.equal(i.axis,1);assert.ok(i.jump&&i.boost&&i.shoot);assert.equal(i.aimY,-1);t.end(1);assert.equal(combineTouch(pad,t.read()).axis,-1);});
 for(const duration of [1,84,160])test(`tactile : TIR ${duration} pas, même charge et frappe que clavier`,()=>{
   const t=new TouchInput(),p=createPlayer('fluid'),a=createBall(),b=createBall(),ca=new BallControl(),cb=new BallControl();
-  Object.assign(p,{x:300,y:606});for(const ball of [a,b])Object.assign(ball,{x:339,y:625,vx:0,vy:0});t.start(1,'aim',0,-1);t.start(2,'shoot');
-  for(let i=0;i<duration;i++){ca.update(p,a,t.read(),C.step);cb.update(p,b,{aimY:-1,shoot:true},C.step);}
-  assert.equal(ca.charge,cb.charge);assert.ok(ca.charge<=.7);t.end(2);ca.update(p,a,t.read(),C.step);cb.update(p,b,{aimY:-1},C.step);assert.deepEqual(a,b);assert.ok(a.vy<-500);assert.equal(ca.indicator,null);
+  Object.assign(p,{x:300,y:606});for(const ball of [a,b])Object.assign(ball,{x:339,y:596,vx:0,vy:0});t.start(1,'aim',0,-1);t.start(2,'shoot');
+  for(let i=0;i<duration;i++){ca.update(p,a,t.read(),C.step);cb.update(p,b,{aimY:-1,aimIntent:true,shoot:true},C.step);}
+  assert.equal(ca.charge,cb.charge);assert.ok(ca.charge<=.7);t.end(2);ca.update(p,a,t.read(),C.step);cb.update(p,b,{aimY:-1,aimIntent:true},C.step);assert.deepEqual(a,b);assert.ok(a.vy<-500);assert.equal(ca.indicator,null);
 });

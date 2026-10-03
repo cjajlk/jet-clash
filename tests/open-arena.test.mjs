@@ -12,7 +12,7 @@ test('arène ouverte : seuls les trois solides intérieurs sont désactivés, or
   assert.deepEqual(solids,classicSolids.filter(s=>!['platform','obstacle'].includes(s.kind)));
   for(const s of solids)assert.ok(classicSolids.includes(s),'same floor and goal objects');
 });
-for(const [name,x,y] of [['plateforme gauche',400,400],['plateforme droite',880,400],['centre',640,605]]){
+for(const [name,x,y] of [['plateforme gauche',400,400],['plateforme droite',880,400],['centre',640,596]]){
   test(`arène ouverte : balle libre à travers ${name}`,()=>{
     const ball=createBall();Object.assign(ball,{x,y,vx:120,vy:80});const before={...ball};collideBall(ball,solids);assert.deepEqual(ball,before);
   });
@@ -24,7 +24,7 @@ for(const [name,x,y] of [['plateforme gauche',400,400],['plateforme droite',880,
 test('arène ouverte : le rendu conserve les deux cages/rampes et ne dessine aucun intérieur',()=>{
   const noop=()=>{},ctx=new Proxy({createLinearGradient:()=>({addColorStop:noop})},{get:(o,k)=>o[k]??noop,set:(o,k,v)=>(o[k]=v,true)});
   const renderer=new Renderer({getContext:()=>ctx}),draws=[];
-  renderer.camera.update=()=>({zoom:1,x:640,y:360});renderer.fit=key=>draws.push(key);renderer.goalRamp=key=>draws.push(key);
+  renderer.camera.update=()=>({zoom:1,x:640,y:360});renderer.fit=key=>draws.push(key);renderer.goalRamp=key=>draws.push(key);renderer.goalGate=key=>draws.push(key);
   renderer.render({player:createPlayer('fluid'),bot:createPlayer('heavy'),ball:createBall()});
   for(const key of ['left','right','rampLeft','rampRight'])assert.ok(draws.includes(key));
   assert.ok(!draws.includes('platform'));assert.ok(!draws.includes('obstacle'));

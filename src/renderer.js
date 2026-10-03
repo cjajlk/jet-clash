@@ -40,7 +40,9 @@ export function resolveFluidVisualPose(p,cache={}){
   const flip=look.x<-.12||(Math.abs(look.x)<=.12&&(p.controlX<0||p.facing<0));
   const drift=motion||look;
   const rotation=pose==='ceiling' ? 0 : clamp((drift.x*.12+drift.y*.04),-FLUID_VISUAL.maxRotation,FLUID_VISUAL.maxRotation);
-  return {key:`fluid_${pose}`,flip,rotation,pose};
+  const flipProgress=p.flipTimer>0?1-p.flipTimer/C.airFlipDuration:0;
+  const flipRotation=flipProgress*Math.PI*2*(p.flipX<0?-1:1);
+  return {key:`fluid_${pose}`,flip,rotation:rotation+flipRotation,pose};
 }
 export class Renderer{
   constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.images={};this.camera=new MobileCamera();this.fluidVisuals=new WeakMap();}
@@ -62,6 +64,14 @@ export class Renderer{
     c.drawImage(im,mirrored?im.width-sourceX-sourceWidth:sourceX,sourceY,sourceWidth,sourceHeight,0,C.goalRampBottom,width,height);
     c.restore();
   }
+  goalGate(key,side){
+    const im=this.images[key];if(!im)return;
+    const c=this.ctx,x=side==='left'?0:C.goalRight,width=side==='left'?C.goalLeft:C.width-C.goalRight;
+    const height=C.goalBottom-C.goalTop,centerX=x+width/2,centerY=C.goalTop+height/2;
+    c.save();c.beginPath();c.rect(x,C.goalTop,width,height);c.clip();
+    c.translate(centerX,centerY);c.rotate(side==='left'?Math.PI/2:-Math.PI/2);
+    c.drawImage(im,-height/2,-width*.75,height,width*1.5);c.restore();
+  }
   fluidIndicator(player,control){
     const anchor=resolveFluidContactIndicator(player,control);if(!anchor)return;const c=this.ctx;const {x,y,direction,charge}=anchor;
     c.save();c.translate(x,y);c.rotate(Math.atan2(direction.y,direction.x));c.lineJoin='round';c.shadowColor='#43dcff';c.shadowBlur=6+8*charge;
@@ -78,7 +88,7 @@ export class Renderer{
     const bg=this.images.background;if(bg){const s=Math.max(C.width/bg.width,C.height/bg.height);c.drawImage(bg,(C.width-bg.width*s)/2,0,bg.width*s,bg.height*s);}c.fillStyle='#080c2350';c.fillRect(0,0,C.width,C.height);
     const grad=c.createLinearGradient(0,C.floor,0,C.height);grad.addColorStop(0,'#131735cc');grad.addColorStop(1,'#080e22');c.fillStyle=grad;c.fillRect(0,C.floor,C.width,C.height-C.floor);c.strokeStyle='#71ddff90';c.lineWidth=2;c.beginPath();c.moveTo(0,C.floor);c.lineTo(C.width,C.floor);c.stroke();
     this.goalRamp('rampLeft');this.goalRamp('rampRight',true);
-    this.fit('left',0,C.goalTop-1,181,C.goalBottom-C.goalTop+2);this.fit('right',C.width-198,C.goalTop-1,198,C.goalBottom-C.goalTop+2);if(!OPEN_ARENA){this.fit('platform',285,380,230,96);this.fit('platform',765,380,230,96);this.fit('obstacle',496,570,288,89);}
+    this.goalGate('left','left');this.goalGate('right','right');if(!OPEN_ARENA){this.fit('platform',285,380,230,96);this.fit('platform',765,380,230,96);this.fit('obstacle',496,570,288,89);}
     for(const p of [m.player,m.bot].filter(Boolean)){const h=96;
       if(p.skin==='fluid'&&(!p.grounded||p.contactSurface==='ceiling')){
         const cache=this.fluidVisuals.get(p)||{};this.fluidVisuals.set(p,cache);

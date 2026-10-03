@@ -39,25 +39,33 @@ function air(overrides={}){
 test('Fluid : mapping aérien stable et lisible',()=>{
   const state={};
   assert.equal(resolveFluidVisualPose(air({footX:0,footY:.98}),state).key,'fluid_air_idle');
-  assert.equal(resolveFluidVisualPose(air({footX:.2,footY:.66,vy:-200}),state).key,'fluid_air_up');
-  assert.equal(resolveFluidVisualPose(air({footX:.55,footY:.34}),state).key,'fluid_air_diagonal_up');
-  assert.equal(resolveFluidVisualPose(air({footX:.92,footY:.02}),state).key,'fluid_air_horizontal');
-  assert.equal(resolveFluidVisualPose(air({footX:.4,footY:-.48}),state).key,'fluid_air_diagonal_down');
+  assert.equal(resolveFluidVisualPose(air({footX:.714,footY:.7,vy:-200}),state).key,'fluid_air_up');
+  assert.equal(resolveFluidVisualPose(air({footX:.917,footY:.4}),state).key,'fluid_air_diagonal_up');
+  assert.equal(resolveFluidVisualPose(air({footX:1,footY:0}),state).key,'fluid_air_horizontal');
+  assert.equal(resolveFluidVisualPose(air({footX:.917,footY:-.4}),state).key,'fluid_air_diagonal_down');
   assert.equal(resolveFluidVisualPose(air({footX:0,footY:-.84,flipIntent:C.airFlipIntentTime}),state).key,'fluid_air_turn');
   assert.equal(resolveFluidVisualPose(air({footX:0,footY:1,impulseCooldown:C.airImpulseCooldown-.01}),state).key,'fluid_air_dash');
   assert.equal(resolveFluidVisualPose(Object.assign(createPlayer('fluid'),{grounded:true,contactSurface:'ceiling',footX:0,footY:-1}),state).key,'fluid_ceiling');
 });
 
+test('Fluid : le flip animé effectue une rotation complète sans mutation physique',()=>{
+  const p=air(),rest=resolveFluidVisualPose(p,{}).rotation;
+  p.flipTimer=C.airFlipDuration/2;p.flipX=1;
+  const pose=resolveFluidVisualPose(p,{});
+  assert.ok(Math.abs(pose.rotation-rest-Math.PI)<1e-9);
+  assert.equal(p.flipTimer,C.airFlipDuration/2);
+});
+
 test('Fluid : hystérésis visuelle et miroir sans mutation physique',()=>{
   const state={};
-  const p=air({footX:.54,footY:.34,vx:140,vy:-30});
+  const p=air({footX:.917,footY:.4,vx:140,vy:-30});
   const first=resolveFluidVisualPose(p,state);
   const before={x:p.x,y:p.y,vx:p.vx,vy:p.vy,w:p.w,h:p.h};
-  const second=resolveFluidVisualPose(Object.assign(p,{footX:.50,footY:.38}),state);
+  const second=resolveFluidVisualPose(Object.assign(p,{footX:.9,footY:.44}),state);
   assert.equal(first.key,'fluid_air_diagonal_up');
   assert.equal(second.key,'fluid_air_diagonal_up');
   assert.equal(first.flip,false);
-  assert.equal(resolveFluidVisualPose(air({footX:-.54,footY:.34}),state).flip,true);
+  assert.equal(resolveFluidVisualPose(air({footX:-.917,footY:.4}),state).flip,true);
   assert.ok(Math.abs(first.rotation)<=.16);
   assert.deepEqual({x:p.x,y:p.y,vx:p.vx,vy:p.vy,w:p.w,h:p.h},before);
 });
@@ -73,9 +81,9 @@ test('Fluid : le rendu conserve les sprites terrestres et n’altère pas la phy
   Object.assign(m.player,{x:300,y:606,vx:0,vy:0,grounded:true,boosting:false});
   renderer.render(m);
   assert.ok(draws.some(d=>d.key==='fluid_idle'||d.key==='fluid_walk'||d.key==='fluid_sprint'||d.key==='fluid_jetpack'));
-  assert.ok(draws.some(d=>d.key==='fluid_idle'&&d.w===86*C.fluidVisualScale&&d.h===96*C.fluidVisualScale));
+  assert.ok(draws.some(d=>d.key==='fluid_walk'&&d.w===86*C.fluidVisualScale&&d.h===96*C.fluidVisualScale));
   draws.length=0;
-  Object.assign(m.player,{grounded:false,footX:.55,footY:.34});
+  Object.assign(m.player,{grounded:false,footX:.917,footY:.4});
   renderer.render(m);
   assert.ok(draws.some(d=>d.key==='fluid_air_diagonal_up'&&d.w===86*C.fluidVisualScale&&d.h===96*C.fluidVisualScale));
   assert.equal(m.player.x,300);

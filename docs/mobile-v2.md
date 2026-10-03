@@ -16,11 +16,11 @@ Trois doigts peuvent combiner direction + JET + glissement/charge/TIR. Relâcher
 
 Seule la commande tactile explicite `touchDirection` redirige la poussée en l’air. Sans ce vecteur, JET garde sa poussée verticale habituelle. Au sol, le décollage reste vertical ; SAUT garde sa mécanique actuelle. La poussée utilise toujours `CONFIG.thrust` (1850), la consommation 31/s et la recharge 23/s. Gravité, inertie, limites de vitesse existantes et collisions sont conservées. Cette adaptation de direction tactile est la seule modification du pilotage physique du personnage.
 
-Clavier, stick gauche manette, stick droit de visée, Croix/A, R2/RT et Carré/X n’ont pas été remappés. Sans interaction avec le joystick tactile, la manette fonctionne exactement comme avant. Ni la physique de balle, ni les hitboxes, ni le rayon de balle, ni la géométrie, ni le bot, ni le scoring n’ont été changés.
+Le mapping manette est désormais Croix/A pour saut et double saut, Rond/B pour jetpack, Carré/X pour flip aérien, et L2/LT pour tir chargé. En l’air, le flip tourne le personnage et donne une impulsion à la balle lors du premier contact, une seule fois par envol ; l’axe de déplacement dirige l’impact. Sur mobile, le bouton FLIP déclenche la même action ; SAUT ×2 permet le second appui en l’air. Les cages sont dessinées verticalement ; leur ouverture mesure 150 × 270 px, contre 95 px de diamètre pour la balle. Les rampes suivent les contours de collision.
 
 ## Caméra mobile
 
-`src/mobile-camera.js` : mode équilibré à 1,30× (+30 % de taille apparente par rapport au cadrage V1). Le zoom peut redescendre vers 1× lorsque les acteurs s’éloignent ; il suit les trois acteurs et inclut la bouche du but quand la balle approche d’une extrémité. Élargissement immédiat si nécessaire, recentrage et rapprochement progressifs. Un halo fin renforce la balle sur mobile.
+`src/mobile-camera.js` : mode équilibré à 1,30× (+30 % de taille apparente par rapport au cadrage V1). Le zoom peut redescendre vers 1× lorsque les acteurs s’éloignent ; il suit les acteurs présents (Fluid et balle en entraînement, Fluid, Heavy et balle en duel) et inclut la bouche du but quand la balle approche d’une extrémité. Élargissement immédiat si nécessaire, recentrage et rapprochement progressifs. Un halo fin renforce la balle sur mobile.
 
 Le zoom est un changement de rendu global de la scène, sans modification des coordonnées gameplay. Le HUD ne zoome pas. Le PC reste à 1× avec son cadrage et ses tailles précédents. Les constantes proche/équilibré/large et la projection monde-écran préparent d’éventuelles options/indicateurs futurs ; aucun menu ni indicateur hors écran n’est ajouté.
 

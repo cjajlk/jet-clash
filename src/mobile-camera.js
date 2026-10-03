@@ -7,7 +7,7 @@ export class MobileCamera {
   reset(){this.zoom=1;this.x=C.width/2;this.y=C.height/2;this.active=false;}
   update(m,enabled,dt=1/60){
     if(!enabled){this.reset();return this;}
-    const points=[{x:m.player.x,y:m.player.y,r:52},{x:m.bot.x,y:m.bot.y,r:52},{x:m.ball.x,y:m.ball.y,r:m.ball.r+12}];
+    const points=[{x:m.player.x,y:m.player.y,r:52},...(m.bot?[{x:m.bot.x,y:m.bot.y,r:52}]:[]),{x:m.ball.x,y:m.ball.y,r:m.ball.r+12}];
     // Include the nearby goal mouth before it becomes relevant to a shot/save.
     if(m.ball.x<320)points.push({x:C.goalLeft,y:(C.goalTop+C.goalBottom)/2,r:65});
     if(m.ball.x>C.width-320)points.push({x:C.goalRight,y:(C.goalTop+C.goalBottom)/2,r:65});

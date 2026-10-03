@@ -19,8 +19,8 @@ export class BallInput {
     let pads=[];try{pads=Array.from(this.source.getGamepads?.()||[]);}catch{}
     const supported=pads.filter(p=>p?.connected&&p.mapping==='standard');
     const pad=supported.find(p=>p.index===index)||supported[0];
-    const shootButton=pad?.buttons?.[controlSettings.gamepad.shoot],fallbackShootButton=pad?.buttons?.[controlSettings.gamepad.shootAlt];
-    const shoot=!!(shootButton?.pressed||shootButton?.value>.5||fallbackShootButton?.pressed||fallbackShootButton?.value>.5);
+    const shootButton=pad?.buttons?.[controlSettings.gamepad.shoot];
+    const shoot=!!(shootButton?.pressed||shootButton?.value>.5);
     let cancelShot=this.cancelled||!!(this.previous.connected&&!pad);this.cancelled=false;
     // Only the shot button needs release after focus/start, never the aim stick.
     if(this.blocked&&!shoot)this.blocked=false;

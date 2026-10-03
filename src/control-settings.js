@@ -10,7 +10,7 @@ export const KEY_OPTIONS=Object.freeze([
 ]);
 
 export const GAMEPAD_BUTTON_OPTIONS=Object.freeze([
-  {value:0,label:'Croix / A'},{value:1,label:'Cercle / B'},{value:2,label:'Carré / X'},{value:3,label:'Triangle / Y'},
+  {value:0,label:'Croix / A'},{value:1,label:'Rond / B'},{value:2,label:'Carré / X'},{value:3,label:'Triangle / Y'},
   {value:4,label:'L1 / LB'},{value:5,label:'R1 / RB'},{value:6,label:'L2 / LT'},{value:7,label:'R2 / RT'},
   {value:8,label:'Partager / View'},{value:9,label:'Options / Menu'},{value:10,label:'Stick gauche (L3)'},{value:11,label:'Stick droit (R3)'},
   {value:12,label:'Haut'} ,{value:13,label:'Bas'},{value:14,label:'Gauche'},{value:15,label:'Droite'},
@@ -40,7 +40,7 @@ const DEFAULT_SETTINGS=Object.freeze({
     aimDown:['KeyK'],
     aimRight:['KeyL'],
   },
-  gamepad:{movementStick:'right',jump:0,boost:7,shoot:6,shootAlt:2,rotate:5,resetBall:13},
+  gamepad:{movementStick:'right',jump:0,boost:1,shoot:6,rotate:2,resetBall:13},
   touch:{layout:'standard'},
 });
 
@@ -52,6 +52,7 @@ function normalize(saved){
   const keyboard=saved?.keyboard||{};
   const gamepad=saved?.gamepad||{};
   const touch=saved?.touch||{};
+  const migratedDefaultGamepad=asNumber(gamepad.boost)===7&&asNumber(gamepad.rotate)===5;
   return {
     keyboard:{
       moveLeft:arrayOf(keyboard.moveLeft).length?arrayOf(keyboard.moveLeft):clone(DEFAULT_SETTINGS.keyboard.moveLeft),
@@ -69,10 +70,9 @@ function normalize(saved){
     gamepad:{
       movementStick:gamepad.movementStick==='left'?'left':'right',
       jump:asNumber(gamepad.jump)??DEFAULT_SETTINGS.gamepad.jump,
-      boost:asNumber(gamepad.boost)??DEFAULT_SETTINGS.gamepad.boost,
+      boost:migratedDefaultGamepad?DEFAULT_SETTINGS.gamepad.boost:asNumber(gamepad.boost)??DEFAULT_SETTINGS.gamepad.boost,
       shoot:asNumber(gamepad.shoot)??DEFAULT_SETTINGS.gamepad.shoot,
-      shootAlt:asNumber(gamepad.shootAlt)??DEFAULT_SETTINGS.gamepad.shootAlt,
-      rotate:asNumber(gamepad.rotate)??DEFAULT_SETTINGS.gamepad.rotate,
+      rotate:migratedDefaultGamepad?DEFAULT_SETTINGS.gamepad.rotate:asNumber(gamepad.rotate)??DEFAULT_SETTINGS.gamepad.rotate,
       resetBall:asNumber(gamepad.resetBall)??DEFAULT_SETTINGS.gamepad.resetBall,
     },
     touch:{layout:touch.layout==='mirrored'?'mirrored':'standard'},

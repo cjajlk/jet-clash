@@ -9,7 +9,7 @@ export class TouchControls {
     this.layer=document.createElement('div');this.layer.id='touch-controls';this.layer.hidden=true;
     this.layer.innerHTML=`<div class="touch-stick touch-move" data-touch="move" role="group" aria-label="Joystick directionnel 360 degrés"><span class="touch-knob"></span></div>
       <button type="button" class="touch-button touch-jump" data-touch="jump">SAUT</button>
-      <button type="button" class="touch-button touch-rot" data-touch="rot">ROT</button>
+      <button type="button" class="touch-button touch-rot" data-touch="rot">FLIP</button>
       <button type="button" class="touch-button touch-boost" data-touch="boost">JET</button>
       <button type="button" class="touch-button touch-shoot" data-touch="shoot" aria-label="Tir : maintenir pour charger, glisser pour viser, relâcher pour frapper">TIR</button>
       <button type="button" class="touch-button touch-reset" data-touch="reset">RESET</button>

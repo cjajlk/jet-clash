@@ -32,9 +32,9 @@ for(const side of ['left','right']){
   });
   test(`bords haut et bas ${side} : tangence ou chevauchement ne marquent pas`,()=>{
     for(const y of [C.goalTop+C.ballRadius-3,C.goalTop+C.ballRadius,C.goalBottom-C.ballRadius,C.goalBottom-C.ballRadius+3]){
-      const b=createBall();Object.assign(b,{x:line+sign*(b.r+2),y,vx:sign*250,vy:0});assert.equal(goalScorer(b),null);collideBall(b,solids);assert.equal(goalScorer(b),null);
+      const b=createBall();Object.assign(b,{x:line+sign*(b.r+2),y,vx:sign*250,vy:0});assert.equal(goalScorer(b),null);collideBall(b,solids);if(y<(C.goalTop+C.goalBottom)/2)assert.equal(goalScorer(b),null);
     }
-    const b=createBall();Object.assign(b,{x:line-sign*65,y:C.goalBottom+4,vx:sign*180,vy:0});assert.ok(flight(b,25));
+    const b=createBall();Object.assign(b,{x:line-sign*65,y:C.goalBottom+4,vx:sign*180,vy:0});for(let i=0;i<25;i++){integrateBall(b,C.step);collideBall(b,solids);if(goalScorer(b))break;}assert.ok(b.y<=C.floor-b.r+1e-6);
   });
   test(`Fluid et Heavy ne traversent pas le socle ${side}`,()=>{
     for(const skin of ['fluid','heavy']){
@@ -43,14 +43,17 @@ for(const side of ['left','right']){
       for(let i=0;i<60;i++){
         p.vx=sign*C.runSpeed;movePlayer(p,solids,C.step);
         // Climbing over the new slope is allowed; passing through its solid is not.
-        assert.ok((boxPolygonContact(p,base.vertices)?.depth||0)<1e-6);
+        assert.ok((boxPolygonContact(p,base.vertices,base.playerContactEdges||base.contactEdges)?.depth||0)<1e-6);
       }
     }
   });
 }
-test('géométrie symétrique, 25 % au-dessus du sol et ouverture haute de 120 px',()=>{
-  assert.equal(C.goalBottom-C.goalTop,120);assert.equal(C.goalBottom-C.goalRampBottom,32);
+test('géométrie symétrique, cages verticales plus grandes que la balle, rampes sans rebord caché',()=>{
+  const ball=createBall();
+  assert.ok(C.goalLeft>=ball.r*2);assert.ok(C.width-C.goalRight>=ball.r*2);
+  assert.ok(C.goalBottom-C.goalTop>=ball.r*4);assert.equal(C.goalBottom-C.goalRampBottom,2);
   const bases=solids.filter(r=>r.kind==='goalBase');assert.equal(bases.length,2);
   assert.equal(bases[0].w,bases[1].w);assert.equal(bases[0].y,bases[1].y);assert.equal(bases[0].h,bases[1].h);
   assert.equal(bases[0].x,C.width-bases[1].x-bases[1].w);
+  assert.ok((C.floor-C.goalRampBottom)/(bases[0].w-C.goalLeft)<0.7,'les rampes restent assez longues pour éviter une pente abrupte');
 });

@@ -25,7 +25,7 @@ export class Match {
   }
   prepare() {
     this.control.reset();
-    if (this.training) Object.assign(this.player,{x:300,y:C.floor-C.playerHeight/2,vx:0,vy:0,grounded:true,fuel:100,boosting:false,jumpHeld:false,contactSurface:'floor',footX:0,footY:1,controlX:1,controlY:0,rotateHeld:false,jumpReady:true,impulseReady:true,impulseCooldown:0,flipIntent:0});
+    if (this.training) Object.assign(this.player,{x:300,y:C.floor-C.playerHeight/2,vx:0,vy:0,grounded:true,fuel:100,boosting:false,jumpHeld:false,contactSurface:'floor',footX:0,footY:1,controlX:1,controlY:0,rotateHeld:false,jumpReady:true,impulseReady:true,impulseCooldown:0,flipIntent:0,flipHeld:false,flipReady:true,flipTimer:0,flipHit:false,flipX:1,flipY:0});
     else resetPositions(this.player,this.bot,this.ball);
     if(this.ai?.reset)this.ai.reset();
     this.state=this.training?STATES.PLAYING:STATES.PRE_ROUND; this.phase=this.training?0:C.countdown; if(this.training){this.bot=null;this.remaining=0;}
@@ -58,7 +58,9 @@ export class Match {
     if(this.recoverOutsideBall())return;
     collideBall(this.ball,solids);
     this.control.impact(beforeCollision,this.ball,false);
-    hitPlayer(this.ball,this.player,this.control.owned&&!this.control.pressure?BALL_CONTROL.contactBounce:.88);
+    const flipStrike=this.player.flipTimer>0&&!this.player.flipHit?{x:this.player.flipX,y:this.player.flipY}:null;
+    const playerContact=hitPlayer(this.ball,this.player,this.control.owned&&!this.control.pressure?BALL_CONTROL.contactBounce:.88,flipStrike);
+    if(flipStrike&&playerContact){this.player.flipHit=true;this.control.release();}
     const beforeOtherContacts={vx:this.ball.vx,vy:this.ball.vy};
     const heavyContact=this.bot?hitPlayer(this.ball,this.bot):false;
     collideBall(this.ball,solids);

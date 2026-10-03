@@ -12,14 +12,15 @@ import { goalScorer } from '../src/goals.js';
 const ends=solids.filter(s=>s.goalBoundary),epsilon=1e-5;
 function checkBall(b){
   assert.ok(!ballOutsideArena(b),'balle hors arène');
-  assert.ok(b.x>=b.r-epsilon&&b.x<=C.width-b.r+epsilon,'balle derrière le mur extérieur');
+  const insideGoalOpening=b.x>=0&&b.x<=C.width&&b.y-b.r>C.goalTop&&b.y+b.r<C.goalBottom;
+  if(!insideGoalOpening)assert.ok(b.x>=b.r-epsilon&&b.x<=C.width-b.r+epsilon,'balle derrière le mur extérieur');
   assert.ok(b.y>=100+b.r-epsilon&&b.y<=C.floor-b.r+epsilon,'balle sous le sol ou hors plafond');
-  for(const s of ends)assert.ok((circlePolygonContact(b,s.collisionVertices||s.vertices)?.depth||0)<epsilon,`balle dans ${s.kind}`);
+  for(const s of ends)assert.ok((circlePolygonContact(b,s.collisionVertices||s.vertices,s.contactEdges)?.depth||0)<epsilon,`balle dans ${s.kind}`);
 }
 function checkPlayer(p){
   assert.ok(p.x-p.w/2>=C.goalLeft-epsilon&&p.x+p.w/2<=C.goalRight+epsilon,'personnage derrière la cage');
   assert.ok(p.y-p.h/2>=100-epsilon&&p.y+p.h/2<=C.floor+epsilon,'personnage hors sol/plafond');
-  for(const s of ends)assert.ok((boxPolygonContact(p,s.collisionVertices||s.vertices)?.depth||0)<epsilon,`personnage dans ${s.kind}`);
+  for(const s of ends)assert.ok((boxPolygonContact(p,s.collisionVertices||s.vertices,s.playerContactEdges||s.contactEdges)?.depth||0)<epsilon,`personnage dans ${s.kind}`);
 }
 function coordinates(side,x,y,vx,vy){return {x:side==='gauche'?x:C.width-x,y,vx:side==='gauche'?vx:-vx,vy};}
 function simulate(side,initial,seconds=4,skins=[],axis=-1,boost=false){
@@ -37,7 +38,7 @@ function simulate(side,initial,seconds=4,skins=[],axis=-1,boost=false){
 for(const side of ['gauche','droite']){
   test(`${side} 1 — balle lente au pied de rampe`,()=>{const r=simulate(side,[227,625,-30,0]);assert.ok(r.maxX>227||r.minY<620);});
   test(`${side} 2 — pression forte contre rampe, Fluid et Heavy`,()=>{for(const skin of ['fluid','heavy']){const r=simulate(side,[227,625,-300,0],6,[skin]);assert.ok(r.minY<600||r.maxX>260);}});
-  test(`${side} 3 — côté extérieur de la cage renvoie dans le terrain`,()=>{const r=simulate(side,[150,330,-300,0]);assert.ok(r.maxX>160);});
+  test(`${side} 3 — coin supérieur de cage : renvoi ou but valide, sans blocage`,()=>{const r=simulate(side,[150,330,-300,0]);assert.ok(r.maxX>160||r.scored,'le ballon doit revenir dans le terrain ou entrer complètement dans le but');});
   test(`${side} 4 — balle au-dessus de la cage ne se pose pas sur un toit`,()=>{const r=simulate(side,[230,145,-120,0]);assert.ok(r.b.y>200||r.maxX>280);});
   test(`${side} 5 — frappe vers le dessus de cage`,()=>{const r=simulate(side,[240,260,-700,-450]);assert.ok(r.maxX>250);});
   test(`${side} 6 — les deux personnages montent contre la rampe sans sortir`,()=>{for(const skin of ['fluid','heavy'])simulate(side,[245,600,0,0],5,[skin]);});
@@ -88,7 +89,8 @@ test('symétrie exacte des contours supérieurs et inférieurs',()=>{
   for(const kind of ['goalRoof','goalBase']){const a=ends.find(s=>s.kind===kind&&s.x===0),b=ends.find(s=>s.kind===kind&&s.x>0);assert.deepEqual((a.collisionVertices||a.vertices).map(v=>key({x:C.width-v.x,y:v.y})).sort(),(b.collisionVertices||b.vertices).map(key).sort());}
 });
 test('sécurité ultime : balle entièrement dehors => réengagement sans point ni XP',()=>{
-  for(const [x,y]of [[-20,448],[1300,448],[640,80],[640,664]]){
+  const radius=C.ballRadius*C.ballScale;
+  for(const [x,y]of [[-radius-1,448],[C.width+radius+1,448],[640,100-radius-1],[640,C.floor+radius+1]]){
     const m=new Match(new ProfileStore({getItem:()=>null,setItem(){}}));m.start();m.state=S.PLAYING;m.score={player:2,bot:1};m.remaining=100;
     Object.assign(m.ball,{x,y});m.update(C.step);assert.equal(m.state,S.PRE_ROUND);assert.deepEqual(m.score,{player:2,bot:1});assert.equal(m.profile.data.xp,0);assert.equal(m.boundaryRecoveries,1);assert.equal(m.ball.x,640);assert.equal(m.ball.y,278);assert.equal(m.lastGoal,null);
     for(let i=0;i<362;i++)m.update(C.step);assert.equal(m.state,S.PLAYING);assert.equal(m.boundaryRecoveries,1);

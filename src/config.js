@@ -14,9 +14,8 @@ export const CONFIG = Object.freeze({
   groundOrientationRate: 18, airOrientationRate: 8, airRotateRate: 12,
   airReturnOrientationRate: 4.5, airLeanFactor: .72, airLeanDepth: .42,
   airFlipIntentTime: .22, airFlipIntentY: -.68,
-  // Opening shifted a little higher, with a separate ramp end so the slope
-  // no longer feeds directly into the mouth.
-  goalLeft: 82, goalRight: 1198, goalTop: 374, goalBottom: 494, goalRampBottom: 462,
+  airFlipDuration: .48, airFlipStrikeSpeed: 420,
+  goalLeft: 150, goalRight: 1130, goalTop: 300, goalBottom: 570, goalRampBottom: 568,
 });
 export const DIFFICULTIES = Object.freeze({
   easy: { name: 'Facile', reaction: 0.34, error: 64, anticipation: 0.10, aggression: 0.55 },

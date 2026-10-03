@@ -12,25 +12,25 @@ export const classicSolids = [
   ] },
   // Solid exterior above each mouth: no horizontal roof on which a ball can park.
   // The field-facing diagonal joins the ceiling to the unchanged upper goal lip.
-  {x:0,y:100,w:218,h:C.goalTop-100,kind:'goalRoof',goalBoundary:true,contactEdges:[1,2],vertices:[
-    {x:0,y:100},{x:218,y:100},{x:C.goalLeft,y:C.goalTop},{x:0,y:C.goalTop},
+  {x:0,y:100,w:285,h:C.goalTop-100,kind:'goalRoof',goalBoundary:true,contactEdges:[1,2],vertices:[
+    {x:0,y:100},{x:285,y:100},{x:C.goalLeft,y:C.goalTop},{x:0,y:C.goalTop},
   ]},
-  {x:1062,y:100,w:218,h:C.goalTop-100,kind:'goalRoof',goalBoundary:true,contactEdges:[2,3],vertices:[
-    {x:1062,y:100},{x:C.width,y:100},{x:C.width,y:C.goalTop},{x:C.goalRight,y:C.goalTop},
+  {x:995,y:100,w:285,h:C.goalTop-100,kind:'goalRoof',goalBoundary:true,contactEdges:[2,3],vertices:[
+    {x:995,y:100},{x:C.width,y:100},{x:C.width,y:C.goalTop},{x:C.goalRight,y:C.goalTop},
   ]},
-  // Invisible 45-degree slopes, joined to each base as a single solid polygon.
-  // Keep the approved rendering outline in vertices. The invisible collision
-  // continues the same incline inside the goal, but leaves a gap before the mouth.
-  // At the scoring line x=82 the surface now stops at the raised ramp end.
-  { x:0,y:C.goalRampBottom,w:218,h:C.floor-C.goalRampBottom,kind:'goalBase',goalBoundary:true,contactEdges:[0],collisionVertices:[
-    {x:0,y:C.goalRampBottom-C.goalLeft},{x:218,y:C.floor},{x:0,y:C.floor},
-  ],vertices:[
-    {x:0,y:C.goalRampBottom},{x:C.goalLeft,y:C.goalRampBottom},{x:218,y:C.floor},{x:0,y:C.floor},
+  // Collision follows the visible ramp, leaving the goal mouth free of hidden edges.
+  { x:0,y:C.goalRampBottom,w:260,h:C.floor-C.goalRampBottom,kind:'goalBase',goalBoundary:true,contactEdges:[0,2],playerContactEdges:[0],vertices:[
+    {x:C.goalLeft,y:C.goalRampBottom},{x:260,y:C.floor},{x:C.goalLeft,y:C.floor},
   ] },
-  { x:1062,y:C.goalRampBottom,w:218,h:C.floor-C.goalRampBottom,kind:'goalBase',goalBoundary:true,contactEdges:[0],collisionVertices:[
-    {x:1062,y:C.floor},{x:C.width,y:C.goalRampBottom-C.goalLeft},{x:C.width,y:C.floor},
-  ],vertices:[
-    {x:1062,y:C.floor},{x:C.goalRight,y:C.goalRampBottom},{x:C.width,y:C.goalRampBottom},{x:C.width,y:C.floor},
+  { x:1020,y:C.goalRampBottom,w:260,h:C.floor-C.goalRampBottom,kind:'goalBase',goalBoundary:true,contactEdges:[0,2],playerContactEdges:[2],vertices:[
+    {x:C.goalRight,y:C.goalRampBottom},{x:C.goalRight,y:C.floor},{x:1020,y:C.floor},
+  ] },
+  // Pocket floor level with the ramp top: a ball that enters the goal stays in the scoring band instead of falling behind the ramp.
+  { x:0,y:C.goalRampBottom,w:C.goalLeft,h:C.floor-C.goalRampBottom,kind:'goalPocket',goalBoundary:true,contactEdges:[0],playerContactEdges:[],vertices:[
+    {x:0,y:C.goalRampBottom},{x:C.goalLeft,y:C.goalRampBottom},{x:C.goalLeft,y:C.floor},{x:0,y:C.floor},
+  ] },
+  { x:C.goalRight,y:C.goalRampBottom,w:C.width-C.goalRight,h:C.floor-C.goalRampBottom,kind:'goalPocket',goalBoundary:true,contactEdges:[0],playerContactEdges:[],vertices:[
+    {x:C.goalRight,y:C.goalRampBottom},{x:C.width,y:C.goalRampBottom},{x:C.width,y:C.floor},{x:C.goalRight,y:C.floor},
   ] },
 ];
 export const solids = OPEN_ARENA ? classicSolids.filter(s=>!['platform','obstacle'].includes(s.kind)) : classicSolids;
@@ -39,6 +39,7 @@ export function resetPositions(player, bot, ball) {
     Object.assign(body, { x, y: C.floor - C.playerHeight / 2, vx: 0, vy: 0,
       grounded: true, contactSurface: 'floor', footX: 0, footY: 1, controlX: 1, controlY: 0,
       rotateHeld: false, jumpReady: true, impulseReady: true, impulseCooldown: 0, flipIntent: 0,
+      flipHeld:false,flipReady:true,flipTimer:0,flipHit:false,flipX:1,flipY:0,
       fuel: 100, boosting: false, jumpHeld: false });
   }
   player.facing = 1; bot.facing = -1;

@@ -20,7 +20,7 @@ test('déplacement, saut, jetpack, recharge et égalité des capacités',()=>{
   assert.equal(a.vx,b.vx);assert.equal(a.vy,b.vy);assert.equal(a.fuel,b.fuel);
 });
 test('saut : premier appui, maintien sans répétition, second appui aérien et consommation unique',()=>{
-  const p=createPlayer('fluid');p.grounded=true;drive(p,{jump:true},C.step);assert.ok(p.vy<0);const afterGround=p.vy;drive(p,{jump:true},C.step);assert.equal(p.vy,afterGround+C.gravity*C.step);drive(p,{jump:false},C.step);const beforeAir=p.vy;drive(p,{jump:true},C.step);assert.ok(p.vy<beforeAir);assert.equal(p.impulseReady,false);const afterAir=p.vy;drive(p,{jump:false},C.step);drive(p,{jump:true},C.step);assert.equal(p.vy,afterAir+C.gravity*C.step);
+  const p=createPlayer('fluid');p.grounded=true;drive(p,{jump:true},C.step);assert.ok(p.vy<0);const afterGround=p.vy;drive(p,{jump:true},C.step);assert.equal(p.vy,afterGround+C.gravity*C.step);drive(p,{jump:false},C.step);const beforeAir=p.vy;drive(p,{jump:true},C.step);assert.ok(p.vy<beforeAir);assert.equal(p.impulseReady,false);const afterAir=p.vy;drive(p,{jump:false},C.step);drive(p,{jump:true},C.step);assert.ok(Math.abs(p.vy-(afterAir+2*C.gravity*C.step))<1e-9);
 });
 test('double saut : orientation quasi verticale reste neutre et orientation forte devient flip',()=>{
   const neutral=createPlayer('fluid');neutral.grounded=false;neutral.jumpReady=false;neutral.impulseReady=true;neutral.footX=.08;neutral.footY=.99;drive(neutral,{jump:true},C.step);assert.equal(neutral.vx,0);assert.ok(neutral.vy<0);
@@ -42,7 +42,7 @@ test('orientation aérienne : retour vertical progressif quand l’entrée devie
 });
 test('orientation aérienne : le tête-en-bas volontaire reste possible après maintien suffisant',()=>{
   const p=createPlayer('fluid');p.grounded=false;p.x=300;p.y=260;
-  for(let i=0;i<72;i++)drive(p,{aimX:0,aimY:-1},C.step);
+  for(let i=0;i<72;i++)drive(p,{aimX:0,aimY:-1,rotate:true},C.step);
   assert.ok(p.flipIntent>=C.airFlipIntentTime);
   assert.ok(p.footY<0);
 });
@@ -61,9 +61,9 @@ test('rotation dédiée : le stick dirige l’orientation seulement quand ROT es
   assert.equal(p.rotateHeld,false);
 });
 test('sol et plafond : recharge seulement quand les pieds sont orientés vers la surface',()=>{
-  const floor=createPlayer('fluid');floor.grounded=false;floor.jumpReady=false;floor.impulseReady=false;floor.footX=0;floor.footY=1;floor.y=C.floor-floor.h/2-1;floor.vy=200;movePlayer(floor,solids,.02);assert.ok(floor.jumpReady&&floor.impulseReady);
-  const ceiling=createPlayer('fluid');ceiling.grounded=false;ceiling.jumpReady=false;ceiling.impulseReady=false;ceiling.footX=0;ceiling.footY=-1;ceiling.y=100+ceiling.h/2+1;ceiling.vy=-200;movePlayer(ceiling,solids,.02);assert.ok(ceiling.jumpReady&&ceiling.impulseReady);
-  const shoulder=createPlayer('fluid');shoulder.grounded=false;shoulder.jumpReady=false;shoulder.impulseReady=false;shoulder.footX=1;shoulder.footY=0;shoulder.y=100+shoulder.h/2+1;shoulder.vy=-200;movePlayer(shoulder,solids,.02);assert.equal(shoulder.jumpReady,false);
+  const floor=createPlayer('fluid');floor.x=400;floor.grounded=false;floor.jumpReady=false;floor.impulseReady=false;floor.footX=0;floor.footY=1;floor.y=C.floor-floor.h/2-1;floor.vy=200;movePlayer(floor,solids,.02);assert.ok(floor.jumpReady&&floor.impulseReady);
+  const ceiling=createPlayer('fluid');ceiling.x=400;ceiling.grounded=false;ceiling.jumpReady=false;ceiling.impulseReady=false;ceiling.footX=0;ceiling.footY=-1;ceiling.y=100+ceiling.h/2+1;ceiling.vy=-200;movePlayer(ceiling,solids,.02);assert.ok(ceiling.jumpReady&&ceiling.impulseReady);
+  const shoulder=createPlayer('fluid');shoulder.x=400;shoulder.grounded=false;shoulder.jumpReady=false;shoulder.impulseReady=false;shoulder.footX=1;shoulder.footY=0;shoulder.y=100+shoulder.h/2+1;shoulder.vy=-200;movePlayer(shoulder,solids,.02);assert.equal(shoulder.jumpReady,false);
 });
 test('JET ne recharge pas le saut aérien',()=>{const p=createPlayer('fluid');p.grounded=false;p.jumpReady=false;p.impulseReady=true;drive(p,{boost:true},C.step);assert.equal(p.impulseReady,true);assert.equal(p.jumpReady,false);});
 test('sol, plateformes, dessous de plateforme et obstacle bloquent le joueur',()=>{
@@ -81,7 +81,18 @@ test('contact physique symétrique, sans attraction ni possession',()=>{
   const balls=[];for(const skin of ['fluid','heavy']){const p=createPlayer(skin);p.x=400;p.y=500;p.vx=250;const b=createBall();Object.assign(b,{x:432,y:500,vx:0,vy:0});assert.ok(hitPlayer(b,p));assert.ok(b.vx>250);balls.push(b);}
   assert.equal(balls[0].vx,balls[1].vx);const p=createPlayer('fluid');p.x=100;p.y=100;const b=createBall(),before={...b};assert.equal(hitPlayer(b,p),false);assert.deepEqual(b,before);
 });
-test('but valide seulement après entrée complète sous la barre',()=>{const b=createBall();b.y=(C.goalTop+C.goalBottom)/2;b.x=1199;assert.equal(goalScorer(b),null);b.x=1220;assert.equal(goalScorer(b),'player');b.x=60;assert.equal(goalScorer(b),'bot');b.y=C.goalTop+6;assert.equal(goalScorer(b),null);});
+test('flip aérien : le premier contact frappe la balle une fois dans la direction du flip',()=>{
+  const m=playing(),p=m.player;
+  Object.assign(p,{x:300,y:400,grounded:false,contactSurface:null,flipReady:true,flipHit:false});
+  Object.assign(m.ball,{x:335,y:400,vx:0,vy:0});
+  m.update(C.step,{axis:0,rotate:true});
+  const struckSpeed=Math.hypot(m.ball.vx,m.ball.vy);
+  assert.ok(struckSpeed>300);assert.equal(p.flipHit,true);
+  Object.assign(m.ball,{x:335,y:400,vx:0,vy:0});
+  m.update(C.step,{axis:0,rotate:true});
+  assert.ok(Math.hypot(m.ball.vx,m.ball.vy)<100);assert.equal(p.flipHit,true);
+});
+test('but valide seulement après entrée complète sous la barre',()=>{const b=createBall();b.y=(C.goalTop+C.goalBottom)/2;b.x=C.goalRight-1;assert.equal(goalScorer(b),null);b.x=C.goalRight+b.r;assert.equal(goalScorer(b),'player');b.x=C.goalLeft-b.r;assert.equal(goalScorer(b),'bot');b.y=C.goalTop+b.r;assert.equal(goalScorer(b),null);});
 test('buts des deux camps, double but ignoré, remise en jeu et chrono suspendu',()=>{
   const m=playing();Object.assign(m.ball,{x:1220,y:(C.goalTop+C.goalBottom)/2,vx:0,vy:0});m.update(C.step);assert.equal(m.score.player,1);assert.equal(m.state,S.GOAL_SCORED);assert.equal(m.goal('player'),false);const time=m.remaining;advance(m,1.9);assert.equal(m.state,S.PRE_ROUND);assert.equal(m.ball.x,640);assert.equal(m.remaining,time);advance(m,3.1);Object.assign(m.ball,{x:60,y:(C.goalTop+C.goalBottom)/2,vx:0,vy:0});m.update(C.step);assert.equal(m.score.bot,1);
 });
