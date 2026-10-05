@@ -19,7 +19,9 @@ export class KeyboardInput {
     const bindings=controlSettings.keyboard;
     const any=(action)=>bindings[action].some(k=>this.keys.has(k));
     const resetBall=any('resetBall')&&!this.previousReset;this.previousReset=any('resetBall');
-    return { axis:Number(any('moveRight'))-Number(any('moveLeft')),
+    const directionX=Number(any('moveRight'))-Number(any('moveLeft'));
+    const directionY=Number(any('aimDown'))-Number(any('aimUp'));
+    return { axis:directionX,directionX,directionY,
       jump:any('jump'), boost:any('boost'), rotate:any('rotate'), resetBall };
   }
 }
@@ -41,6 +43,10 @@ export class PlayerInput {
     const directionHeld=[...controlSettings.keyboard.moveLeft,...controlSettings.keyboard.moveRight].some(code=>this.keyboard.keys.has(code));
     // Keyboard directions retain priority when held; buttons combine by OR.
     // A connected or held controller therefore never disables keyboard controls.
-    return {axis:directionHeld?keyboard.axis:pad.axis,jump:keyboard.jump||pad.jump,boost:keyboard.boost||pad.boost,rotate:keyboard.rotate||pad.rotate,resetBall:keyboard.resetBall||pad.resetBall};
+    const keyboardVertical=keyboard.directionY!==0;
+    return {axis:directionHeld?keyboard.axis:pad.axis,
+      directionX:directionHeld?keyboard.directionX:pad.directionX,
+      directionY:keyboardVertical?keyboard.directionY:pad.directionY,
+      jump:keyboard.jump||pad.jump,boost:keyboard.boost||pad.boost,rotate:keyboard.rotate||pad.rotate,resetBall:keyboard.resetBall||pad.resetBall};
   }
 }

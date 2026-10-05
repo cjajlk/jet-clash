@@ -38,15 +38,15 @@ export function movePlayer(p, solids, dt) {
     p.vy = 0;
     rechargeSupport(p);
   }
-  if (p.y < 100 + p.h/2) { p.y = 100+p.h/2; p.vy = Math.max(0,p.vy); setSupport(p,1); rechargeSupport(p); }
-  // The sides behind the goal mouths are scoring space for the ball, not a
-  // character corridor. Finish every step with closed floor/ceiling/end limits.
+  if (p.y < C.ceiling + p.h/2) { p.y = C.ceiling+p.h/2; p.vy = Math.max(0,p.vy); setSupport(p,1); rechargeSupport(p); }
+  // Arena V2: the recessed goal mouths are playable for characters too.
+  // Outer canvas walls remain hard limits; the rectangular goal frame solids
+  // above/below the mouth keep players inside the intended opening.
   for(let pass=0;pass<4;pass++){
-    const left=C.goalLeft+p.w/2,right=C.goalRight-p.w/2;
-    if(p.x<left){p.x=left;p.vx=Math.max(0,p.vx);}
-    if(p.x>right){p.x=right;p.vx=Math.min(0,p.vx);}
+    if(p.x<p.w/2){p.x=p.w/2;p.vx=Math.max(0,p.vx);}
+    if(p.x>C.width-p.w/2){p.x=C.width-p.w/2;p.vx=Math.min(0,p.vx);}
     if(p.y+p.h/2>C.floor){p.y=C.floor-p.h/2;p.vy=Math.min(0,p.vy);setSupport(p,-1);rechargeSupport(p);}
-    if(p.y-p.h/2<100){p.y=100+p.h/2;p.vy=Math.max(0,p.vy);setSupport(p,1);rechargeSupport(p);}
+    if(p.y-p.h/2<C.ceiling){p.y=C.ceiling+p.h/2;p.vy=Math.max(0,p.vy);setSupport(p,1);rechargeSupport(p);}
     resolvePlayerRamps(p,solids.filter(s=>s.goalBoundary));
   }
 }
@@ -89,19 +89,19 @@ export function collideBall(ball, solids) {
     const insideGoalOpening=ball.x>=0&&ball.x<=C.width&&ball.y-ball.r>C.goalTop&&ball.y+ball.r<C.goalBottom;
     if (!insideGoalOpening&&ball.x < ball.r) { ball.x = ball.r; if(ball.vx<0)ball.vx=-ball.vx*C.ballBounce; }
     if (!insideGoalOpening&&ball.x > C.width-ball.r) { ball.x=C.width-ball.r; if(ball.vx>0)ball.vx=-ball.vx*C.ballBounce; }
-    if (ball.y < 100+ball.r) { ball.y=100+ball.r; if(ball.vy<0)ball.vy=-ball.vy*C.ballBounce; }
+    if (ball.y < C.ceiling+ball.r) { ball.y=C.ceiling+ball.r; if(ball.vy<0)ball.vy=-ball.vy*C.ballBounce; }
     if (ball.y > C.floor-ball.r) { ball.y=C.floor-ball.r;if(ball.vy>0){ball.vy=ball.vy<45?0:-ball.vy*C.ballBounce;ball.vx*=.988;} }
     for(const end of ends)resolveBallShape(ball,end);
   }
   // End-collider separation can move a deeply compressed ball past the flat
   // floor/ceiling plane; finish with the arena's hard containment limits.
-  if(ball.y<100+ball.r){ball.y=100+ball.r;if(ball.vy<0)ball.vy=-ball.vy*C.ballBounce;}
+  if(ball.y<C.ceiling+ball.r){ball.y=C.ceiling+ball.r;if(ball.vy<0)ball.vy=-ball.vy*C.ballBounce;}
   if(ball.y>C.floor-ball.r){ball.y=C.floor-ball.r;if(ball.vy>0)ball.vy=-ball.vy*C.ballBounce;}
 }
 
 // Strictly outside: mere contact/partial overlap with the boundary is not a reset.
 export function ballOutsideArena(ball){
-  return ball.x+ball.r<0||ball.x-ball.r>C.width||ball.y+ball.r<100||ball.y-ball.r>C.floor;
+  return ball.x+ball.r<0||ball.x-ball.r>C.width||ball.y+ball.r<C.ceiling||ball.y-ball.r>C.floor;
 }
 export function hitPlayer(ball,p,restitution=.88,flipStrike=null) {
   const hit = circleContact(ball,{ x:p.x-p.w/2,y:p.y-p.h/2,w:p.w,h:p.h });

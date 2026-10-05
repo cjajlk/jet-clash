@@ -98,3 +98,10 @@ Le bot reste simple, les collisions utilisent des formes géométriques simplifi
 Pas de multijoueur, boutique, pass complet, capacités spéciales, nouvelles arènes, nouveaux personnages ou intégration CJEngine. Aucun commit ni push effectué. **Prochaine étape : test réel de CJ, puis corrections sur son retour uniquement.**
 
 Voir `docs/fichiers-livres.md` pour la liste exacte des fichiers.
+
+
+## Arène 02 — visuel complet
+- Nouvelle image complète : `assets/arena/arena_background_vertical_goals.png`.
+- L'ancienne arène est conservée intacte : `assets/arena/arena_background.png`.
+- Les anciennes cages V3 restent dans le pack mais ne sont pas superposées sur l'Arène 02.
+- Physique, buts, tir, ballon ×1.50 et gameplay inchangés.

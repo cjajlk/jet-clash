@@ -1,5 +1,5 @@
 import { controlSettings } from './control-settings.js';
-const neutral=()=>({axis:0,jump:false,boost:false,rotate:false,resetBall:false});
+const neutral=()=>({axis:0,directionX:0,directionY:0,jump:false,boost:false,rotate:false,resetBall:false});
 export const STICK_DEADZONE=.18;
 export const TRIGGER_THRESHOLD=.12;
 
@@ -31,7 +31,7 @@ export class GamepadInput {
     });
   }
   clear(){
-    this.needsNeutral=this.needsNeutral||!!(this.previous.axis||this.previous.jump||this.previous.boost||this.previous.rotate);
+    this.needsNeutral=this.needsNeutral||!!(this.previous.axis||this.previous.directionY||this.previous.jump||this.previous.boost||this.previous.rotate);
     this.previous=neutral();this.previousReset=false;this.axisAtActivity=0;
   }
   read(){
@@ -48,9 +48,11 @@ export class GamepadInput {
     this.index=pad.index;
     const useLeft=controlSettings.gamepad.movementStick==='left';
     // W3C standard mapping: Cross/A=0, Circle/B=1 and Square/X=2.
-    const state={axis:stickAxis(pad.axes?.[useLeft?0:2]),jump:button(pad,controlSettings.gamepad.jump,.5),boost:button(pad,controlSettings.gamepad.boost,TRIGGER_THRESHOLD),rotate:button(pad,controlSettings.gamepad.rotate,.5),resetBall:button(pad,controlSettings.gamepad.resetBall,.5)};
-    if(this.needsNeutral){if(!state.axis&&!state.jump&&!state.boost&&!state.rotate)this.needsNeutral=false;return neutral();}
-    const moved=state.axis!==0&&(this.axisAtActivity===0||Math.sign(state.axis)!==Math.sign(this.axisAtActivity)||Math.abs(state.axis-this.axisAtActivity)>.08);
+    const directionX=stickAxis(pad.axes?.[useLeft?0:2]);
+    const directionY=stickAxis(pad.axes?.[useLeft?1:3]);
+    const state={axis:directionX,directionX,directionY,jump:button(pad,controlSettings.gamepad.jump,.5),boost:button(pad,controlSettings.gamepad.boost,TRIGGER_THRESHOLD),rotate:button(pad,controlSettings.gamepad.rotate,.5),resetBall:button(pad,controlSettings.gamepad.resetBall,.5)};
+    if(this.needsNeutral){if(!state.axis&&!state.directionY&&!state.jump&&!state.boost&&!state.rotate)this.needsNeutral=false;return neutral();}
+    const moved=(state.axis!==0||state.directionY!==0)&&(this.axisAtActivity===0||Math.sign(state.axis)!==Math.sign(this.axisAtActivity)||Math.abs(state.axis-this.axisAtActivity)>.08||Math.abs(state.directionY-this.previous.directionY)>.08);
     if(moved||state.jump&&!this.previous.jump||state.boost&&!this.previous.boost||state.rotate&&!this.previous.rotate){this.onActivity();this.axisAtActivity=state.axis;}
     if(state.axis===0)this.axisAtActivity=0;
     const resetBall=state.resetBall&&!this.previousReset;

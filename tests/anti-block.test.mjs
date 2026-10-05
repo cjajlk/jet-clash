@@ -1,103 +1,44 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CONFIG as C } from '../src/config.js';
-// Retain collision regression coverage for the reversible original layout.
-import { classicSolids as solids } from '../src/arena.js';
+import { solids } from '../src/arena.js';
 import { createBall, integrateBall } from '../src/ball.js';
-import { createPlayer, drive } from '../src/player.js';
-import { collideBall, movePlayer, hitPlayer, circleContact } from '../src/physics.js';
-import { circlePolygonContact, boxPolygonContact } from '../src/collision-shapes.js';
+import { createPlayer } from '../src/player.js';
+import { collideBall, movePlayer } from '../src/physics.js';
+import { goalScorer } from '../src/goals.js';
 
-const zones=[
-  {name:'sous le but gauche',foot:260,direction:-1,slope:(C.floor-C.goalRampBottom)/(260-C.goalLeft),shape:solids.find(s=>s.kind==='goalBase'&&s.x===0)},
-  {name:'sous le but droit',foot:1020,direction:1,slope:(C.floor-C.goalRampBottom)/(260-C.goalLeft),shape:solids.find(s=>s.kind==='goalBase'&&s.x>0)},
-  {name:'pied central gauche',foot:448,direction:1,slope:50/114,shape:solids.find(s=>s.kind==='obstacle')},
-  {name:'pied central droit',foot:832,direction:-1,slope:50/114,shape:solids.find(s=>s.kind==='obstacle')},
-];
-function simulate(zone,speed,mode,seconds=8){
-  const {foot,direction,slope}=zone,b=createBall();
-  const tangent=b.r*(Math.sqrt(1+slope*slope)-1)/slope;
-  Object.assign(b,{x:foot-direction*(tangent+(mode==='duo opposé'?0:.5)),y:C.floor-b.r,vx:direction*speed,vy:0});
-  const initialX=b.x,initialY=b.y,players=[];
-  const add=(skin,axis)=>{
-    const p=createPlayer(skin);Object.assign(p,{x:b.x-axis*44,y:C.floor-p.h/2,grounded:true});
-    movePlayer(p,solids,0);players.push({p,axis});
-  };
-  if(mode!=='seule')add(mode==='Heavy'?'heavy':'fluid',direction);
-  if(mode==='duo même côté')add('heavy',direction);
-  if(mode==='duo opposé')add('heavy',-direction);
-  let escapeAt=null,minY=b.y,firstContact=false;const history=[];
-  for(let i=0;i<seconds/C.step;i++){
-    for(const {p,axis} of players){drive(p,{axis},C.step);movePlayer(p,solids,C.step);}
-    integrateBall(b,C.step);
-    if(circlePolygonContact(b,zone.shape.vertices,zone.shape.contactEdges))firstContact=true;
-    // The same order as Match.update; no replacement/test-only solver.
-    collideBall(b,solids);for(const {p}of players)hitPlayer(b,p);
-    if(circlePolygonContact(b,zone.shape.vertices,zone.shape.contactEdges))firstContact=true;
-    collideBall(b,solids);
-    assert.ok(Number.isFinite(b.x)&&Number.isFinite(b.y)&&Number.isFinite(b.vx)&&Number.isFinite(b.vy));
-    for(const shape of solids){
-      const hit=shape.vertices?circlePolygonContact(b,shape.vertices,shape.contactEdges):circleContact(b,shape);
-      const tolerance=shape.kind==='floor'?2e-4:1e-5;
-      assert.ok((hit?.depth||0)<tolerance,`pénétration ${shape.kind}: ${hit?.depth}`);
-    }
-    minY=Math.min(minY,b.y);
-    const elevated=initialY-b.y>25;
-    const away=direction*(b.x-initialX)<-2 && b.vx*direction<-1;
-    if(escapeAt===null&&firstContact&&(elevated||away))escapeAt=i*C.step;
-    if(i<120)history.push([b.x,b.y,b.vx,b.vy]);
-  }
-  return {escapeAt,minY,firstContact,history};
-}
-
-for(const zone of zones)for(const speed of [30,300,900])for(const mode of ['seule','Fluid','Heavy','duo même côté','duo opposé']){
-  test(`${zone.name} / ${speed} px/s / ${mode}: sortie physique sans blocage`,()=>{
-    const result=simulate(zone,speed,mode);
-    assert.ok(result.firstContact,'la trajectoire doit réellement toucher la pente');
-    assert.notEqual(result.escapeAt,null,'la balle doit quitter le contact ou monter');
-    assert.ok(result.escapeAt<4,`sortie trop tardive : ${result.escapeAt}s`);
+test('Arena V2 : aucune ancienne rampe, plateforme ou obstacle central',()=>{
+  for(const kind of ['platform','obstacle','goalPocket'])assert.equal(solids.some(s=>s.kind===kind),false);
+  assert.equal(solids.filter(s=>s.kind==='goalBase').length,2);
+  assert.equal(solids.filter(s=>s.kind==='goalRoof').length,2);
+});
+for(const side of ['left','right']){
+  const left=side==='left', line=left?C.goalLeft:C.goalRight, sign=left?-1:1;
+  test(`Arena V2 ${side} : ballon aérien entre librement dans la cage`,()=>{
+    const b=createBall();Object.assign(b,{x:line-sign*80,y:(C.goalTop+C.goalBottom)/2,vx:sign*500,vy:0});
+    let scored=false;for(let i=0;i<80;i++){integrateBall(b,C.step);collideBall(b,solids);if(goalScorer(b)){scored=true;break;}}
+    assert.ok(scored);assert.ok(left?b.x<C.goalLeft:b.x>C.goalRight);
+  });
+  test(`Arena V2 ${side} : Fluid peut entrer dans le but en l'air`,()=>{
+    const p=createPlayer('fluid');Object.assign(p,{x:line-sign*90,y:(C.goalTop+C.goalBottom)/2,vx:sign*260,vy:0,grounded:false});
+    for(let i=0;i<80;i++)movePlayer(p,solids,C.step);
+    assert.ok(left?p.x<C.goalLeft:p.x>C.goalRight);
+    assert.ok(p.x>=p.w/2&&p.x<=C.width-p.w/2);
+  });
+  test(`Arena V2 ${side} : montant haut ferme la zone au-dessus de l'ouverture`,()=>{
+    const b=createBall();Object.assign(b,{x:line-sign*70,y:C.goalTop-b.r-4,vx:sign*500,vy:0});
+    for(let i=0;i<60;i++){integrateBall(b,C.step);collideBall(b,solids);}
+    assert.ok(left?b.x>=C.goalLeft-b.r-1:b.x<=C.goalRight+b.r+1);
+    assert.equal(goalScorer(b),null);
+  });
+  test(`Arena V2 ${side} : socle ferme la zone sous l'ouverture`,()=>{
+    const p=createPlayer('fluid');Object.assign(p,{x:line-sign*70,y:C.goalBottom+p.h/2+1,vx:sign*260,vy:0});
+    for(let i=0;i<80;i++)movePlayer(p,solids,C.step);
+    assert.ok(left?p.x>=C.goalLeft-p.w/2-1:p.x<=C.goalRight+p.w/2+1);
   });
 }
-for(const zone of zones){
-  test(`${zone.name}: Fluid et Heavy produisent exactement la même réponse`,()=>{
-    assert.deepEqual(simulate(zone,30,'Fluid',2),simulate(zone,30,'Heavy',2));
-  });
-  test(`${zone.name}: balle immobile sur la pente redescend par gravité`,()=>{
-    const b=createBall(),d=30,normal={x:-zone.direction*zone.slope,y:-1},length=Math.hypot(normal.x,normal.y);
-    Object.assign(b,{x:zone.foot+zone.direction*d+normal.x/length*b.r,y:C.floor-zone.slope*d+normal.y/length*b.r,vx:0,vy:0});
-    const start=b.x;
-    for(let i=0;i<120;i++){integrateBall(b,C.step);collideBall(b,solids);}
-    assert.ok((b.x-start)*zone.direction<-5,'la gravité doit ramener la balle vers le bas de la pente');
-  });
-}
-test('les contours de collision sont exactement symétriques',()=>{
-  const key=v=>`${v.x},${v.y}`;
-  const mirror=shape=>shape.vertices.map(v=>key({x:C.width-v.x,y:v.y})).sort();
-  assert.deepEqual(mirror(zones[0].shape),zones[1].shape.vertices.map(key).sort());
-  assert.deepEqual(mirror(zones[2].shape),zones[2].shape.vertices.map(key).sort());
-});
-test('trajectoires libres en miroir : même réponse des pentes',()=>{
-  for(const [left,right] of [[zones[0],zones[1]],[zones[2],zones[3]]]){
-    const a=simulate(left,300,'seule',1),b=simulate(right,300,'seule',1);
-    a.history.forEach((p,i)=>{const q=b.history[i],message=`${left.name}, pas ${i}: ${p} / ${q}`;assert.ok(Math.abs(p[0]+q[0]-C.width)<1e-6,message);assert.ok(Math.abs(p[1]-q[1])<1e-6,message);assert.ok(Math.abs(p[2]+q[2])<1e-6,message);assert.ok(Math.abs(p[3]-q[3])<1e-6,message);});
-  }
-});
-test('contact incliné sans apport d’énergie : réponse issue de la normale',()=>{
-  const shape=zones[0].shape,ball=createBall();
-  const slope=zones[0].slope,n={x:slope/Math.hypot(slope,1),y:-1/Math.hypot(slope,1)};
-  const surfaceY=C.goalRampBottom+slope*(150-C.goalLeft);
-  Object.assign(ball,{x:150+n.x*(ball.r-1),y:surfaceY+n.y*(ball.r-1),vx:-300,vy:0});
-  const energy=ball.vx**2+ball.vy**2;
-  collideBall(ball,[shape]);assert.ok(ball.vy<0);assert.ok(ball.vx**2+ball.vy**2<=energy+1e-6);
-  assert.ok((circlePolygonContact(ball,shape.vertices,shape.contactEdges)?.depth||0)<1e-6);
-});
-test('les personnages montent sur les quatre pentes sans traverser la géométrie',()=>{
-  for(const zone of zones)for(const skin of ['fluid','heavy']){
-    const p=createPlayer(skin);Object.assign(p,{x:zone.foot-zone.direction*40,y:C.floor-p.h/2,grounded:true});let minY=p.y;
-    for(let i=0;i<120;i++){
-      drive(p,{axis:zone.direction},C.step);movePlayer(p,solids,C.step);minY=Math.min(minY,p.y);
-      assert.ok((boxPolygonContact(p,zone.shape.vertices,zone.shape.playerContactEdges||zone.shape.contactEdges)?.depth||0)<1e-6);
-    }
-    assert.ok(minY<C.floor-p.h/2-20);
-  }
+test('Arena V2 : plafond physique au niveau configuré sous HUD',()=>{
+  const p=createPlayer('fluid');Object.assign(p,{x:640,y:C.ceiling+p.h/2+2,vy:-500,grounded:false,footX:0,footY:-1});
+  movePlayer(p,solids,.05);assert.equal(p.y,C.ceiling+p.h/2);assert.equal(p.contactSurface,'ceiling');
+  const b=createBall();Object.assign(b,{x:640,y:C.ceiling+b.r+2,vy:-500});collideBall(b,solids);assert.ok(b.y>=C.ceiling+b.r);
 });

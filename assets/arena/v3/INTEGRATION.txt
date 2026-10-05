@@ -1,0 +1,14 @@
+JetClash - Arena V3 visual asset pack
+
+Integrated now:
+- goal_v3_blue.png / but_bleu.png: left goal visual
+- goal_v3_red.png / but_rouge.png: right goal visual
+
+All other sorted arena assets are bundled in this folder for later visual passes.
+They are not collision geometry and do not change gameplay.
+
+Gameplay reference kept:
+- ballScale 1.50
+- ceiling 110
+- goals 175/1105, top 320, bottom 600
+- no ramps/platforms/center obstacle

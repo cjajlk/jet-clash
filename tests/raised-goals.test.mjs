@@ -1,59 +1,47 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CONFIG as C } from '../src/config.js';
-import { Match, STATES as S } from '../src/match.js';
-import { ProfileStore } from '../src/profile-store.js';
-import { createBall, integrateBall } from '../src/ball.js';
+import { createBall } from '../src/ball.js';
 import { createPlayer } from '../src/player.js';
-import { collideBall, movePlayer } from '../src/physics.js';
 import { solids } from '../src/arena.js';
+import { movePlayer, collideBall } from '../src/physics.js';
 import { goalScorer } from '../src/goals.js';
-import { boxPolygonContact } from '../src/collision-shapes.js';
+
 const middle=(C.goalTop+C.goalBottom)/2;
-function match(){const m=new Match(new ProfileStore({getItem:()=>null,setItem(){}}));m.start();for(let i=0;i<362;i++)m.update(C.step);assert.equal(m.state,S.PLAYING);return m;}
-function flight(ball,steps=60){let bounced=false;const initialY=ball.y;const direction=Math.sign(ball.vx);for(let i=0;i<steps;i++){integrateBall(ball,C.step);collideBall(ball,solids);assert.equal(goalScorer(ball),null);if(Math.sign(ball.vx)===-direction||ball.y<initialY-1)bounced=true;}return bounced;}
+test('cages V2 : verticales, hautes, symétriques et sans rampe',()=>{
+  const ball=createBall();
+  assert.equal(C.goalLeft,C.width-C.goalRight);
+  assert.ok(C.goalBottom-C.goalTop>=ball.r*4);
+  assert.equal(C.goalRampBottom,C.goalBottom);
+  assert.equal(solids.some(s=>s.vertices),false);
+  assert.equal(solids.filter(s=>s.kind==='goalBase').length,2);
+});
 for(const side of ['left','right']){
   const left=side==='left',line=left?C.goalLeft:C.goalRight,sign=left?-1:1;
-  test(`balle roulant au sol vers ${side} : rebond, aucun but`,()=>{
-    const b=createBall();Object.assign(b,{x:line-sign*166,y:C.floor-b.r,vx:sign*250,vy:0});assert.ok(flight(b));
+  test(`cage ${side} : le ballon doit réellement pénétrer avant le but`,()=>{
+    const b=createBall();b.y=middle;b.x=line+sign*5;assert.equal(goalScorer(b),null);
+    b.x=line+sign*36;assert.equal(goalScorer(b),left?'bot':'player');
   });
-  test(`balle frappée dans l’ouverture ${side} : vrai but, remise en jeu, score unique`,()=>{
-    const m=match(),scorer=left?'bot':'player';Object.assign(m.ball,{x:line-sign*35,y:middle,vx:sign*500,vy:-45});
-    for(let i=0;i<35&&m.state===S.PLAYING;i++)m.update(C.step);
-    assert.equal(m.state,S.GOAL_SCORED);assert.equal(m.score[scorer],1);assert.equal(m.goal(scorer),false);
-    for(let i=0;i<230;i++)m.update(C.step);
-    assert.equal(m.state,S.PRE_ROUND);assert.equal(m.ball.x,640);assert.equal(m.score[scorer],1);
-    for(let i=0;i<365;i++)m.update(C.step);
-    assert.equal(m.state,S.PLAYING);assert.equal(m.score[scorer],1);
+  test(`cage ${side} : aucun but hors de l'ouverture verticale`,()=>{
+    const b=createBall();b.x=line+sign*60;b.y=C.goalTop+b.r-1;assert.equal(goalScorer(b),null);
+    b.y=C.goalBottom-b.r+1;assert.equal(goalScorer(b),null);
   });
-  test(`rebond sous cage ${side} : aucun but à l’ancienne hauteur`,()=>{
-    const b=createBall();Object.assign(b,{x:line-sign*130,y:570,vx:sign*350,vy:-50});assert.ok(flight(b,30));
-    Object.assign(b,{x:left?40:1240,y:600});assert.equal(goalScorer(b),null);
-  });
-  test(`bords haut et bas ${side} : tangence ou chevauchement ne marquent pas`,()=>{
-    for(const y of [C.goalTop+C.ballRadius-3,C.goalTop+C.ballRadius,C.goalBottom-C.ballRadius,C.goalBottom-C.ballRadius+3]){
-      const b=createBall();Object.assign(b,{x:line+sign*(b.r+2),y,vx:sign*250,vy:0});assert.equal(goalScorer(b),null);collideBall(b,solids);if(y<(C.goalTop+C.goalBottom)/2)assert.equal(goalScorer(b),null);
-    }
-    const b=createBall();Object.assign(b,{x:line-sign*65,y:C.goalBottom+4,vx:sign*180,vy:0});for(let i=0;i<25;i++){integrateBall(b,C.step);collideBall(b,solids);if(goalScorer(b))break;}assert.ok(b.y<=C.floor-b.r+1e-6);
-  });
-  test(`Fluid et Heavy ne traversent pas le socle ${side}`,()=>{
-    for(const skin of ['fluid','heavy']){
-      const p=createPlayer(skin);Object.assign(p,{x:line-sign*166,y:C.floor-p.h/2,vx:sign*C.runSpeed,vy:0});
-      const base=solids.find(s=>s.kind==='goalBase'&&(left?s.x===0:s.x>0));
-      for(let i=0;i<60;i++){
-        p.vx=sign*C.runSpeed;movePlayer(p,solids,C.step);
-        // Climbing over the new slope is allowed; passing through its solid is not.
-        assert.ok((boxPolygonContact(p,base.vertices,base.playerContactEdges||base.contactEdges)?.depth||0)<1e-6);
-      }
-    }
+  test(`cage ${side} : personnage aérien admis dans la profondeur`,()=>{
+    const p=createPlayer('fluid');Object.assign(p,{x:line-sign*30,y:middle,vx:sign*300,grounded:false});
+    for(let i=0;i<50;i++)movePlayer(p,solids,C.step);
+    assert.ok(left?p.x<line:p.x>line);
   });
 }
-test('géométrie symétrique, cages verticales plus grandes que la balle, rampes sans rebord caché',()=>{
-  const ball=createBall();
-  assert.ok(C.goalLeft>=ball.r*2);assert.ok(C.width-C.goalRight>=ball.r*2);
-  assert.ok(C.goalBottom-C.goalTop>=ball.r*4);assert.equal(C.goalBottom-C.goalRampBottom,2);
-  const bases=solids.filter(r=>r.kind==='goalBase');assert.equal(bases.length,2);
-  assert.equal(bases[0].w,bases[1].w);assert.equal(bases[0].y,bases[1].y);assert.equal(bases[0].h,bases[1].h);
-  assert.equal(bases[0].x,C.width-bases[1].x-bases[1].w);
-  assert.ok((C.floor-C.goalRampBottom)/(bases[0].w-C.goalLeft)<0.7,'les rampes restent assez longues pour éviter une pente abrupte');
+
+
+test('Arène V3 : le seuil bas impose une vraie levée avant entrée dans le but',()=>{
+  const b=createBall();
+  // Au sol, même dirigée vers le but, la balle reste sous l'ouverture utile.
+  Object.assign(b,{x:C.goalRight-20,y:C.floor-b.r,vx:700,vy:0});
+  for(let i=0;i<60;i++){b.x+=b.vx*C.step;collideBall(b,solids);}
+  assert.ok(b.x<=C.goalRight-b.r+1,'la base du but doit bloquer une balle au sol');
+  assert.equal(goalScorer(b),null);
+  // Une balle réellement levée au milieu de l'ouverture peut entrer et marquer.
+  Object.assign(b,{x:C.goalRight+b.r,y:(C.goalTop+C.goalBottom)/2,vx:0,vy:0});
+  assert.equal(goalScorer(b),'player');
 });

@@ -2,7 +2,7 @@ import { CONFIG as C } from './config.js';
 import { solids, OPEN_ARENA } from './arena.js';
 import { MobileCamera } from './mobile-camera.js';
 import { drawBallContactZone } from './ball-control.js';
-const paths={background:'arena/arena_background.png',left:'arena/goal_left_blue.png',right:'arena/goal_right_red.png',rampLeft:'arena/goal_ramp_left_blue.png',rampRight:'arena/goal_ramp_right_red.png',platform:'arena/platform_large.png',obstacle:'arena/center_obstacle.png',ball:'ball/ball_idle.png',impact:'ball/ball_glow.png'};
+const paths={background:'arena/arena_background_midfield_goals.png',backgroundLegacy:'arena/arena_background.png',left:'arena/goal_left_blue.png',right:'arena/goal_right_red.png',rampLeft:'arena/goal_ramp_left_blue.png',rampRight:'arena/goal_ramp_right_red.png',platform:'arena/platform_large.png',obstacle:'arena/center_obstacle.png',ball:'ball/ball_idle.png',impact:'ball/ball_glow.png',goalV3Blue:'arena/goal_v3_blue.png',goalV3Red:'arena/goal_v3_red.png'};
 const FLUID_AIR_POSES=Object.freeze(['air_idle','air_up','air_diagonal_up','air_horizontal','air_turn','ceiling','air_diagonal_down','air_dash']);
 export const FLUID_AIR_ASSETS=Object.freeze(FLUID_AIR_POSES.map(pose=>`fluid_${pose}`));
 const FLUID_VISUAL=Object.freeze({hysteresis:.08,maxRotation:.16,dashWindow:.12,idleY:.82,upY:.58,diagUpY:.22,horizontalY:-.16,diagDownY:-.62,turnY:-.78});
@@ -37,7 +37,8 @@ export function resolveFluidVisualPose(p,cache={}){
   }else pose=Math.abs(p.vx)>45?'sprint':'walk';
   const last=cache.pose;if(last&&last!==pose&&Math.abs(look.y-(FLUID_POSE_Y[last]??0))<FLUID_VISUAL.hysteresis)pose=last;
   cache.pose=pose;cache.look=look;
-  const flip=look.x<-.12||(Math.abs(look.x)<=.12&&(p.controlX<0||p.facing<0));
+  // The source aerial PNGs face right. footX points toward the feet, i.e. opposite the head/facing direction.
+  const flip=look.x>.12||(Math.abs(look.x)<=.12&&(p.controlX<0||p.facing<0));
   const drift=motion||look;
   const rotation=pose==='ceiling' ? 0 : clamp((drift.x*.12+drift.y*.04),-FLUID_VISUAL.maxRotation,FLUID_VISUAL.maxRotation);
   const flipProgress=p.flipTimer>0?1-p.flipTimer/C.airFlipDuration:0;
@@ -72,6 +73,38 @@ export class Renderer{
     c.translate(centerX,centerY);c.rotate(side==='left'?Math.PI/2:-Math.PI/2);
     c.drawImage(im,-height/2,-width*.75,height,width*1.5);c.restore();
   }
+  arenaV2Goals(){
+    const c=this.ctx;
+    const draw=(side,color,asset)=>{
+      const left=side==='left', x=left?0:C.goalRight, w=left?C.goalLeft:C.width-C.goalRight;
+      const top=C.goalTop,bottom=C.goalBottom,h=bottom-top;
+      // Recess the playable pocket into the arena instead of laying a bright rectangle over it.
+      const pocket=c.createLinearGradient(left?0:C.goalRight,top,left?C.goalLeft:C.width,bottom);
+      pocket.addColorStop(0,'rgba(5,9,27,.72)');pocket.addColorStop(.62,'rgba(9,14,38,.46)');pocket.addColorStop(1,'rgba(15,20,48,.18)');
+      c.save();c.fillStyle=pocket;c.fillRect(x,top,w,h);c.restore();
+      // Arena V3 art remains decorative only. It is now smaller, dimmer and seated on the floor
+      // so the structure reads as part of La Cour de l'Aube rather than a pasted foreground card.
+      const im=this.images[asset];
+      if(im){
+        const artW=Math.max(220,w*1.38),artH=h+18;
+        const artX=left?C.goalLeft-artW+15:C.goalRight-15;
+        const artY=bottom-artH+10;
+        c.save();c.globalAlpha=.84;c.drawImage(im,artX,artY,artW,artH);c.restore();
+      }
+      // Soft floor reflection visually anchors each cage without changing collisions.
+      const glowX=left?0:C.goalRight;
+      const glow=c.createLinearGradient(glowX,bottom,glowX+(left?w:-w),bottom);
+      glow.addColorStop(0,color+'55');glow.addColorStop(1,color+'00');
+      c.save();c.globalAlpha=.42;c.fillStyle=glow;c.fillRect(x,bottom-8,w,18);c.restore();
+      // Thin gameplay-readable rim remains visible, but no longer dominates the artwork.
+      c.save();c.strokeStyle=color;c.lineWidth=2;c.shadowColor=color;c.shadowBlur=5;
+      c.beginPath();
+      if(left){c.moveTo(C.goalLeft,top);c.lineTo(0,top);c.lineTo(0,bottom);c.lineTo(C.goalLeft,bottom);}
+      else{c.moveTo(C.goalRight,top);c.lineTo(C.width,top);c.lineTo(C.width,bottom);c.lineTo(C.goalRight,bottom);}
+      c.stroke();c.restore();
+    };
+    draw('left','#4ad8ff','goalV3Blue');draw('right','#ff5c70','goalV3Red');
+  }
   fluidIndicator(player,control){
     const anchor=resolveFluidContactIndicator(player,control);if(!anchor)return;const c=this.ctx;const {x,y,direction,charge}=anchor;
     c.save();c.translate(x,y);c.rotate(Math.atan2(direction.y,direction.x));c.lineJoin='round';c.shadowColor='#43dcff';c.shadowBlur=6+8*charge;
@@ -85,10 +118,17 @@ export class Renderer{
     const camera=this.camera.update(m,mobile,dt);c.save();
     const fluidW=86*(C.fluidVisualScale||1),fluidH=96*(C.fluidVisualScale||1);
     if(mobile){c.translate(C.width/2,C.height/2);c.scale(camera.zoom,camera.zoom);c.translate(-camera.x,-camera.y);}
-    const bg=this.images.background;if(bg){const s=Math.max(C.width/bg.width,C.height/bg.height);c.drawImage(bg,(C.width-bg.width*s)/2,0,bg.width*s,bg.height*s);}c.fillStyle='#080c2350';c.fillRect(0,0,C.width,C.height);
-    const grad=c.createLinearGradient(0,C.floor,0,C.height);grad.addColorStop(0,'#131735cc');grad.addColorStop(1,'#080e22');c.fillStyle=grad;c.fillRect(0,C.floor,C.width,C.height-C.floor);c.strokeStyle='#71ddff90';c.lineWidth=2;c.beginPath();c.moveTo(0,C.floor);c.lineTo(C.width,C.floor);c.stroke();
-    this.goalRamp('rampLeft');this.goalRamp('rampRight',true);
-    this.goalGate('left','left');this.goalGate('right','right');if(!OPEN_ARENA){this.fit('platform',285,380,230,96);this.fit('platform',765,380,230,96);this.fit('obstacle',496,570,288,89);}
+    const bg=this.images.background;if(bg){
+      // Arena 02 background is authored at the same 16:9 ratio as the gameplay canvas.
+      // Draw it edge-to-edge so the painted midfield, side walls and goal mouths stay aligned.
+      c.drawImage(bg,0,0,C.width,C.height);
+    }
+    // Keep the complete painted pitch visible. The old dark foreground strip made Fluid/Heavy
+    // look as if they were standing in front of the arena instead of on its midfield plane.
+    c.fillStyle='#080c2318';c.fillRect(0,0,C.width,C.height);
+    // Arena 02 uses one complete illustration (floor, walls and vertical goals).
+    // Goal/floor/ceiling collisions remain handled by arena.js; no separate goal artwork is overlaid.
+
     for(const p of [m.player,m.bot].filter(Boolean)){const h=96;
       if(p.skin==='fluid'&&(!p.grounded||p.contactSurface==='ceiling')){
         const cache=this.fluidVisuals.get(p)||{};this.fluidVisuals.set(p,cache);

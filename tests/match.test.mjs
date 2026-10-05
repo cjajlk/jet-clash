@@ -22,14 +22,20 @@ test('déplacement, saut, jetpack, recharge et égalité des capacités',()=>{
 test('saut : premier appui, maintien sans répétition, second appui aérien et consommation unique',()=>{
   const p=createPlayer('fluid');p.grounded=true;drive(p,{jump:true},C.step);assert.ok(p.vy<0);const afterGround=p.vy;drive(p,{jump:true},C.step);assert.equal(p.vy,afterGround+C.gravity*C.step);drive(p,{jump:false},C.step);const beforeAir=p.vy;drive(p,{jump:true},C.step);assert.ok(p.vy<beforeAir);assert.equal(p.impulseReady,false);const afterAir=p.vy;drive(p,{jump:false},C.step);drive(p,{jump:true},C.step);assert.ok(Math.abs(p.vy-(afterAir+2*C.gravity*C.step))<1e-9);
 });
-test('double saut : orientation quasi verticale reste neutre et orientation forte devient flip',()=>{
-  const neutral=createPlayer('fluid');neutral.grounded=false;neutral.jumpReady=false;neutral.impulseReady=true;neutral.footX=.08;neutral.footY=.99;drive(neutral,{jump:true},C.step);assert.equal(neutral.vx,0);assert.ok(neutral.vy<0);
-  const flip=createPlayer('fluid');flip.grounded=false;flip.jumpReady=false;flip.impulseReady=true;flip.footX=1;flip.footY=0;flip.rotateHeld=true;drive(flip,{jump:true,rotate:true},C.step);assert.ok(flip.vx>0);assert.ok(flip.impulseReady===false);
+test('double saut : orientation seule/ROT reste neutre, stick directionnel déclenche le flip',()=>{
+  for(const rotate of [false,true]){const neutral=createPlayer('fluid');neutral.grounded=false;neutral.jumpReady=false;neutral.impulseReady=true;neutral.footX=1;neutral.footY=0;drive(neutral,{jump:true,rotate},C.step);assert.equal(neutral.vx,0);assert.ok(neutral.vy<0);}
+  const flip=createPlayer('fluid');flip.grounded=false;flip.jumpReady=false;flip.impulseReady=true;drive(flip,{jump:true,directionX:1,directionY:0},C.step);assert.ok(flip.vx>0);assert.equal(flip.impulseReady,false);assert.ok(flip.flipTimer>0);assert.equal(flip.flipX,1);
 });
 test('orientation aérienne progressive et impulsion courte distincte du Jetpack',()=>{
   const p=createPlayer('fluid');p.grounded=false;p.jumpReady=false;p.impulseReady=true;p.footX=0;p.footY=1;p.x=300;p.y=260;
   drive(p,{aimX:1,aimY:-1,jump:true},C.step);
   assert.ok(p.vx>0);assert.ok(p.vy<0);assert.equal(p.impulseReady,false);assert.ok(p.impulseCooldown>0);assert.ok(p.footY>0&&p.footY<1);
+});
+
+test('inertie aérienne : l’élan horizontal persiste lorsque le stick est relâché',()=>{
+  const p=createPlayer('fluid');p.grounded=false;p.vx=240;p.vy=-80;
+  for(let i=0;i<30;i++)drive(p,{},C.step);
+  assert.ok(p.vx>185);
 });
 test('orientation aérienne : retour vertical progressif quand l’entrée devient neutre',()=>{
   const p=createPlayer('fluid');p.grounded=false;p.x=300;p.y=260;
@@ -40,25 +46,17 @@ test('orientation aérienne : retour vertical progressif quand l’entrée devie
   assert.ok(p.footY>tilted);
   assert.ok(p.footY>0);
 });
-test('orientation aérienne : le tête-en-bas volontaire reste possible après maintien suffisant',()=>{
-  const p=createPlayer('fluid');p.grounded=false;p.x=300;p.y=260;
-  for(let i=0;i<72;i++)drive(p,{aimX:0,aimY:-1,rotate:true},C.step);
-  assert.ok(p.flipIntent>=C.airFlipIntentTime);
-  assert.ok(p.footY<0);
+test('orientation aérienne : le stick 360° oriente le corps sans modifier la trajectoire',()=>{
+  const p=createPlayer('fluid');p.grounded=false;p.x=300;p.y=260;p.vx=90;p.vy=-40;const vx=p.vx;
+  for(let i=0;i<24;i++)drive(p,{directionX:0,directionY:1},C.step);
+  assert.ok(p.footY<0);assert.ok(p.vx<=vx);
 });
-test('rotation dédiée : le stick dirige l’orientation seulement quand ROT est maintenu',()=>{
+test('rotation dédiée : ROT reste disponible mais n’est plus requis pour orienter ni pour décider du flip',()=>{
   const p=createPlayer('fluid');p.grounded=false;p.x=300;p.y=260;
-  for(let i=0;i<24;i++)drive(p,{axis:1},C.step);
-  assert.ok(p.footY>0.7);
-  const lean=p.footY;
-  drive(p,{axis:1,rotate:true},C.step);
-  assert.ok(p.rotateHeld);
-  assert.ok(p.footY>=lean);
-  for(let i=0;i<36;i++)drive(p,{axis:0,rotate:true,aimX:0,aimY:-1},C.step);
-  assert.ok(p.flipIntent>=C.airFlipIntentTime);
-  assert.ok(p.footY<0);
-  drive(p,{axis:1},C.step);
-  assert.equal(p.rotateHeld,false);
+  for(let i=0;i<24;i++)drive(p,{directionX:1,directionY:0},C.step);
+  assert.ok(Math.abs(p.footX)>0.7);
+  drive(p,{directionX:0,directionY:-1,rotate:true},C.step);assert.ok(p.rotateHeld);
+  const q=createPlayer('fluid');q.grounded=false;q.jumpReady=false;q.impulseReady=true;drive(q,{jump:true,rotate:true},C.step);assert.equal(q.vx,0);assert.ok(q.vy<0);
 });
 test('sol et plafond : recharge seulement quand les pieds sont orientés vers la surface',()=>{
   const floor=createPlayer('fluid');floor.x=400;floor.grounded=false;floor.jumpReady=false;floor.impulseReady=false;floor.footX=0;floor.footY=1;floor.y=C.floor-floor.h/2-1;floor.vy=200;movePlayer(floor,solids,.02);assert.ok(floor.jumpReady&&floor.impulseReady);
@@ -105,9 +103,24 @@ test('rejouer, retour menu et conservation du profil',()=>{const m=playing();m.s
 test('profil persistant, seuil de niveau et idempotence après rechargement',()=>{const storage=memory(),p=new ProfileStore(storage);p.data.xp=990;assert.equal(p.award('match-1',2,true),170);assert.equal(p.level,2);const reloaded=new ProfileStore(storage);assert.equal(reloaded.data.xp,1160);assert.equal(reloaded.award('match-1',2,true),0);});
 test('stockage refusé ou corrompu ne bloque pas le match',()=>{const p=new ProfileStore({getItem(){return 'bad'},setItem(){throw Error()}});assert.ok(p.warning);assert.equal(p.award('x',1,false),110);assert.equal(p.award('x',1,false),0);});
 test('trois bots : décisions bornées, mêmes paramètres physiques',()=>{for(const level of ['easy','normal','elite']){const ai=new Bot(level,()=>.5),p=createPlayer('heavy'),ball=createBall();p.x=900;p.y=606;p.grounded=true;for(let i=0;i<500;i++){const input=ai.update(p,ball,C.step);assert.ok([-1,0,1].includes(input.axis));drive(p,input,C.step);movePlayer(p,solids,C.step);assert.ok(Math.abs(p.vx)<=C.runSpeed);assert.ok(p.fuel>=0&&p.fuel<=100);}}});
-test('le bot rejoint une balle sur le bord de l’obstacle ou le toit du but',()=>{
-  for(const [x,y,bx] of [[748,601,795],[1250,C.goalTop-15-C.ballRadius,1120]]){
+test('le bot rejoint une balle libre ou proche du montant haut du but',()=>{
+  for(const [x,y,bx] of [[748,520,795],[1250,C.goalTop-15-C.ballRadius,1120]]){
     const m=playing();m.ai=new Bot('elite',()=>.5);Object.assign(m.bot,{x:bx,y:606,vx:0,vy:0});Object.assign(m.ball,{x,y,vx:0,vy:0});
     advance(m,20);assert.ok(Math.abs(m.ball.x-x)>30||m.score.player+m.score.bot>0,`balle bloquée à ${x}`);
   }
+});
+
+test('double saut neutre relance une vraie montee sans casser inertie horizontale',()=>{
+  const p=createPlayer('fluid');p.grounded=false;p.jumpReady=false;p.impulseReady=true;p.vx=137;p.vy=120;
+  drive(p,{jump:true},C.step);
+  assert.ok(p.vx>130); // only the normal tiny air drag applies; the double jump does not erase horizontal inertia
+  assert.equal(p.vy,-C.maxRise);
+  assert.equal(p.impulseReady,false);
+});
+
+test('Jet V4 : Fluid propulse dans son orientation aerienne sans effacer son inertie',()=>{
+  const p=createPlayer('fluid');p.grounded=false;p.contactSurface=null;p.footX=-1;p.footY=0;p.vx=80;p.vy=0;
+  drive(p,{boost:true,directionX:1,directionY:0},C.step);
+  assert.ok(p.vx>80);
+  assert.ok(p.fuel<100);
 });

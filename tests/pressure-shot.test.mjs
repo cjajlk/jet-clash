@@ -6,9 +6,9 @@ import { CONFIG as C } from '../src/config.js';
 import { hitPlayer } from '../src/physics.js';
 function duel(){
   const m=new Match(new ProfileStore({getItem(){return null;},setItem(){}}));m.start();m.state=STATES.PLAYING;
-  Object.assign(m.player,{x:273,y:606,vx:0,vy:0,grounded:true,facing:1});
-  Object.assign(m.ball,{x:339,y:596,vx:0,vy:0});
-  Object.assign(m.bot,{x:405,y:606,vx:0,vy:0,grounded:true,facing:-1});
+  Object.assign(m.player,{x:285,y:606,vx:0,vy:0,grounded:true,facing:1});
+  Object.assign(m.ball,{x:323,y:596,vx:0,vy:0});
+  Object.assign(m.bot,{x:361,y:606,vx:0,vy:0,grounded:true,facing:-1});
   // Test fixture only: sustained opposing inputs, production AI is unchanged.
   m.ai.update=()=>({axis:-1});return m;
 }

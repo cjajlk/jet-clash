@@ -6,26 +6,20 @@ import { createPlayer } from '../src/player.js';
 import { collideBall,movePlayer } from '../src/physics.js';
 import { Renderer } from '../src/renderer.js';
 
-test('arène ouverte : seuls les trois solides intérieurs sont désactivés, originaux conservés',()=>{
-  assert.equal(OPEN_ARENA,true);
-  assert.equal(classicSolids.filter(s=>['platform','obstacle'].includes(s.kind)).length,3);
-  assert.deepEqual(solids,classicSolids.filter(s=>!['platform','obstacle'].includes(s.kind)));
-  for(const s of solids)assert.ok(classicSolids.includes(s),'same floor and goal objects');
+test('arène V2 : layout ouvert sans anciens solides intérieurs ni rampes',()=>{
+  assert.equal(OPEN_ARENA,true);assert.deepEqual(solids,classicSolids);
+  assert.equal(solids.some(s=>['platform','obstacle','goalPocket'].includes(s.kind)),false);
+  assert.equal(solids.filter(s=>s.kind==='goalRoof').length,2);
+  assert.equal(solids.filter(s=>s.kind==='goalBase').length,2);
 });
-for(const [name,x,y] of [['plateforme gauche',400,400],['plateforme droite',880,400],['centre',640,596]]){
-  test(`arène ouverte : balle libre à travers ${name}`,()=>{
-    const ball=createBall();Object.assign(ball,{x,y,vx:120,vy:80});const before={...ball};collideBall(ball,solids);assert.deepEqual(ball,before);
-  });
-  for(const skin of ['fluid','heavy'])test(`arène ouverte : ${skin} libre à travers ${name}`,()=>{
-    const p=createPlayer(skin);Object.assign(p,{x,y,vx:100,vy:-100});movePlayer(p,solids,.05);
-    assert.equal(p.x,x+5);assert.equal(p.y,y-5);assert.equal(p.vx,100);assert.equal(p.vy,-100);
-  });
+for(const [name,x,y] of [['ancienne plateforme gauche',400,400],['ancienne plateforme droite',880,400],['ancien centre',640,596]]){
+  test(`arène V2 : balle libre à travers ${name}`,()=>{const ball=createBall();Object.assign(ball,{x,y,vx:120,vy:80});const before={...ball};collideBall(ball,solids);assert.deepEqual(ball,before);});
+  for(const skin of ['fluid','heavy'])test(`arène V2 : ${skin} libre à travers ${name}`,()=>{const p=createPlayer(skin);Object.assign(p,{x,y,vx:100,vy:-100});movePlayer(p,solids,.05);assert.equal(p.x,x+5);assert.equal(p.y,y-5);});
 }
-test('arène ouverte : le rendu conserve les deux cages/rampes et ne dessine aucun intérieur',()=>{
+test('arène V2 : rendu utilise les cages verticales et aucune rampe',()=>{
   const noop=()=>{},ctx=new Proxy({createLinearGradient:()=>({addColorStop:noop})},{get:(o,k)=>o[k]??noop,set:(o,k,v)=>(o[k]=v,true)});
-  const renderer=new Renderer({getContext:()=>ctx}),draws=[];
-  renderer.camera.update=()=>({zoom:1,x:640,y:360});renderer.fit=key=>draws.push(key);renderer.goalRamp=key=>draws.push(key);renderer.goalGate=key=>draws.push(key);
+  const renderer=new Renderer({getContext:()=>ctx}),calls=[];
+  renderer.camera.update=()=>({zoom:1,x:640,y:360});renderer.arenaV2Goals=()=>calls.push('arenaV2Goals');renderer.goalRamp=()=>calls.push('ramp');renderer.goalGate=()=>calls.push('oldGate');renderer.fit=key=>calls.push(key);
   renderer.render({player:createPlayer('fluid'),bot:createPlayer('heavy'),ball:createBall()});
-  for(const key of ['left','right','rampLeft','rampRight'])assert.ok(draws.includes(key));
-  assert.ok(!draws.includes('platform'));assert.ok(!draws.includes('obstacle'));
+  assert.ok(calls.includes('arenaV2Goals'));assert.ok(!calls.includes('ramp'));assert.ok(!calls.includes('oldGate'));assert.ok(!calls.includes('platform'));assert.ok(!calls.includes('obstacle'));
 });

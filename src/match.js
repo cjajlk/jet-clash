@@ -59,14 +59,14 @@ export class Match {
     collideBall(this.ball,solids);
     this.control.impact(beforeCollision,this.ball,false);
     const flipStrike=this.player.flipTimer>0&&!this.player.flipHit?{x:this.player.flipX,y:this.player.flipY}:null;
-    const playerContact=hitPlayer(this.ball,this.player,this.control.owned&&!this.control.pressure?BALL_CONTROL.contactBounce:.88,flipStrike);
+    const playerContact=hitPlayer(this.ball,this.player,this.control.softContact&&!this.control.pressure?BALL_CONTROL.contactBounce:.88,flipStrike);
     if(flipStrike&&playerContact){this.player.flipHit=true;this.control.release();}
     const beforeOtherContacts={vx:this.ball.vx,vy:this.ball.vy};
     const heavyContact=this.bot?hitPlayer(this.ball,this.bot):false;
     collideBall(this.ball,solids);
     if(this.recoverOutsideBall())return;
     this.control.impact(beforeOtherContacts,this.ball,heavyContact);
-    this.control.finishContacts(this.ball);
+    this.control.finishContacts(this.ball,this.player,playerContact);
     const scorer=goalScorer(this.ball); if (scorer) this.goal(scorer);
   }
   recoverOutsideBall(){

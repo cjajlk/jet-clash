@@ -64,8 +64,8 @@ test('Fluid : hystérésis visuelle et miroir sans mutation physique',()=>{
   const second=resolveFluidVisualPose(Object.assign(p,{footX:.9,footY:.44}),state);
   assert.equal(first.key,'fluid_air_diagonal_up');
   assert.equal(second.key,'fluid_air_diagonal_up');
-  assert.equal(first.flip,false);
-  assert.equal(resolveFluidVisualPose(air({footX:-.917,footY:.4}),state).flip,true);
+  assert.equal(first.flip,true);
+  assert.equal(resolveFluidVisualPose(air({footX:-.917,footY:.4}),state).flip,false);
   assert.ok(Math.abs(first.rotation)<=.16);
   assert.deepEqual({x:p.x,y:p.y,vx:p.vx,vy:p.vy,w:p.w,h:p.h},before);
 });

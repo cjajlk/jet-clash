@@ -13,8 +13,9 @@ export function createPlayer(skin) {
     flipHeld:false,flipReady:true,flipTimer:0,flipHit:false,flipX:1,flipY:0 };
 }
 export function drive(body, input, dt) {
-  const rawTouch=input.touchDirection,rawAim=normalize(input.aimX,input.aimY);
-  const rawDirection=rawAim||normalize(rawTouch?.x,rawTouch?.y);
+  const rawTouch=input.touchDirection;
+  const rawAim=normalize(input.aimX,input.aimY);
+  const rawDirection=normalize(input.directionX,input.directionY)||normalize(rawTouch?.x,rawTouch?.y)||rawAim;
   const support=body.contactSurface;
   const supported=body.grounded||!!support;
   const horizontal=body.facing||1;
@@ -33,10 +34,13 @@ export function drive(body, input, dt) {
   const control=normalize(controlDirection.x,controlDirection.y)||{x:horizontal,y:0};
   body.controlX=control.x;body.controlY=control.y;
   body.rotateHeld=rotationHeld;
-  const wantsFlip=!supported&&rotationHeld&&!!rawDirection&&rawDirection.y<C.airFlipIntentY;
+  const wantsFlip=!supported&&!!rawDirection;
   body.flipIntent=wantsFlip?Math.min(C.airFlipIntentTime,body.flipIntent+dt):Math.max(0,body.flipIntent-dt);
-  const visualTarget=supported?(support==='ceiling'?{x:0,y:-1}:{x:0,y:1}):rotationHeld?(rawDirection||{x:body.footX||0,y:body.footY||1}):(!rawDirection?{x:0,y:1}:body.flipIntent>=C.airFlipIntentTime?control:normalize(control.x*C.airLeanFactor,1-Math.abs(control.x)*C.airLeanDepth)||{x:0,y:1});
-  const turnRate=supported?C.groundOrientationRate:rotationHeld?C.airRotateRate:body.flipIntent>=C.airFlipIntentTime?C.airOrientationRate:C.airReturnOrientationRate;
+  // footX/footY points toward the feet, so the body/head faces opposite the stick.
+  // Trajectory is untouched: the stick changes orientation, not existing velocity.
+  const stickFootTarget=rawDirection?{x:-rawDirection.x,y:-rawDirection.y}:null;
+  const visualTarget=supported?(support==='ceiling'?{x:0,y:-1}:{x:0,y:1}):(stickFootTarget||(rotationHeld?{x:body.footX||0,y:body.footY||1}:{x:0,y:1}));
+  const turnRate=supported?C.groundOrientationRate:rawDirection?(rotationHeld?C.airRotateRate:C.airOrientationRate):C.airReturnOrientationRate;
   const visual=normalize(body.footX,body.footY)||{x:1,y:0};
   const visualEase=1-Math.exp(-turnRate*dt);
   const currentAngle=Math.atan2(visual.y,visual.x),targetAngle=Math.atan2(visualTarget.y,visualTarget.x);
@@ -46,13 +50,13 @@ export function drive(body, input, dt) {
   const axis = Math.max(-1, Math.min(1, input.axis || 0));
   const accel = supported ? C.runAcceleration : C.airAcceleration;
   body.vx += axis * accel * dt;
-  if (!axis) body.vx *= Math.exp(-(supported ? 13 : 1.5) * dt);
+  if (!axis) body.vx *= Math.exp(-(supported ? 13 : C.airHorizontalDrag) * dt);
   body.vx = Math.max(-C.runSpeed, Math.min(C.runSpeed, body.vx));
   if (axis) body.facing = Math.sign(axis);
   body.impulseCooldown=Math.max(0,body.impulseCooldown-dt);
   const airLook=normalize(body.footX,body.footY)||{x:0,y:1};
   const orientedImpulse=normalize(airLook.x,-Math.abs(airLook.y))||{x:0,y:-1};
-  const directionalImpulse=rawDirection&&Math.abs(rawDirection.x)>.18?normalize(rawDirection.x,-Math.abs(rawDirection.y))||orientedImpulse:orientedImpulse;
+  const directionalImpulse=rawDirection||orientedImpulse;
   if (input.jump && !body.jumpHeld) {
     if (supported && body.jumpReady) {
       body.vy = support==='ceiling' ? C.jumpSpeed : -C.jumpSpeed;
@@ -62,10 +66,25 @@ export function drive(body, input, dt) {
       body.impulseReady = true;
       body.flipIntent = 0;
     } else if (body.impulseReady && body.impulseCooldown <= 0) {
-      const directional = body.rotateHeld||body.flipIntent>=C.airFlipIntentTime||Math.abs(airLook.x)>.45||(rawDirection&&Math.abs(rawDirection.x)>.18);
-      const impulse = directional?directionalImpulse:{x:0,y:-1};
-      body.vx += impulse.x * C.airImpulseSpeed;
-      body.vy += impulse.y * C.airImpulseSpeed;
+      // Rule: neutral second press = neutral double jump; stick + second press = directional flip.
+      const impulse = rawDirection?directionalImpulse:{x:0,y:-1};
+      if(rawDirection){
+        body.vx += impulse.x * C.airImpulseSpeed;
+        body.vy += impulse.y * C.airImpulseSpeed;
+      } else {
+        // A neutral double jump starts a fresh upward stage. Adding the old
+        // 260 impulse while already at maxRise was immediately swallowed by
+        // the vertical speed clamp, so CJ could barely gain extra height.
+        // Restarting the normal jump rise preserves horizontal inertia while
+        // guaranteeing a real second tier of altitude, including on descent.
+        body.vy = -C.jumpSpeed;
+      }
+      if(rawDirection){
+        // A directional second jump is the flip itself: animate the full roll and
+        // expose its direction to the ball-contact strike during the same window.
+        body.flipTimer=C.airFlipDuration;body.flipReady=false;body.flipHit=false;
+        body.flipX=impulse.x;body.flipY=impulse.y;
+      }
       body.impulseReady = false;
       body.impulseCooldown = C.airImpulseCooldown;
     }
@@ -74,10 +93,15 @@ export function drive(body, input, dt) {
   body.boosting = !!input.boost && body.fuel >= C.fuelUse * dt;
   body.vy += C.gravity * dt;
   if (body.boosting) {
-    // Only an explicit touch vector redirects airborne thrust. Ground takeoff,
-    // keyboard, controller, fuel and thrust magnitude retain their old rules.
-    if(rawDirection&&!supported){body.vx+=rawDirection.x*C.thrust*dt;body.vy+=rawDirection.y*C.thrust*dt;}
-    else body.vy -= C.thrust * dt;
+    // Jet V4: in the air, thrust follows Fluid's actual facing/orientation instead
+    // of always pulling vertically.  The feet vector points away from the head,
+    // therefore the propulsion direction is its opposite. Touch keeps its direct
+    // 360° vector so the existing mobile control remains immediate.
+    const touchJet=normalize(rawTouch?.x,rawTouch?.y);
+    const bodyJet=normalize(-body.footX,-body.footY)||{x:0,y:-1};
+    const jetDirection=!supported&&body.skin==='fluid'?(touchJet||bodyJet):{x:0,y:-1};
+    body.vx += jetDirection.x * C.thrust * dt;
+    body.vy += jetDirection.y * C.thrust * dt;
     body.fuel = Math.max(0, body.fuel - C.fuelUse * dt);
   }
   else if (!input.boost) body.fuel = Math.min(100, body.fuel + C.fuelRecharge * dt);
