@@ -34,6 +34,9 @@ export class GamepadInput {
     this.needsNeutral=this.needsNeutral||!!(this.previous.axis||this.previous.directionY||this.previous.jump||this.previous.boost||this.previous.rotate);
     this.previous=neutral();this.previousReset=false;this.axisAtActivity=0;
   }
+  resume(){
+    this.needsNeutral=false;this.previous=neutral();this.previousReset=false;this.axisAtActivity=0;
+  }
   read(){
     let pads=[];
     try{

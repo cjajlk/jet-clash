@@ -10,9 +10,36 @@ function rechargeSupport(p) {
   if (p.contactSurface === 'ceiling' && p.footY < -.65) { p.jumpReady = true; p.impulseReady = true; }
 }
 function overlaps(p, r) { return !r.vertices && p.x + p.w/2 > r.x && p.x - p.w/2 < r.x+r.w && p.y+p.h/2 > r.y && p.y-p.h/2 < r.y+r.h; }
+function surfaceYAt(points,x){
+  if(!points?.length)return null;
+  for(let i=0;i<points.length-1;i++){
+    const a=points[i],b=points[i+1],lo=Math.min(a.x,b.x),hi=Math.max(a.x,b.x);
+    if(x<lo||x>hi)continue;
+    const t=Math.abs(b.x-a.x)<1e-9?0:(x-a.x)/(b.x-a.x);
+    return a.y+(b.y-a.y)*t;
+  }
+  return null;
+}
 function resolvePlayerRamps(p,solids){
   for(const shape of solids){
     if(!shape.vertices)continue;
+    // Goal approaches are treated as a continuous rideable surface for the player.
+    // This avoids the SAT rectangle snagging on the steep first segment and creating
+    // the invisible wall CJ observed in front of both goals.
+    if(shape.kind==='goalBase'&&shape.surface){
+      const surfaceY=surfaceYAt(shape.surface,p.x);
+      if(surfaceY!=null){
+        const feet=p.y+p.h/2;
+        const wasAbove=p.y-p.h/2<surfaceY;
+        if(wasAbove&&feet>=surfaceY-3&&p.vy>=-90){
+          p.y=surfaceY-p.h/2;
+          if(p.vy>0)p.vy=0;
+          p.grounded=true;p.contactSurface='floor';
+          rechargeSupport(p);
+        }
+      }
+      continue;
+    }
     const hit=boxPolygonContact(p,shape.collisionVertices||shape.vertices,shape.playerContactEdges||shape.contactEdges);if(!hit)continue;
     p.x+=hit.nx*hit.depth;p.y+=hit.ny*hit.depth;
     const normal=p.vx*hit.nx+p.vy*hit.ny;

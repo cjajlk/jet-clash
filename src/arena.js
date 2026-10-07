@@ -1,14 +1,30 @@
 import { CONFIG as C } from './config.js';
-// Arena 02: open field with recessed vertical goals.
+// Arena 02: open field with recessed vertical goals and smooth Sideswipe-like approaches.
 export const OPEN_ARENA = true;
+
+const leftGoalBaseVertices = [
+  { x: 0, y: C.goalBottom },
+  { x: C.goalLeft, y: C.goalBottom },
+  { x: C.goalLeft + 30, y: C.goalBottom + 15 },
+  { x: C.goalLeft + 60, y: C.goalBottom + 40 },
+  { x: C.goalLeft + 90, y: C.goalBottom + 85 },
+  { x: C.goalLeft + 120, y: C.goalBottom + 140 },
+  { x: C.goalLeft + 155, y: C.floor },
+  { x: 0, y: C.floor },
+];
+const rightGoalBaseVertices = leftGoalBaseVertices
+  .map(p => ({ x: C.width - p.x, y: p.y }))
+  .reverse();
+
 export const classicSolids = [
   { x: 0, y: C.floor, w: C.width, h: 100, kind: 'floor' },
-  // Vertical goal frames. The space between goalTop and goalBottom is a real
-  // playable pocket: ball AND players can fly inside it.
+  // The opening between goalTop and goalBottom stays fully playable.
   { x: 0, y: C.ceiling, w: C.goalLeft, h: C.goalTop-C.ceiling, kind: 'goalRoof', goalBoundary: true },
   { x: C.goalRight, y: C.ceiling, w: C.width-C.goalRight, h: C.goalTop-C.ceiling, kind: 'goalRoof', goalBoundary: true },
-  { x: 0, y: C.goalBottom, w: C.goalLeft, h: C.floor-C.goalBottom, kind: 'goalBase', goalBoundary: true },
-  { x: C.goalRight, y: C.goalBottom, w: C.width-C.goalRight, h: C.floor-C.goalBottom, kind: 'goalBase', goalBoundary: true },
+  // Curved-looking convex ramps replace the former rectangular bases. This removes
+  // the invisible vertical wall at the mouth and lets Fluid ride smoothly toward the goal.
+  { vertices: leftGoalBaseVertices, surface: leftGoalBaseVertices.slice(0,-1), kind: 'goalBase', goalBoundary: true, side: 'left' },
+  { vertices: rightGoalBaseVertices, surface: rightGoalBaseVertices.slice(1).reverse(), kind: 'goalBase', goalBoundary: true, side: 'right' },
 ];
 export const solids = classicSolids;
 export function resetPositions(player, bot, ball) {

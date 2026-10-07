@@ -36,6 +36,7 @@ export class PlayerInput {
     target.addEventListener('blur',()=>this.gamepad.clear());
   }
   clear(){this.keyboard.clear();this.gamepad.clear();this.ball.clear();}
+  resumeGamepad(){this.gamepad.resume?.();}
   readBallControls(){return this.ball.read(this.gamepad.index);}
   read(){
     const pad=this.gamepad.read(),keyboard=this.keyboard.read();

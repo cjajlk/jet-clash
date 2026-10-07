@@ -104,6 +104,6 @@ export function drive(body, input, dt) {
     body.vy += jetDirection.y * C.thrust * dt;
     body.fuel = Math.max(0, body.fuel - C.fuelUse * dt);
   }
-  else if (!input.boost) body.fuel = Math.min(100, body.fuel + C.fuelRecharge * dt);
+  else if (!input.boost && supported) body.fuel = Math.min(100, body.fuel + C.fuelRecharge * dt);
   body.vy = Math.max(-C.maxRise, Math.min(850, body.vy));
 }

@@ -8,6 +8,7 @@ import { HUD } from './hud.js';
 import { TouchControls } from './touch-controls.js';
 import { combineTouch } from './touch-input.js';
 import { MobileMenu } from './mobile-menu.js';
+import { controlSettings } from './control-settings.js';
 const canvas=document.getElementById('arena'),renderer=new Renderer(canvas),hud=new HUD(),input=new PlayerInput(),controlsHelp=new ControlsHelp();
 const mobile=new TouchControls(document.getElementById('game-shell'));
 let storage;try{storage=localStorage;}catch{}
@@ -20,7 +21,7 @@ mobileMenu.update(match,false,'Chargement de l’arène…');
 start.addEventListener('click',launch);document.getElementById('replay').addEventListener('click',launch);document.getElementById('back-menu').addEventListener('click',()=>{input.clear();match.menu();hud.update(match);});
 let last=performance.now(),accumulator=0,paused=false,touchCancelled=false,touchReleaseAim=null;
 function setPaused(value){paused=value;if(value)match.control.release();input.clear();mobile.clear();accumulator=0;last=performance.now();document.getElementById('pause').hidden=!value||[STATES.MENU,STATES.POST_MATCH].includes(match.state);}
-window.addEventListener('blur',()=>setPaused(true));window.addEventListener('focus',()=>setPaused(false));document.addEventListener('visibilitychange',()=>setPaused(document.hidden));
+window.addEventListener('blur',()=>setPaused(true));window.addEventListener('focus',()=>{input.resumeGamepad();setPaused(false);});document.addEventListener('visibilitychange',()=>{if(!document.hidden)input.resumeGamepad();setPaused(document.hidden);});document.addEventListener('fullscreenchange',()=>{input.resumeGamepad();canvas.focus();});
 try{await renderer.load();ready=true;start.disabled=false;start.textContent='ENTRER DANS L’ARÈNE →';document.getElementById('load-status').textContent='5 MIN · MORT SUBITE EN CAS D’ÉGALITÉ';}catch(error){document.getElementById('load-status').textContent=`Asset inaccessible : ${error.message}. Vérifie que le ZIP est entièrement extrait.`;start.textContent='CHARGEMENT IMPOSSIBLE';}
 function frame(now){
   const delta=Math.min((now-last)/1000,0.1);last=now;
@@ -31,7 +32,15 @@ function frame(now){
   // Keep the release direction until a physics tick consumes the release,
   // including on screens whose refresh rate exceeds the physics rate.
   const released=touchReleaseAim?{aimX:touchReleaseAim.x,aimY:touchReleaseAim.y,aimActive:true}:{};
-  const controls=combineTouch({...input.read(),...input.readBallControls()},{...touch,...released,cancelShot:touchCancelled});
+  const playerControls=input.read();
+  const ballControls=input.readBallControls();
+  // If a saved/custom gamepad profile assigns TIR and FLIP to the same button,
+  // prioritise the aimed shot while the button is held. This prevents the flip
+  // action from rotating Fluid during charge/aim and restores predictable 360° aiming.
+  if(input.gamepad.status.connected&&ballControls.shoot&&controlSettings.gamepad.shoot===controlSettings.gamepad.rotate){
+    playerControls.rotate=false;
+  }
+  const controls=combineTouch({...playerControls,...ballControls},{...touch,...released,cancelShot:touchCancelled});
   controlsHelp.update(input);
   const gamepadActive=input.gamepad.status.connected;
   if(controls.resetBall&&match.training)match.resetTrainingBall();
