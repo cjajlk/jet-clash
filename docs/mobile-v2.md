@@ -20,9 +20,9 @@ Le mapping manette est désormais Croix/A pour saut et double saut, Rond/B pour 
 
 ## Caméra mobile
 
-`src/mobile-camera.js` : mode équilibré à 1,30× (+30 % de taille apparente par rapport au cadrage V1). Le zoom peut redescendre vers 1× lorsque les acteurs s’éloignent ; il suit les acteurs présents (Fluid et balle en entraînement, Fluid, Heavy et balle en duel) et inclut la bouche du but quand la balle approche d’une extrémité. Élargissement immédiat si nécessaire, recentrage et rapprochement progressifs. Un halo fin renforce la balle sur mobile.
+Le cadrage a depuis été remplacé par un suivi du joueur et du ballon, actif sur PC et mobile, avec zoom progressif jusqu’à 1,50× et repères pour les bots hors écran. Voir `follow-camera-v1.md` pour le comportement et les validations actuels. Le halo fin de la balle reste présent sur mobile.
 
-Le zoom est un changement de rendu global de la scène, sans modification des coordonnées gameplay. Le HUD ne zoome pas. Le PC reste à 1× avec son cadrage et ses tailles précédents. Les constantes proche/équilibré/large et la projection monde-écran préparent d’éventuelles options/indicateurs futurs ; aucun menu ni indicateur hors écran n’est ajouté.
+Le zoom reste un changement de rendu global de la scène, sans modification des coordonnées gameplay. Le HUD et les commandes restent fixes.
 
 ## Tests et lancement
 

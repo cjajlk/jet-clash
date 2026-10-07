@@ -129,9 +129,9 @@ export class Renderer{
     c.restore();
   }
   render(m,{mobile=false,dt=1/60}={}){const c=this.ctx;c.clearRect(0,0,C.width,C.height);
-    const camera=this.camera.update(m,mobile,dt);c.save();
+    const camera=this.camera.update(m,true,dt);c.save();
     const fluidW=86*(C.fluidVisualScale||1),fluidH=96*(C.fluidVisualScale||1);
-    if(mobile){c.translate(C.width/2,C.height/2);c.scale(camera.zoom,camera.zoom);c.translate(-camera.x,-camera.y);}
+    if(camera.active){c.translate(C.width/2,C.height/2);c.scale(camera.zoom,camera.zoom);c.translate(-camera.x,-camera.y);}
     const bg=this.images.background;if(bg){
       // Arena 02 background is authored at the same 16:9 ratio as the gameplay canvas.
       // Draw it edge-to-edge so the painted midfield, side walls and goal mouths stay aligned.
@@ -166,5 +166,30 @@ export class Renderer{
     const b=m.ball;c.save();c.translate(b.x,b.y);c.rotate(b.angle);this.fit(b.flash>0?'impact':'ball',-b.r,-b.r,b.r*2,b.r*2);c.restore();
     this.fluidIndicator(m.player,m.control);
     c.restore();
+    if(camera.active)this.offscreenPlayers(m);
+  }
+  offscreenPlayers(m){
+    const c=this.ctx,markers=[],size=Math.max(1,Math.min(2,C.width/(this.canvas.clientWidth||C.width)));
+    for(const p of m.players||[m.player,m.bot].filter(Boolean)){
+      if(p===m.player)continue;
+      const projected=this.camera.project(p.x,p.y);if(projected.visible)continue;
+      const side=projected.x<C.width/2?-1:1,x=side<0?28*size:C.width-28*size;
+      // Stack nearby indicators without covering the scoreboard or touch buttons.
+      let y=Math.max(180,Math.min(C.height-240,projected.y));
+      const preferred=y;
+      for(const offset of [0,-38,38,-76,76]){
+        const candidate=Math.max(180,Math.min(C.height-240,preferred+offset*size));
+        if(!markers.some(marker=>marker.side===side&&Math.abs(marker.y-candidate)<32*size)){y=candidate;break;}
+      }
+      markers.push({side,y});
+      const color=p.team==='player'?'#65e8ff':'#ff5b79';
+      c.save();c.fillStyle='#080c23e6';c.strokeStyle=color;c.lineWidth=2;
+      c.beginPath();c.arc(x,y,13*size,0,Math.PI*2);c.fill();c.stroke();
+      c.save();c.translate(x,y);c.rotate(Math.atan2(projected.y-y,projected.x-x));
+      c.fillStyle=color;c.beginPath();c.moveTo(7*size,0);c.lineTo(-3*size,-5*size);c.lineTo(-3*size,5*size);c.closePath();c.fill();c.restore();
+      c.fillStyle=color;
+      c.font=`bold ${11*size}px Segoe UI, sans-serif`;c.textAlign=side<0?'left':'right';
+      c.fillText(p.label||'BOT',x-side*20*size,y+4*size);c.restore();
+    }
   }
 }

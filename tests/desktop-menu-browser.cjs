@@ -15,6 +15,8 @@ const fs=require('node:fs');fs.mkdirSync('work',{recursive:true});
         const body=document.querySelector('.mm-body').getBoundingClientRect(),nav=document.querySelector('.mm-nav').getBoundingClientRect();
         if(body.left<nav.right-1&&body.bottom>nav.top+1)bad.push('navigation overlap');
         for(const el of document.querySelectorAll('.mm-header,.mm-nav,.mm-body,.mm-page-heading,.mm-preview,.mm-selected-reward,.mm-card,#mobile-play,#mobile-duel')){
+          // Scrollable cards may be below the viewport; their clipping container must fit.
+          if(el.matches('.mm-card')&&el.closest('.mm-challenges,.mm-options'))continue;
           const b=el.getBoundingClientRect();if(b.left<0||b.top<0||b.right>innerWidth+1||b.bottom>innerHeight+1)bad.push(el.className||el.id);
         }return bad;
       }),[]);
@@ -36,7 +38,7 @@ const fs=require('node:fs');fs.mkdirSync('work',{recursive:true});
       await page.setViewportSize(viewport);await fits();assert.ok(await page.evaluate(()=>window.menuBeforeResize===document.querySelector('#mobile-menu')));
       assert.equal(await page.evaluate(()=>localStorage.getItem('jetclash.etape2.profile.v1')),saved);
       await page.locator('.mm-nav [data-route="home"]').click();await page.click('#mobile-play');await fits();await page.click('[data-difficulty="easy"]');await page.click('#mobile-duel');
-      await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING');assert.equal(await root.isVisible(),false);assert.equal(await page.evaluate(()=>window.__jetclash.renderer.camera.zoom),1);assert.equal(await page.evaluate(()=>window.__jetclash.match.difficulty),'easy');
+      await page.waitForFunction(()=>window.__jetclash.match.state==='PLAYING');assert.equal(await root.isVisible(),false);await page.waitForFunction(()=>window.__jetclash.renderer.camera.zoom>1);assert.equal(await page.evaluate(()=>window.__jetclash.match.difficulty),'easy');
       await page.evaluate(()=>{const m=window.__jetclash.match;m.score.player=1;m.remaining=.01;});await page.waitForFunction(()=>window.__jetclash.match.state==='POST_MATCH');await page.click('#back-menu');await root.waitFor({state:'visible'});assert.equal(await root.getAttribute('data-route'),'home');await fits();
       assert.deepEqual(errors,[]);console.log(`Desktop ${viewport.width}x${viewport.height} PASS: all destinations, shared state on resize, duel, return, bounds, assets and console.`);await context.close();
     }

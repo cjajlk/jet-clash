@@ -102,9 +102,12 @@ test('2v2 : menu bloque le lancement sans assets ou hors du choix des modes',()=
   const model=new MobileMenuModel();assert.equal(model.canLaunch('2v2',true),false);model.navigate('modes');
   assert.equal(model.canLaunch('2v2',false),false);assert.equal(model.canLaunch('2v2',true),true);assert.equal(model.canLaunch('duel',true),true);
 });
-test('2v2 : cadrage mobile inclut les quatre joueurs sans les déplacer',()=>{
-  const m=make();m.players[2].x=20;m.players[3].x=C.width-20;const before=structuredClone(m.players),camera=new MobileCamera();camera.update(m,true,C.step);
-  for(const p of m.players)assert.equal(camera.project(p.x,p.y).visible,true);assert.deepEqual(m.players,before);
+test('2v2 : cadrage suit humain et ballon sans dézoomer pour les bots éloignés',()=>{
+  const m=playing();m.player.x=550;m.ball.x=600;m.ball.y=m.player.y;
+  m.players[2].x=20;m.players[3].x=C.width-20;const before=structuredClone(m.players),camera=new MobileCamera();
+  for(let i=0;i<120;i++)camera.update(m,true,C.step);
+  for(const p of [m.player,m.ball])assert.equal(camera.project(p.x,p.y).visible,true);
+  assert.ok(camera.zoom>1.4);assert.equal(camera.project(m.players[2].x,m.players[2].y).visible,false);assert.deepEqual(m.players,before);
 });
 test('2v2 : match complet avec buts physiques, chrono actif et récompense unique',()=>{
   const m=make();for(const entry of m.bots)entry.ai.base.random=()=>.5;

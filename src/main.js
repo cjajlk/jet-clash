@@ -26,7 +26,7 @@ const mobileMenu=new MobileMenu({enabled:true,onLaunch:payload=>launch(payload),
 mobileMenu.update(match,false,'Chargement de l’arène…');
 const returnToMenu=()=>{
   setPaused(false);touchCancelled=false;touchReleaseAim=null;
-  audio.stop();match.menu();document.getElementById('pause').hidden=true;
+  audio.stop();match.menu();renderer.camera.reset();document.getElementById('pause').hidden=true;
   mobile.update(match.state);mobileMenu.update(match,ready);hud.update(match);
   mobileMenu.root.querySelector('#mobile-play')?.focus();
 };

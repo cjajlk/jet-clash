@@ -19,7 +19,7 @@ const assert=require('node:assert/strict');
     assert.ok(await page.evaluate(x=>window.__jetclash.match.player.x>x,x));
     if(process.env.TEAM_SCREENSHOT_DIR&&viewport.width===1280){require('node:fs').mkdirSync(process.env.TEAM_SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:require('node:path').join(process.env.TEAM_SCREENSHOT_DIR,'JetClash-2v2.png')});}
     if(touch){
-      assert.equal(await page.evaluate(()=>window.__jetclash.match.players.every(p=>window.__jetclash.renderer.camera.project(p.x,p.y).visible)),true);
+      assert.equal(await page.evaluate(()=>{const g=window.__jetclash;return [g.match.player,g.match.ball].every(p=>g.renderer.camera.project(p.x,p.y).visible);}),true);
       assert.deepEqual(await page.evaluate(()=>{
         const b=document.querySelector('#leave-game').getBoundingClientRect(),r=document.querySelector('#hud').getBoundingClientRect();
         return b.left<r.right&&b.right>r.left&&b.top<r.bottom&&b.bottom>r.top;
