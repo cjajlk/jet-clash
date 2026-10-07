@@ -24,7 +24,14 @@ mobile.onReset=()=>{if(match.training)match.resetTrainingBall();};
 const launch=payload=>{if(!ready)return;input.clear();mobile.clear();const mode=payload?.mode||'duel';if(mode==='training')match.start('training');else{const difficulty=payload?.difficulty||document.getElementById('difficulty').value;document.getElementById('difficulty').value=difficulty;match.start(difficulty);}mobileMenu.update(match,ready);hud.update(match);canvas.focus();};
 const mobileMenu=new MobileMenu({enabled:true,onLaunch:payload=>launch(payload),audio});
 mobileMenu.update(match,false,'Chargement de l’arène…');
-start.addEventListener('click',launch);document.getElementById('replay').addEventListener('click',launch);document.getElementById('back-menu').addEventListener('click',()=>{input.clear();match.menu();hud.update(match);});
+const returnToMenu=()=>{
+  setPaused(false);touchCancelled=false;touchReleaseAim=null;
+  audio.stop();match.menu();document.getElementById('pause').hidden=true;
+  mobile.update(match.state);mobileMenu.update(match,ready);hud.update(match);
+  mobileMenu.root.querySelector('#mobile-play')?.focus();
+};
+start.addEventListener('click',launch);document.getElementById('replay').addEventListener('click',launch);
+for(const id of ['back-menu','leave-game'])document.getElementById(id).addEventListener('click',returnToMenu);
 let last=performance.now(),accumulator=0,paused=false,touchCancelled=false,touchReleaseAim=null;
 function setPaused(value){paused=value;audio.setPaused(value);if(value)match.control.release();input.clear();mobile.clear();accumulator=0;last=performance.now();document.getElementById('pause').hidden=!value||[STATES.MENU,STATES.POST_MATCH].includes(match.state);}
 window.addEventListener('blur',()=>setPaused(true));window.addEventListener('focus',()=>{input.resumeGamepad();setPaused(false);});document.addEventListener('visibilitychange',()=>{if(!document.hidden)input.resumeGamepad();setPaused(document.hidden);});document.addEventListener('fullscreenchange',()=>{input.resumeGamepad();canvas.focus();});

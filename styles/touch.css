@@ -6,6 +6,7 @@
 .touch-match>.topbar,.touch-match main>:not(#game-shell){visibility:hidden}
 .touch-match #game-shell{position:fixed;inset:0;margin:auto;width:min(100vw,177.7778dvh);height:auto;max-height:100dvh;aspect-ratio:16/9;border:0;border-radius:0;z-index:20;box-shadow:none;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .touch-match #arena{object-fit:contain;touch-action:none}
+.touch-match .game-back{top:max(6px,env(safe-area-inset-top));right:calc(64px + env(safe-area-inset-right))}
 .touch-match #game-shell:fullscreen{width:100vw;height:100dvh;background:#090c18}
 .touch-match .hud{top:max(6px,env(safe-area-inset-top));transform:translateX(-50%) scale(.7);transform-origin:top center}
 .touch-match .fuel-hud{bottom:auto;top:68px;left:calc(12px + env(safe-area-inset-left));right:calc(12px + env(safe-area-inset-right))}
@@ -33,3 +34,5 @@
 #touch-rotate{position:fixed;inset:0;z-index:12;background:#090f23fa;display:grid;align-content:center;justify-items:center;gap:18px;padding:24px;text-align:center;color:#a1f4ff;touch-action:none}
 #touch-rotate strong{font-size:24px}#touch-rotate span{font-size:15px;line-height:1.7;color:#d2e5ff}
 @media (max-height:380px) and (orientation:landscape){#touch-controls{--edge:12px;--bottom:12px}.touch-match .hud{transform:translateX(-50%) scale(.6)}.touch-match .fuel-hud{top:52px}}
+@media (max-width:600px){.game-back{top:96px}.touch-match .game-back{top:96px;right:calc(12px + env(safe-area-inset-right))}}
+@media (orientation:portrait){.touch-capable .game-back{position:fixed;top:calc(12px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));right:auto}}

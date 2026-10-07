@@ -6,6 +6,7 @@
 <div class="arena-heading"><span>02 / LA COUR DE L’AUBE — ARÈNE VERTICALE</span><span>DUEL · JOUEUR CONTRE BOT</span></div>
 <div id="game-shell" class="game-shell">
 <canvas id="arena" width="1280" height="720" aria-label="Arène JetClash. Fluid à gauche, Heavy à droite." tabindex="0"></canvas>
+<button id="leave-game" type="button" class="game-back" hidden aria-label="Quitter la partie et retourner au menu">← RETOUR MENU</button>
 <div id="hud" class="hud" hidden><div class="team blue"><span>FLUID <small>VOUS</small></span><strong id="score-player">0</strong></div><div class="clock"><span id="mode-label">MATCH</span><strong id="timer">05:00</strong></div><div class="team red"><strong id="score-bot">0</strong><span>HEAVY <small>BOT</small></span></div></div>
 <div id="fuel-hud" class="fuel-hud" hidden><div><label for="fuel-player">JETPACK · FLUID</label><progress id="fuel-player" max="100" value="100"></progress></div><div class="red"><label for="fuel-bot">JETPACK · HEAVY</label><progress id="fuel-bot" max="100" value="100"></progress></div></div>
 <div id="announcement" class="announcement" role="status" aria-live="polite" hidden></div>
