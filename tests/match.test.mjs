@@ -8,7 +8,7 @@ import { createBall, integrateBall } from '../src/ball.js';
 import { movePlayer, collideBall, hitPlayer } from '../src/physics.js';
 // Retain collision regression coverage for the reversible original layout.
 import { classicSolids as solids } from '../src/arena.js';
-import { goalScorer } from '../src/goals.js';
+import { goalScorer, goalEntryDepth } from '../src/goals.js';
 import { Bot } from '../src/bot.js';
 const memory=()=>{const data=new Map();return {getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v)};};
 const make=()=>new Match(new ProfileStore(memory()));
@@ -16,7 +16,10 @@ function advance(m,seconds,input={}){for(let i=0;i<Math.ceil(seconds/C.step);i++
 function playing(){const m=make();m.start();advance(m,3.02);assert.equal(m.state,S.PLAYING);return m;}
 test('menu, lancement et compte à rebours sans consommation du chrono',()=>{const m=make();assert.equal(m.state,S.MENU);m.start('elite');advance(m,2);assert.equal(m.state,S.PRE_ROUND);assert.equal(m.remaining,300);advance(m,1.02);assert.equal(m.state,S.PLAYING);assert.equal(m.difficulty,'elite');});
 test('déplacement, saut, jetpack, recharge et égalité des capacités',()=>{
-  const a=createPlayer('fluid'),b=createPlayer('heavy');for(const p of [a,b]){p.x=300;p.y=606;p.grounded=true;for(let i=0;i<30;i++){drive(p,{axis:1},C.step);movePlayer(p,solids,C.step);}assert.ok(p.x>0);drive(p,{jump:true},C.step);assert.ok(p.vy<0);const fuel=p.fuel;drive(p,{boost:true},C.step);assert.ok(p.fuel<fuel);const low=p.fuel;drive(p,{},C.step);assert.ok(p.fuel>low);}
+  const a=createPlayer('fluid'),b=createPlayer('heavy');for(const p of [a,b]){p.x=C.width/2;p.y=C.floor-p.h/2;p.grounded=true;p.contactSurface='floor';for(let i=0;i<30;i++){drive(p,{axis:1},C.step);movePlayer(p,solids,C.step);}assert.ok(p.x>0);drive(p,{jump:true},C.step);assert.ok(p.vy<0);const fuel=p.fuel;drive(p,{boost:true},C.step);assert.ok(p.fuel<fuel);const low=p.fuel;drive(p,{},C.step);assert.equal(p.fuel,low,'pas de recharge en plein air');
+    for(let i=0;i<360&&!p.grounded;i++){drive(p,{},C.step);movePlayer(p,solids,C.step);}
+    assert.ok(p.grounded,'atterrissage réel requis');assert.equal(p.contactSurface,'floor');
+    drive(p,{},C.step);assert.ok(p.fuel>low,'recharge après atterrissage');}
   assert.equal(a.vx,b.vx);assert.equal(a.vy,b.vy);assert.equal(a.fuel,b.fuel);
 });
 test('saut : premier appui, maintien sans répétition, second appui aérien et consommation unique',()=>{
@@ -60,8 +63,8 @@ test('rotation dédiée : ROT reste disponible mais n’est plus requis pour ori
 });
 test('sol et plafond : recharge seulement quand les pieds sont orientés vers la surface',()=>{
   const floor=createPlayer('fluid');floor.x=400;floor.grounded=false;floor.jumpReady=false;floor.impulseReady=false;floor.footX=0;floor.footY=1;floor.y=C.floor-floor.h/2-1;floor.vy=200;movePlayer(floor,solids,.02);assert.ok(floor.jumpReady&&floor.impulseReady);
-  const ceiling=createPlayer('fluid');ceiling.x=400;ceiling.grounded=false;ceiling.jumpReady=false;ceiling.impulseReady=false;ceiling.footX=0;ceiling.footY=-1;ceiling.y=100+ceiling.h/2+1;ceiling.vy=-200;movePlayer(ceiling,solids,.02);assert.ok(ceiling.jumpReady&&ceiling.impulseReady);
-  const shoulder=createPlayer('fluid');shoulder.x=400;shoulder.grounded=false;shoulder.jumpReady=false;shoulder.impulseReady=false;shoulder.footX=1;shoulder.footY=0;shoulder.y=100+shoulder.h/2+1;shoulder.vy=-200;movePlayer(shoulder,solids,.02);assert.equal(shoulder.jumpReady,false);
+  const ceiling=createPlayer('fluid');ceiling.x=400;ceiling.grounded=false;ceiling.jumpReady=false;ceiling.impulseReady=false;ceiling.footX=0;ceiling.footY=-1;ceiling.y=C.ceiling+ceiling.h/2+1;ceiling.vy=-200;movePlayer(ceiling,solids,.02);assert.ok(ceiling.jumpReady&&ceiling.impulseReady);
+  const shoulder=createPlayer('fluid');shoulder.x=400;shoulder.grounded=false;shoulder.jumpReady=false;shoulder.impulseReady=false;shoulder.footX=1;shoulder.footY=0;shoulder.y=C.ceiling+shoulder.h/2+1;shoulder.vy=-200;movePlayer(shoulder,solids,.02);assert.equal(shoulder.contactSurface,'ceiling');assert.equal(shoulder.jumpReady,false);assert.equal(shoulder.impulseReady,false);
 });
 test('JET ne recharge pas le saut aérien',()=>{const p=createPlayer('fluid');p.grounded=false;p.jumpReady=false;p.impulseReady=true;drive(p,{boost:true},C.step);assert.equal(p.impulseReady,true);assert.equal(p.jumpReady,false);});
 test('sol, plateformes, dessous de plateforme et obstacle bloquent le joueur',()=>{
@@ -73,7 +76,13 @@ test('balle : gravité, inertie, rebonds, plateformes, obstacle et limites',()=>
   // Goal boundaries have sloping collision surfaces, not horizontal shelves.
   // Their fieldward response is covered by goal-boundaries.test.mjs.
   for(const r of solids.filter(s=>!s.goalBoundary)){Object.assign(ball,{x:r.x+r.w/2,y:r.y-ball.r+2,vx:20,vy:150});collideBall(ball,[r]);assert.ok(ball.vy<0);assert.ok(Math.abs(ball.y-(r.y-ball.r))<.001);}
-  Object.assign(ball,{x:2,y:200,vx:-50,vy:0});collideBall(ball,[]);assert.ok(ball.vx>0);Object.assign(ball,{x:1279,y:200,vx:50});collideBall(ball,[]);assert.ok(ball.vx<0);
+  for(const side of [-1,1]){
+    const x=side<0?2:C.width-2;
+    Object.assign(ball,{x,y:C.goalBottom+ball.r+1,vx:side*50,vy:0});collideBall(ball,[]);
+    assert.equal(Math.sign(ball.vx),-side,'rebond hors ouverture');
+    Object.assign(ball,{x,y:(C.goalTop+C.goalBottom)/2,vx:side*50,vy:0});collideBall(ball,[]);
+    assert.equal(ball.x,x);assert.equal(ball.vx,side*50,'passage libre dans la cage');
+  }
 });
 test('contact physique symétrique, sans attraction ni possession',()=>{
   const balls=[];for(const skin of ['fluid','heavy']){const p=createPlayer(skin);p.x=400;p.y=500;p.vx=250;const b=createBall();Object.assign(b,{x:432,y:500,vx:0,vy:0});assert.ok(hitPlayer(b,p));assert.ok(b.vx>250);balls.push(b);}
@@ -90,7 +99,7 @@ test('flip aérien : le premier contact frappe la balle une fois dans la directi
   m.update(C.step,{axis:0,rotate:true});
   assert.ok(Math.hypot(m.ball.vx,m.ball.vy)<100);assert.equal(p.flipHit,true);
 });
-test('but valide seulement après entrée complète sous la barre',()=>{const b=createBall();b.y=(C.goalTop+C.goalBottom)/2;b.x=C.goalRight-1;assert.equal(goalScorer(b),null);b.x=C.goalRight+b.r;assert.equal(goalScorer(b),'player');b.x=C.goalLeft-b.r;assert.equal(goalScorer(b),'bot');b.y=C.goalTop+b.r;assert.equal(goalScorer(b),null);});
+test('but valide seulement après entrée complète sous la barre',()=>{const b=createBall();b.y=(C.goalTop+C.goalBottom)/2;b.x=C.goalRight-1;assert.equal(goalScorer(b),null);b.x=C.goalRight+goalEntryDepth(b.r);assert.equal(goalScorer(b),'player');b.x=C.goalLeft-goalEntryDepth(b.r);assert.equal(goalScorer(b),'bot');b.y=C.goalTop+b.r;assert.equal(goalScorer(b),null);});
 test('buts des deux camps, double but ignoré, remise en jeu et chrono suspendu',()=>{
   const m=playing();Object.assign(m.ball,{x:1220,y:(C.goalTop+C.goalBottom)/2,vx:0,vy:0});m.update(C.step);assert.equal(m.score.player,1);assert.equal(m.state,S.GOAL_SCORED);assert.equal(m.goal('player'),false);const time=m.remaining;advance(m,1.9);assert.equal(m.state,S.PRE_ROUND);assert.equal(m.ball.x,640);assert.equal(m.remaining,time);advance(m,3.1);Object.assign(m.ball,{x:60,y:(C.goalTop+C.goalBottom)/2,vx:0,vy:0});m.update(C.step);assert.equal(m.score.bot,1);
 });

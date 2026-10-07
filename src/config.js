@@ -2,6 +2,7 @@
 export const CONFIG = Object.freeze({
   width: 1280, height: 720, ceiling: 90, floor: 570, duration: 300,
   step: 1 / 120, countdown: 3, goalPause: 1.8,
+  goalEntryRadiusFactor: 1.75, goalEffectDuration: .8,
   gravity: 1120, runAcceleration: 2050, airAcceleration: 1250, airHorizontalDrag: .45,
   runSpeed: 300, jumpSpeed: 545, thrust: 1700, maxRise: 500,
   fuelUse: 31, fuelRecharge: 23, playerWidth: 38, playerHeight: 76,

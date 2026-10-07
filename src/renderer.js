@@ -105,6 +105,20 @@ export class Renderer{
     };
     draw('left','#4ad8ff','goalV3Blue');draw('right','#ff5c70','goalV3Red');
   }
+  goalPulse(effect){
+    if(!effect||effect.remaining<=0)return;
+    const c=this.ctx,left=effect.side==='left';
+    const x=left?0:C.goalRight,w=left?C.goalLeft:C.width-C.goalRight;
+    const progress=1-effect.remaining/C.goalEffectDuration;
+    const color=left?'#4ad8ff':'#ff5c88';
+    c.save();c.beginPath();c.rect(x,C.goalTop,w,C.goalBottom-C.goalTop);c.clip();
+    c.globalAlpha=(1-progress)*.22;c.fillStyle=color;
+    c.fillRect(x,C.goalTop,w,C.goalBottom-C.goalTop);
+    c.globalAlpha=(1-progress)*.65;c.strokeStyle=color;c.lineWidth=3;
+    c.shadowColor=color;c.shadowBlur=12;
+    c.beginPath();c.arc(effect.x,effect.y,C.ballRadius*C.ballScale*(1+progress*2),0,Math.PI*2);c.stroke();
+    c.restore();
+  }
   fluidIndicator(player,control){
     const anchor=resolveFluidContactIndicator(player,control);if(!anchor)return;const c=this.ctx;const {x,y,direction,charge}=anchor;
     c.save();c.translate(x,y);c.rotate(Math.atan2(direction.y,direction.x));c.lineJoin='round';c.shadowColor='#43dcff';c.shadowBlur=6+8*charge;
@@ -129,6 +143,7 @@ export class Renderer{
     // Arena 02 uses one complete illustration (floor, walls and vertical goals).
     // Goal/floor/ceiling collisions remain handled by arena.js; no separate goal artwork is overlaid.
 
+    this.goalPulse(m.goalEffect);
     for(const p of [m.player,m.bot].filter(Boolean)){const h=96;
       if(p.skin==='fluid'&&(!p.grounded||p.contactSurface==='ceiling')){
         const cache=this.fluidVisuals.get(p)||{};this.fluidVisuals.set(p,cache);

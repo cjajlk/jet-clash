@@ -11,6 +11,7 @@ export class Match {
   constructor(profile) {
     this.control=new BallControl();this.profile=profile; this.player=createPlayer('fluid'); this.bot=createPlayer('heavy'); this.ball=createBall();
     this.state=STATES.MENU; this.remaining=C.duration; this.score={player:0,bot:0}; this.overtime=false; this.elapsed=0;
+    this.goalEffect=null;
     resetPositions(this.player,this.bot,this.ball);
   }
   start(modeOrDifficulty='normal',difficultyMaybe){
@@ -24,15 +25,20 @@ export class Match {
     if(this.training){this.state=STATES.PLAYING;this.phase=0;this.bot=null;this.remaining=0;}
   }
   prepare() {
+    this.goalEffect=null;
     this.control.reset();
     if (this.training) Object.assign(this.player,{x:300,y:C.floor-C.playerHeight/2,vx:0,vy:0,grounded:true,fuel:100,boosting:false,jumpHeld:false,contactSurface:'floor',footX:0,footY:1,controlX:1,controlY:0,rotateHeld:false,jumpReady:true,impulseReady:true,impulseCooldown:0,flipIntent:0,flipHeld:false,flipReady:true,flipTimer:0,flipHit:false,flipX:1,flipY:0});
     else resetPositions(this.player,this.bot,this.ball);
     if(this.ai?.reset)this.ai.reset();
     this.state=this.training?STATES.PLAYING:STATES.PRE_ROUND; this.phase=this.training?0:C.countdown; if(this.training){this.bot=null;this.remaining=0;}
   }
-  menu() { this.control.reset();this.state=STATES.MENU; this.player.boosting=false; if(this.bot)this.bot.boosting=false; }
+  menu() { this.goalEffect=null;this.control.reset();this.state=STATES.MENU; this.player.boosting=false; if(this.bot)this.bot.boosting=false; }
   resetTrainingBall(){ if(!this.training) return false; Object.assign(this.ball,{x:640,y:278,vx:0,vy:0,angle:0,flash:0}); return true; }
   update(dt, input={}) {
+    if(this.goalEffect){
+      this.goalEffect.remaining=Math.max(0,this.goalEffect.remaining-dt);
+      if(!this.goalEffect.remaining)this.goalEffect=null;
+    }
     if (this.state===STATES.MENU || this.state===STATES.POST_MATCH) return;
     this.elapsed+=dt;
     if (this.state===STATES.PRE_ROUND || this.state===STATES.GOAL_SCORED) {
@@ -77,6 +83,7 @@ export class Match {
   }
   goal(scorer) {
     if (this.state!==STATES.PLAYING || this.finished || !['player','bot'].includes(scorer)) return false;
+    this.goalEffect={side:scorer==='bot'?'left':'right',x:this.ball.x,y:this.ball.y,remaining:C.goalEffectDuration};
     if(this.training){this.resetTrainingBall();this.control.release();this.lastGoal=null;return true;}
     this.control.reset();this.score[scorer]++; this.lastGoal=scorer;
     this.player.boosting=false; if(this.bot)this.bot.boosting=false;
