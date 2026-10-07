@@ -144,7 +144,13 @@ export class Renderer{
     // Goal/floor/ceiling collisions remain handled by arena.js; no separate goal artwork is overlaid.
 
     this.goalPulse(m.goalEffect);
-    for(const p of [m.player,m.bot].filter(Boolean)){const h=96;
+    for(const p of m.players||[m.player,m.bot].filter(Boolean)){const h=96;
+      if(m.mode==='2v2'){
+        c.save();c.strokeStyle=c.fillStyle=p.team==='player'?'#65e8ff':'#ff5b79';c.lineWidth=2;
+        c.beginPath();c.ellipse(p.x,p.y+p.h/2+2,25,5,0,0,Math.PI*2);c.stroke();
+        c.font='bold 11px Segoe UI, sans-serif';c.textAlign='center';c.shadowColor='#050817';c.shadowBlur=4;
+        c.fillText(p.label,p.x,p.y-p.h/2-14);c.restore();
+      }
       if(p.skin==='fluid'&&(!p.grounded||p.contactSurface==='ceiling')){
         const cache=this.fluidVisuals.get(p)||{};this.fluidVisuals.set(p,cache);
         const visual=resolveFluidVisualPose(p,cache);

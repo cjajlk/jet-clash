@@ -33,5 +33,5 @@ export class MobileMenuModel {
   home(){this.route='home';this.previous='home';}
   selectCategory(id){if(!COLLECTION_CATEGORIES.some(c=>c.id===id))return false;this.category=id;return true;}
   selectReward(index){if(!Number.isInteger(index)||index<0||index>=PASS_PREVIEWS.length)return false;this.reward=index;return true;}
-  canLaunch(mode,ready){return this.route==='modes'&&mode==='duel'&&ready===true;}
+  canLaunch(mode,ready){return this.route==='modes'&&['duel','2v2'].includes(mode)&&ready===true;}
 }
