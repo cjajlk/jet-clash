@@ -9,18 +9,24 @@ import { TouchControls } from './touch-controls.js';
 import { combineTouch } from './touch-input.js';
 import { MobileMenu } from './mobile-menu.js';
 import { controlSettings } from './control-settings.js';
+import { GameplayAudio } from './gameplay-audio.js';
 const canvas=document.getElementById('arena'),renderer=new Renderer(canvas),hud=new HUD(),input=new PlayerInput(),controlsHelp=new ControlsHelp();
 const mobile=new TouchControls(document.getElementById('game-shell'));
 let storage;try{storage=localStorage;}catch{}
-const match=new Match(new ProfileStore(storage));const start=document.getElementById('start');let ready=false;
+const profile=new ProfileStore(storage);
+const audio=new GameplayAudio({enabled:profile.data.settings?.sound!==false,onEnabledChange:enabled=>{
+  profile.data.settings={...profile.data.settings,sound:enabled};profile.save();
+}});
+const match=new Match(profile,(kind,detail)=>audio.play(kind,detail));const start=document.getElementById('start');let ready=false;
+for(const event of ['pointerdown','keydown'])document.addEventListener(event,e=>{if(e.isTrusted)audio.unlock();},{capture:true});
 mobile.onCancel=()=>{match.control.release();input.clear();};
 mobile.onReset=()=>{if(match.training)match.resetTrainingBall();};
 const launch=payload=>{if(!ready)return;input.clear();mobile.clear();const mode=payload?.mode||'duel';if(mode==='training')match.start('training');else{const difficulty=payload?.difficulty||document.getElementById('difficulty').value;document.getElementById('difficulty').value=difficulty;match.start(difficulty);}mobileMenu.update(match,ready);hud.update(match);canvas.focus();};
-const mobileMenu=new MobileMenu({enabled:true,onLaunch:payload=>launch(payload)});
+const mobileMenu=new MobileMenu({enabled:true,onLaunch:payload=>launch(payload),audio});
 mobileMenu.update(match,false,'Chargement de l’arène…');
 start.addEventListener('click',launch);document.getElementById('replay').addEventListener('click',launch);document.getElementById('back-menu').addEventListener('click',()=>{input.clear();match.menu();hud.update(match);});
 let last=performance.now(),accumulator=0,paused=false,touchCancelled=false,touchReleaseAim=null;
-function setPaused(value){paused=value;if(value)match.control.release();input.clear();mobile.clear();accumulator=0;last=performance.now();document.getElementById('pause').hidden=!value||[STATES.MENU,STATES.POST_MATCH].includes(match.state);}
+function setPaused(value){paused=value;audio.setPaused(value);if(value)match.control.release();input.clear();mobile.clear();accumulator=0;last=performance.now();document.getElementById('pause').hidden=!value||[STATES.MENU,STATES.POST_MATCH].includes(match.state);}
 window.addEventListener('blur',()=>setPaused(true));window.addEventListener('focus',()=>{input.resumeGamepad();setPaused(false);});document.addEventListener('visibilitychange',()=>{if(!document.hidden)input.resumeGamepad();setPaused(document.hidden);});document.addEventListener('fullscreenchange',()=>{input.resumeGamepad();canvas.focus();});
 try{await renderer.load();ready=true;start.disabled=false;start.textContent='ENTRER DANS L’ARÈNE →';document.getElementById('load-status').textContent='5 MIN · MORT SUBITE EN CAS D’ÉGALITÉ';}catch(error){document.getElementById('load-status').textContent=`Asset inaccessible : ${error.message}. Vérifie que le ZIP est entièrement extrait.`;start.textContent='CHARGEMENT IMPOSSIBLE';}
 function frame(now){
@@ -52,4 +58,4 @@ function frame(now){
   if(!mobileMenu.visible)renderer.render(match,{mobile:mobile.active&&!mobile.portrait,dt:delta});hud.update(match);requestAnimationFrame(frame);
 }requestAnimationFrame(frame);
 // Explicitly enabled only for automated local test sessions.
-if(new URLSearchParams(location.search).get('test')==='1')window.__jetclash={match,input,renderer,setPaused,mobile};
+if(new URLSearchParams(location.search).get('test')==='1')window.__jetclash={match,input,renderer,setPaused,mobile,audio};

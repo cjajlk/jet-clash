@@ -8,11 +8,16 @@ import { Bot } from './bot.js';
 import { goalScorer } from './goals.js';
 export const STATES=Object.freeze({ MENU:'MENU', PRE_ROUND:'PRE_ROUND', PLAYING:'PLAYING', GOAL_SCORED:'GOAL_SCORED', POST_MATCH:'POST_MATCH' });
 export class Match {
-  constructor(profile) {
-    this.control=new BallControl();this.profile=profile; this.player=createPlayer('fluid'); this.bot=createPlayer('heavy'); this.ball=createBall();
+  constructor(profile,onEvent=()=>{}) {
+    this.onEvent=onEvent;
+    this.control=new BallControl(power=>this.notify('shot',{power}));this.profile=profile; this.player=createPlayer('fluid'); this.bot=createPlayer('heavy'); this.ball=createBall();
     this.state=STATES.MENU; this.remaining=C.duration; this.score={player:0,bot:0}; this.overtime=false; this.elapsed=0;
     this.goalEffect=null;
     resetPositions(this.player,this.bot,this.ball);
+  }
+  notify(kind,detail){
+    // Optional presentation effects must never interrupt the simulation.
+    try{this.onEvent(kind,detail);}catch{}
   }
   start(modeOrDifficulty='normal',difficultyMaybe){
     this.training=modeOrDifficulty==='training';
@@ -66,7 +71,7 @@ export class Match {
     this.control.impact(beforeCollision,this.ball,false);
     const flipStrike=this.player.flipTimer>0&&!this.player.flipHit?{x:this.player.flipX,y:this.player.flipY}:null;
     const playerContact=hitPlayer(this.ball,this.player,this.control.softContact&&!this.control.pressure?BALL_CONTROL.contactBounce:.88,flipStrike);
-    if(flipStrike&&playerContact){this.player.flipHit=true;this.control.release();}
+    if(flipStrike&&playerContact){this.player.flipHit=true;this.control.release();this.notify('shot',{power:.65});}
     const beforeOtherContacts={vx:this.ball.vx,vy:this.ball.vy};
     const heavyContact=this.bot?hitPlayer(this.ball,this.bot):false;
     collideBall(this.ball,solids);
@@ -84,6 +89,7 @@ export class Match {
   goal(scorer) {
     if (this.state!==STATES.PLAYING || this.finished || !['player','bot'].includes(scorer)) return false;
     this.goalEffect={side:scorer==='bot'?'left':'right',x:this.ball.x,y:this.ball.y,remaining:C.goalEffectDuration};
+    this.notify('goal',{scorer,training:this.training});
     if(this.training){this.resetTrainingBall();this.control.release();this.lastGoal=null;return true;}
     this.control.reset();this.score[scorer]++; this.lastGoal=scorer;
     if(scorer==='player')this.profile.challenges?.record('goals');

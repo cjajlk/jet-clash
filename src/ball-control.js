@@ -62,7 +62,7 @@ export function drawBallContactZone(ctx,p){
   return zone;
 }
 export class BallControl {
-  constructor(){this.showAim=true;this.reset();}
+  constructor(onShot=()=>{}){this.onShot=onShot;this.showAim=true;this.reset();}
   reset(){this.owned=false;this.pressure=false;this.shotContact=false;this.shotPrepared=false;this.pendingShot=null;this.pendingShotTime=0;this.recentContactTime=0;this.charge=0;this.charging=false;this.held=false;this.cooldown=0;this.aim=null;}
   release(){this.owned=false;this.pressure=false;this.shotContact=false;this.shotPrepared=false;this.pendingShot=null;this.pendingShotTime=0;this.recentContactTime=0;this.charging=false;this.charge=0;this.aim=null;this.cooldown=BALL_CONTROL.cooldown;}
   contact(p,b){
@@ -149,6 +149,7 @@ export class BallControl {
   applyShot(b,shot){
     b.vx=shot.vx;b.vy=shot.vy;const speed=Math.hypot(b.vx,b.vy);
     if(speed>C.maxBallSpeed){b.vx*=C.maxBallSpeed/speed;b.vy*=C.maxBallSpeed/speed;}b.flash=.12;
+    this.onShot(Math.min(1,speed/C.maxBallSpeed));
   }
   finishContacts(b,p,physicalPlayerContact=false){
     // Resolve ordinary body/arena contacts first. A collision solver can separate the
