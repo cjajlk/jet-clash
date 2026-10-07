@@ -31,10 +31,16 @@ for(const side of ['left','right']){
     assert.ok(left?b.x>=C.goalLeft-b.r-1:b.x<=C.goalRight+b.r+1);
     assert.equal(goalScorer(b),null);
   });
-  test(`Arena V2 ${side} : socle ferme la zone sous l'ouverture`,()=>{
-    const p=createPlayer('fluid');Object.assign(p,{x:line-sign*70,y:C.goalBottom+p.h/2+1,vx:sign*260,vy:0});
-    for(let i=0;i<80;i++)movePlayer(p,solids,C.step);
-    assert.ok(left?p.x>=C.goalLeft-p.w/2-1:p.x<=C.goalRight+p.w/2+1);
+  test(`Arena V2 ${side} : approche monte jusqu’au socle sans mur invisible`,()=>{
+    const p=createPlayer('fluid');Object.assign(p,{x:line-sign*180,y:C.floor-p.h/2,vx:sign*260,vy:0});
+    let previousFeet=p.y+p.h/2;
+    for(let i=0;i<110;i++){
+      movePlayer(p,solids,C.step);const feet=p.y+p.h/2;
+      assert.ok(feet<=previousFeet+1e-8,'la montée ne doit pas traverser le socle');previousFeet=feet;
+      assert.ok(p.x>=p.w/2&&p.x<=C.width-p.w/2);
+    }
+    assert.ok(left?p.x<C.goalLeft:p.x>C.goalRight,'entrée dans la cage depuis la rampe');
+    assert.equal(p.y+p.h/2,C.goalBottom);assert.equal(p.contactSurface,'floor');
   });
 }
 test('Arena V2 : plafond physique au niveau configuré sous HUD',()=>{

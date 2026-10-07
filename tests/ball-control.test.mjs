@@ -32,15 +32,40 @@ test('charge progressive, plafond 0,7 s, frappe chargée clairement supérieure'
 test('charge maintenue ne frappe pas automatiquement et n’ajoute aucune vitesse',()=>{const s=setup();for(let i=0;i<200;i++)tick(s,{shoot:true,aimY:-1});assert.equal(s.c.charge,.7);assert.ok(s.c.owned);assert.equal(s.b.vy,0);});
 test('frappe sans stick : orientation actuelle, aucun auto-aim',()=>{for(const facing of [-1,1]){const s=setup();s.p.facing=facing;s.p.controlX=facing;s.p.controlY=0;s.b.x=s.p.x+25*facing;tick(s,{shoot:true});tick(s);assert.equal(Math.sign(s.b.vx),facing);assert.equal(s.b.vy,0);}});
 test('frappe suit la visée au relâchement, pas celle au début de charge',()=>{const s=setup();tick(s,{shoot:true,aimX:1});tick(s,{aimY:-1});assert.equal(s.b.vx,0);assert.ok(s.b.vy<0);});
-test('collision forte et Heavy libèrent la balle et annulent la charge',()=>{for(const heavy of [false,true]){const s=setup();tick(s,{shoot:true});s.c.impact({vx:heavy?0:-500,vy:0},s.b,heavy);assert.equal(s.c.owned,false);assert.equal(s.c.charging,false);tick(s);assert.equal(s.b.vx,0);}});
+test('collision forte et Heavy libèrent la possession mais conservent la précharge',()=>{
+  for(const heavy of [false,true]){
+    const s=setup();tick(s,{shoot:true});const charge=s.c.charge;
+    s.c.impact({vx:heavy?0:-500,vy:0},s.b,heavy);
+    assert.equal(s.c.owned,false);assert.equal(s.c.charging,true);assert.equal(s.c.charge,charge);
+    s.b.x=500;const before={vx:s.b.vx,vy:s.b.vy};tick(s);
+    assert.deepEqual({vx:s.b.vx,vy:s.b.vy},before);assert.ok(s.c.pendingShot);
+    s.c.finishContacts(s.b,s.p,false);assert.deepEqual({vx:s.b.vx,vy:s.b.vy},before);
+    tick(s,{},T.shotIntentSeconds+C.step);assert.equal(s.c.pendingShot,null);
+  }
+});
 test('collision faible conserve le contrôle',()=>{const s=setup();tick(s);s.c.impact({vx:20,vy:0},s.b,false);assert.ok(s.c.owned);});
 test('pause/déconnexion annule la frappe sans tirer',()=>{const s=setup();tick(s,{shoot:true});tick(s,{cancelShot:true});assert.equal(s.b.vx,0);assert.equal(s.c.owned,false);});
 function match(){const m=new Match(new ProfileStore({getItem(){return null;},setItem(){}}));m.start();m.state=STATES.PLAYING;return m;}
-test('conduite en mouvement : charge complète, contact souple et balle non fixée',()=>{const m=match();Object.assign(m.player,{x:250,y:606,vx:0,vy:0,grounded:true});Object.assign(m.ball,{x:281,y:596,vx:0,vy:0});const gaps=[];for(let i=0;i<90;i++){m.update(C.step,{axis:.15,shoot:true,aimY:-1,aimIntent:true});gaps.push(m.ball.x-m.player.x);assert.ok(m.control.owned);}assert.equal(m.control.charge,.7);assert.ok(m.ball.x>320);assert.ok(Math.max(...gaps)-Math.min(...gaps)>=0);m.update(C.step,{aimY:-1,aimIntent:true});assert.ok(m.ball.vy<-900);});
+test('conduite en mouvement : charge complète, contact souple et balle non fixée',()=>{
+  const m=match();
+  Object.assign(m.player,{x:450,y:C.floor-C.playerHeight/2,vx:0,vy:0,grounded:true,contactSurface:'floor'});
+  Object.assign(m.ball,{x:m.player.x+m.player.w/2+m.ball.r,y:C.floor-m.ball.r,vx:0,vy:0});
+  const startX=m.ball.x;
+  for(let i=0;i<90;i++){
+    m.update(C.step,{axis:.15,shoot:true,aimY:-1,aimIntent:true});
+    assert.ok(m.control.owned);
+    assert.ok(m.ball.x-m.player.x>=m.player.w/2+m.ball.r-1e-6,'contact sans chevauchement');
+  }
+  assert.equal(m.control.charge,.7);assert.ok(m.ball.x>startX);
+  m.update(C.step,{aimY:-1,aimIntent:true});assert.ok(m.ball.vy<-900);
+  for(let i=0;i<12;i++)m.update(C.step);
+  assert.ok(m.ball.y<m.player.y-60,'le ballon quitte librement le personnage après la frappe');
+  assert.equal(m.control.owned,false);assert.equal(m.boundaryRecoveries,0);
+});
 for(const side of [-1,1])test(`frappe contrôlée vers cage ${side} : vrai but unique et limites conservées`,()=>{const m=match();Object.assign(m.player,{x:side===1?1100:180,y:448,vx:0,vy:0,facing:side});Object.assign(m.bot,{x:640,y:200});Object.assign(m.ball,{x:m.player.x+31*side,y:448,vx:0,vy:0});m.update(C.step,{shoot:true,aimX:side});m.update(C.step,{aimX:side});for(let i=0;i<80&&m.state===STATES.PLAYING;i++)m.update(C.step);assert.equal(m.score.player+m.score.bot,1);assert.equal(m.boundaryRecoveries,0);});
 for(const boost of [false,true])test(`contrôle aérien et frappe avec jetpack=${boost}`,()=>{const m=match();Object.assign(m.player,{x:600,y:260,vx:0,vy:-100,grounded:false});Object.assign(m.ball,{x:631,y:260,vx:0,vy:-100});m.update(C.step,{boost,shoot:true,aimY:-1});assert.ok(m.control.owned);m.update(C.step,{boost,aimY:-1});assert.equal(m.control.owned,false);assert.ok(m.ball.vy<-400);assert.equal(m.boundaryRecoveries,0);});
 test('Heavy conserve son contact physique et casse la possession en match',()=>{const m=match();Object.assign(m.player,{x:600,y:260});Object.assign(m.ball,{x:631,y:260});Object.assign(m.bot,{x:670,y:260,vx:-200});m.update(C.step,{shoot:true});assert.equal(m.control.owned,false);assert.ok(m.ball.vx<0);});
-test('but et réengagement effacent charge et chevrons sans double score',()=>{const m=match();m.control.owned=true;m.control.charging=true;Object.assign(m.ball,{x:1220,y:448});m.update(C.step);assert.equal(m.score.player,1);assert.equal(m.control.owned,false);m.update(C.step);assert.equal(m.score.player,1);m.prepare();assert.equal(m.control.charge,0);});
+test('but et réengagement effacent charge et chevrons sans double score',()=>{const m=match();m.control.owned=true;m.control.charging=true;Object.assign(m.ball,{x:C.goalRight+C.ballRadius*C.ballScale*C.goalEntryRadiusFactor,y:(C.goalTop+C.goalBottom)/2,vx:0,vy:0});m.update(C.step);assert.equal(m.score.player,1);assert.equal(m.control.owned,false);m.update(C.step);assert.equal(m.score.player,1);m.prepare();assert.equal(m.control.charge,0);});
 test('sécurité hors-arène pendant possession : aucun point',()=>{const m=match();m.control.owned=true;m.ball.y=700;m.update(C.step);assert.equal(m.state,STATES.PRE_ROUND);assert.equal(m.score.player+m.score.bot,0);assert.equal(m.control.owned,false);});
 class Target{listeners={};addEventListener(n,f){(this.listeners[n]??=[]).push(f);}emit(n,props={}){for(const f of this.listeners[n]||[])f({target:{tagName:'CANVAS'},preventDefault(){},...props});}}
 import { controlSettings } from '../src/control-settings.js';
@@ -169,4 +194,29 @@ test('tir orienté : viser vers le haut au relâchement décolle réellement le 
   tick(s,{aimY:-1});
   assert.ok(s.b.vy<0);
   assert.ok(Math.abs(s.b.vy)>Math.abs(s.b.vx));
+});
+
+test('zone miroir : contacts et préparation symétriques au sol et en rotation aérienne',()=>{
+  for(const grounded of [true,false])for(const angle of [0,Math.PI/2,Math.PI,Math.PI*1.5]){
+    const right=createPlayer('fluid'),left=createPlayer('fluid'),control=new BallControl();
+    Object.assign(right,{x:600,y:300,grounded,facing:1,footX:Math.cos(angle),footY:Math.sin(angle)});
+    Object.assign(left,{...right,facing:-1,footX:-right.footX});
+    const center=resolveBallContactZone(right).center;
+    const tiny=createBall();Object.assign(tiny,{x:center.x,y:center.y,r:1});
+    assert.ok(control.contact(right,tiny),'le centre intérieur est un contact');
+    const mirrored={...tiny,x:1200-tiny.x};assert.ok(control.contact(left,mirrored),'le centre miroir est un contact');
+    for(const offset of [-140,-90,-45,0,45,90,140]){
+      const ball={...tiny,x:center.x+offset,r:28.5},mirror={...ball,x:1200-ball.x};
+      assert.equal(control.contact(right,ball),control.contact(left,mirror));
+      assert.equal(control.prepareContact(right,ball,14),control.prepareContact(left,mirror,14));
+    }
+  }
+});
+test('contact récent : séparation proche tolérée, balle éloignée jamais frappée',()=>{
+  for(const x of [398,500]){
+    const s=setup();tick(s,{shoot:true},.35);s.c.finishContacts(s.b,s.p,true);
+    s.b.x=x;const before={vx:s.b.vx,vy:s.b.vy};assert.equal(s.c.contact(s.p,s.b),false);tick(s);
+    if(x===398){assert.ok(s.b.vx>700);assert.equal(s.c.pendingShot,null);}
+    else{assert.deepEqual({vx:s.b.vx,vy:s.b.vy},before);assert.ok(s.c.pendingShot);s.c.finishContacts(s.b,s.p,false);assert.deepEqual({vx:s.b.vx,vy:s.b.vy},before);}
+  }
 });

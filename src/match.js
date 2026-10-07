@@ -22,7 +22,7 @@ export class Match {
     this.id=globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
     this.score={player:0,bot:0}; this.remaining=C.duration; this.overtime=false;
     this.finished=false; this.result=null; this.reward=0; this.elapsed=0; this.lastGoal=null; this.boundaryRecoveries=0; this.prepare();
-    if(this.training){this.state=STATES.PLAYING;this.phase=0;this.bot=null;this.remaining=0;}
+    if(this.training){this.state=STATES.PLAYING;this.phase=0;this.bot=null;this.remaining=0;this.profile.challenges?.record('training');}
   }
   prepare() {
     this.goalEffect=null;
@@ -86,6 +86,7 @@ export class Match {
     this.goalEffect={side:scorer==='bot'?'left':'right',x:this.ball.x,y:this.ball.y,remaining:C.goalEffectDuration};
     if(this.training){this.resetTrainingBall();this.control.release();this.lastGoal=null;return true;}
     this.control.reset();this.score[scorer]++; this.lastGoal=scorer;
+    if(scorer==='player')this.profile.challenges?.record('goals');
     this.player.boosting=false; if(this.bot)this.bot.boosting=false;
     if (this.overtime) this.finish();
     else { this.state=STATES.GOAL_SCORED; this.phase=C.goalPause; }
@@ -97,7 +98,9 @@ export class Match {
     this.control.reset();this.finished=true; this.state=STATES.POST_MATCH;
     this.player.boosting=false; if(this.bot)this.bot.boosting=false;
     this.result=this.score.player>this.score.bot?'win':'loss';
+    const alreadyAwarded=this.profile.data?.completed?.includes(this.id);
     this.reward=this.profile.award(this.id,this.score.player,this.result==='win');
+    if(!alreadyAwarded){this.profile.challenges?.record('matches');if(this.result==='win')this.profile.challenges?.record('wins');}
     return true;
   }
 }

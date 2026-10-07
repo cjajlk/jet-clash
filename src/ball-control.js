@@ -67,11 +67,12 @@ export class BallControl {
   release(){this.owned=false;this.pressure=false;this.shotContact=false;this.shotPrepared=false;this.pendingShot=null;this.pendingShotTime=0;this.recentContactTime=0;this.charging=false;this.charge=0;this.aim=null;this.cooldown=BALL_CONTROL.cooldown;}
   contact(p,b){
     const zone=resolveBallContactZone(p);
-    return !!circlePolygonContact(b,zone.vertices);
+    // Mirroring reverses the polygon winding; the contact solver expects clockwise vertices.
+    return !!circlePolygonContact(b,p.facing<0?[...zone.vertices].reverse():zone.vertices);
   }
   prepareContact(p,b,margin){
     const zone=resolveBallContactZone(p);
-    return !!circlePolygonContact({...b,r:b.r+margin},zone.vertices);
+    return !!circlePolygonContact({...b,r:b.r+margin},p.facing<0?[...zone.vertices].reverse():zone.vertices);
   }
   update(p,b,input,dt,heavy=null){
     const T=BALL_CONTROL;this.cooldown=Math.max(0,this.cooldown-dt);this.pendingShotTime=Math.max(0,this.pendingShotTime-dt);this.recentContactTime=Math.max(0,this.recentContactTime-dt);if(this.pendingShotTime<=0)this.pendingShot=null;
@@ -107,7 +108,9 @@ export class BallControl {
 
     if(!pressed&&this.held&&this.charging){
       const pressure=this.pressure,dir=this.aim||explicitAim||control;
-      const canStrike=touching||pressure||this.recentContactTime>0;
+      // A recent physical touch can survive collision separation, but cannot authorize
+      // a strike once the ball has left the nearby contact envelope.
+      const canStrike=touching||pressure||(this.recentContactTime>0&&this.prepareContact(p,b,T.contactMargin));
       const low=pressure?T.pressureShotSpeed:T.shotSpeed,high=pressure?T.pressureChargedSpeed:T.chargedSpeed;
       const speed=low+(high-low)*this.chargeFraction;
       const shot={vx:dir.x*speed+p.vx*.2,vy:dir.y*speed+p.vy*.2};
