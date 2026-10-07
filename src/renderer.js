@@ -111,9 +111,9 @@ export class Renderer{
     const x=left?0:C.goalRight,w=left?C.goalLeft:C.width-C.goalRight;
     const progress=1-effect.remaining/C.goalEffectDuration;
     const color=left?'#4ad8ff':'#ff5c88';
-    c.save();c.beginPath();c.rect(x,C.goalTop,w,C.goalBottom-C.goalTop);c.clip();
+    c.save();c.beginPath();c.rect(x,C.goalScoreTop,w,C.goalScoreBottom-C.goalScoreTop);c.clip();
     c.globalAlpha=(1-progress)*.22;c.fillStyle=color;
-    c.fillRect(x,C.goalTop,w,C.goalBottom-C.goalTop);
+    c.fillRect(x,C.goalScoreTop,w,C.goalScoreBottom-C.goalScoreTop);
     c.globalAlpha=(1-progress)*.65;c.strokeStyle=color;c.lineWidth=3;
     c.shadowColor=color;c.shadowBlur=12;
     c.beginPath();c.arc(effect.x,effect.y,C.ballRadius*C.ballScale*(1+progress*2),0,Math.PI*2);c.stroke();

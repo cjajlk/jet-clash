@@ -31,6 +31,7 @@ for(const side of ['left','right']){
   r.goalPulse({side,x:line+sign*50,y:245,remaining:C.goalEffectDuration});
   assert.ok(calls.some(c=>c[0]==='fillStyle'&&c[1]===(left?'#4ad8ff':'#ff5c88')));
   assert.ok(calls.some(c=>c[0]==='rect'&&c[1]===(left?0:C.goalRight)&&c[3]===165));
+  assert.ok(calls.some(c=>c[0]==='rect'&&c[2]===C.goalScoreTop&&c[4]===C.goalScoreBottom-C.goalScoreTop));
   assert.ok(calls.some(c=>c[0]==='arc'));assert.equal(calls.at(-1)[0],'restore');
  });
 }

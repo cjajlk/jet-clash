@@ -17,6 +17,8 @@ export const CONFIG = Object.freeze({
   airFlipIntentTime: .22, airFlipIntentY: -.68,
   airFlipDuration: .48, airFlipStrikeSpeed: 420,
   goalLeft: 165, goalRight: 1115, goalTop: 125, goalBottom: 365, goalRampBottom: 365,
+  // Visible net interior in the authored arena background; scoring only.
+  goalScoreTop: 195, goalScoreBottom: 350,
 });
 export const DIFFICULTIES = Object.freeze({
   easy: { name: 'Facile', reaction: 0.34, error: 64, anticipation: 0.10, aggression: 0.55 },
