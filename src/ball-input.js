@@ -7,7 +7,8 @@ export class BallInput {
   constructor(target,source,onActivity){
     this.source=source;this.onActivity=onActivity;this.keys=new Set();this.previous={};this.blocked=false;this.cancelled=false;this.lastAim=null;
     target.addEventListener('keydown',e=>{
-      if(!['KeyI','KeyJ','KeyK','KeyL','KeyF'].includes(e.code)||/^(INPUT|SELECT|BUTTON|TEXTAREA)$/.test(e.target.tagName))return;
+      const bindings=controlSettings.keyboard;
+      if(!['aimUp','aimLeft','aimDown','aimRight','shoot'].some(action=>bindings[action].includes(e.code))||/^(INPUT|SELECT|BUTTON|TEXTAREA)$/.test(e.target.tagName))return;
       e.preventDefault();this.keys.add(e.code);onActivity('keyboard');
     });
     target.addEventListener('keyup',e=>this.keys.delete(e.code));
@@ -28,7 +29,8 @@ export class BallInput {
     const wasPadShooting=!!this.previous.shoot;
     if(padShoot&&!wasPadShooting)this.onActivity('gamepad');
     const keyboardBindings=controlSettings.keyboard;
-    const keyboard=aimDirection(Number(this.keys.has(keyboardBindings.aimRight[0]))-Number(this.keys.has(keyboardBindings.aimLeft[0])),Number(this.keys.has(keyboardBindings.aimDown[0]))-Number(this.keys.has(keyboardBindings.aimUp[0])));
+    const any=action=>keyboardBindings[action].some(code=>this.keys.has(code));
+    const keyboard=aimDirection(Number(any('aimRight'))-Number(any('aimLeft')),Number(any('aimDown'))-Number(any('aimUp')));
 
     // While TIR is held (and on its release frame), the configured movement stick
     // becomes the 360° shot-aim stick. Outside a shot it stays exclusively a
@@ -39,6 +41,6 @@ export class BallInput {
     if(keyboard||padAim)this.lastAim=keyboard||padAim;
     const direction=keyboard||padAim||((padShoot||wasPadShooting)?this.lastAim:null);
     this.previous={connected:!!pad,shoot:padShoot};
-    return {aimX:direction?.x||0,aimY:direction?.y||0,aimIntent:!!direction,shoot:this.keys.has((keyboardBindings.shoot[0]||'KeyF'))||padShoot,cancelShot};
+    return {aimX:direction?.x||0,aimY:direction?.y||0,aimIntent:!!direction,shoot:any('shoot')||padShoot,cancelShot};
   }
 }

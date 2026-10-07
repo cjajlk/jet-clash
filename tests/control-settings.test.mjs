@@ -38,3 +38,25 @@ test('commandes : options tactiles et boutons gamepad restent persistables',()=>
   assert.equal(controlSettings.gamepad.boost,4);
   assert.equal(controlSettings.gamepad.shoot,2);
 });
+
+test('tir et visée utilisent toutes les touches personnalisées, même après création de l’entrée',()=>{
+  const target=new Target(),input=new PlayerInput(target,{});
+  controlSettings.setKeyboard('shoot',['KeyE','KeyT']);
+  controlSettings.setKeyboard('aimLeft',['KeyQ','KeyA']);
+  controlSettings.setKeyboard('aimUp',['KeyZ','KeyW']);
+  for(const code of ['KeyE','KeyT']){
+    target.emit('keydown',{code});assert.equal(input.readBallControls().shoot,true);
+    target.emit('keyup',{code});assert.equal(input.readBallControls().shoot,false);
+  }
+  for(const code of ['KeyQ','KeyA']){
+    target.emit('keydown',{code});assert.equal(input.readBallControls().aimX,-1);target.emit('keyup',{code});
+  }
+  for(const code of ['KeyZ','KeyW']){
+    target.emit('keydown',{code});assert.equal(input.readBallControls().aimY,-1);target.emit('keyup',{code});
+  }
+  target.emit('keydown',{code:'KeyF'});assert.equal(input.readBallControls().shoot,false);
+  target.emit('keyup',{code:'KeyF'});
+  target.emit('keydown',{code:'KeyE',target:{tagName:'SELECT'}});assert.equal(input.readBallControls().shoot,false);
+  target.emit('keydown',{code:'KeyT'});target.emit('blur');
+  assert.equal(input.readBallControls().shoot,false);assert.equal(input.readBallControls().cancelShot,false);
+});
