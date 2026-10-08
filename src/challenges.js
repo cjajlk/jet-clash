@@ -47,7 +47,7 @@ export class ChallengeManager {
       if(state.claimed)continue;
       const progress=Math.min(def.target,state.progress+amount);
       if(progress!==state.progress){state.progress=progress;changed=true;}
-      if(progress===def.target){state.claimed=true;this.profile.data.seasonXp+=def.xp;changed=true;}
+      if(progress===def.target){state.claimed=true;this.profile.pass.addXp(def.xp,{save:false});changed=true;}
     }
     if(changed)this.profile.save();
   }

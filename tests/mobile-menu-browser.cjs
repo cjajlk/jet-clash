@@ -25,10 +25,10 @@ const assert=require('node:assert/strict');
         await page.locator(`.mm-nav [data-route="${route}"]`).tap();assert.equal(await root.getAttribute('data-route'),route);
         assert.equal(await page.locator(`.mm-nav [data-route="${route}"]`).getAttribute('aria-current'),'page');await fits();
         if(route==='collection'){
-          assert.equal(await page.locator('[data-category]').count(),9);await page.locator('[data-category="banners"]').tap();assert.match(await page.locator('.mm-preview h3').textContent(),/Bannières/);
-          await page.locator('[data-category="fluid"]').tap();assert.match(await page.locator('.mm-preview h3').textContent(),/Fluid équipé/);
+          assert.equal(await page.locator('[data-category]').count(),9);await page.locator('[data-category="banners"]').tap();assert.match(await page.locator('.mm-preview h3').first().textContent(),/Bannières/);
+          await page.locator('[data-category="fluid"]').tap();assert.match(await page.locator('.mm-preview h3').first().textContent(),/Fluid équipé/);
         }
-        if(route==='pass'){await page.locator('[data-reward="3"]').tap();assert.match(await page.locator('.mm-selected-reward strong').textContent(),/Bannière/);assert.equal(await page.locator('.mm-selected-reward button').isDisabled(),true);}
+        if(route==='pass'){assert.equal(await page.locator('.sp-level').count(),50);assert.equal(await page.locator('.sp-card').count(),100);}
         await page.screenshot({path:`work/menu-mobile-${route}-${viewport.width}x${viewport.height}.png`});
       }
       await page.locator('.mm-gear').tap();assert.equal(await root.getAttribute('data-route'),'options');await page.locator('[data-back]').tap();assert.equal(await root.getAttribute('data-route'),'home');

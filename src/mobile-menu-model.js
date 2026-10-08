@@ -14,7 +14,6 @@ export const COLLECTION_CATEGORIES=Object.freeze([
   {id:'avatars',label:'Avatars',title:'Avatars',detail:'Affirme ton identité. À venir.'},
   {id:'banners',label:'Bannières / titres',title:'Bannières et titres',detail:'Habille ton profil. À venir.'},
 ]);
-export const PASS_PREVIEWS=Object.freeze(['Emblème','Effet Jet','Ballon','Bannière','Effet de but']);
 export const MENU_IDENTITY=Object.freeze({nickname:'Pilote',emblem:'JC'});
 // Future event themes can supply these presentation fields, without a calendar.
 export const DEFAULT_MENU_THEME=Object.freeze({id:'aube',background:'assets/arena/arena_background.png',event:null});
@@ -23,7 +22,7 @@ export function profilePresentation(profile){
   return {...MENU_IDENTITY,xp,level:1+Math.floor(xp/1000),progress:xp%1000};
 }
 export class MobileMenuModel {
-  constructor(){this.route='home';this.previous='home';this.category='fluid';this.reward=0;}
+  constructor(){this.route='home';this.previous='home';this.category='fluid';}
   navigate(route){
     if(![...MENU_TABS.map(t=>t.id),'options','modes'].includes(route))return false;
     if(route==='options')this.previous=['options','modes'].includes(this.route)?'home':this.route;
@@ -32,6 +31,5 @@ export class MobileMenuModel {
   back(){this.route=this.route==='options'?this.previous:'home';}
   home(){this.route='home';this.previous='home';}
   selectCategory(id){if(!COLLECTION_CATEGORIES.some(c=>c.id===id))return false;this.category=id;return true;}
-  selectReward(index){if(!Number.isInteger(index)||index<0||index>=PASS_PREVIEWS.length)return false;this.reward=index;return true;}
   canLaunch(mode,ready){return this.route==='modes'&&['duel','2v2'].includes(mode)&&ready===true;}
 }
