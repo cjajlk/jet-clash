@@ -1,8 +1,9 @@
+import {drawBallShotTrail,drawBallShotTint} from './ball-shot-trail.js';
 import { CONFIG as C } from './config.js';
 import { solids, OPEN_ARENA } from './arena.js';
 import { MobileCamera } from './mobile-camera.js';
 import { drawBallContactZone } from './ball-control.js';
-const paths={background:'arena/arena_background_midfield_goals.png',backgroundLegacy:'arena/arena_background.png',left:'arena/goal_left_blue.png',right:'arena/goal_right_red.png',rampLeft:'arena/goal_ramp_left_blue.png',rampRight:'arena/goal_ramp_right_red.png',platform:'arena/platform_large.png',obstacle:'arena/center_obstacle.png',ball:'ball/ball_idle.png',impact:'ball/ball_glow.png',goalV3Blue:'arena/goal_v3_blue.png',goalV3Red:'arena/goal_v3_red.png'};
+const paths={shotTrailGold:'ball/shots/shot_gold_trail.png',shotTrailPurple:'ball/shots/shot_purple_trail.png',background:'arena/arena_background_midfield_goals.png',backgroundLegacy:'arena/arena_background.png',left:'arena/goal_left_blue.png',right:'arena/goal_right_red.png',rampLeft:'arena/goal_ramp_left_blue.png',rampRight:'arena/goal_ramp_right_red.png',platform:'arena/platform_large.png',obstacle:'arena/center_obstacle.png',ball:'ball/ball_idle.png',impact:'ball/ball_glow.png',goalV3Blue:'arena/goal_v3_blue.png',goalV3Red:'arena/goal_v3_red.png'};
 const FLUID_AIR_POSES=Object.freeze(['air_idle','air_up','air_diagonal_up','air_horizontal','air_turn','ceiling','air_diagonal_down','air_dash']);
 export const FLUID_AIR_ASSETS=Object.freeze(FLUID_AIR_POSES.map(pose=>`fluid_${pose}`));
 const FLUID_VISUAL=Object.freeze({hysteresis:.08,maxRotation:.16,dashWindow:.12,idleY:.82,upY:.58,diagUpY:.22,horizontalY:-.16,diagDownY:-.62,turnY:-.78});
@@ -38,12 +39,12 @@ export function resolveFluidVisualPose(p,cache={}){
   const last=cache.pose;if(last&&last!==pose&&Math.abs(look.y-(FLUID_POSE_Y[last]??0))<FLUID_VISUAL.hysteresis)pose=last;
   cache.pose=pose;cache.look=look;
   // The source aerial PNGs face right. footX points toward the feet, i.e. opposite the head/facing direction.
-  const flip=look.x>.12||(Math.abs(look.x)<=.12&&(p.controlX<0||p.facing<0));
+  const flip=p.backPoseHeld?p.facing<0:look.x>.12||(Math.abs(look.x)<=.12&&(p.controlX<0||p.facing<0));
   const drift=motion||look;
   const rotation=pose==='ceiling' ? 0 : clamp((drift.x*.12+drift.y*.04),-FLUID_VISUAL.maxRotation,FLUID_VISUAL.maxRotation);
   const flipProgress=p.flipTimer>0?1-p.flipTimer/C.airFlipDuration:0;
   const flipRotation=flipProgress*Math.PI*2*(p.flipX<0?-1:1);
-  return {key:`fluid_${pose}`,flip,rotation:rotation+flipRotation,pose};
+  return {key:`fluid_${pose}`,flip,rotation:p.backPoseHeld?0:rotation+flipRotation,pose};
 }
 export class Renderer{
   constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.images={};this.camera=new MobileCamera();this.fluidVisuals=new WeakMap();}
@@ -163,7 +164,8 @@ export class Renderer{
     }
     if(C.DEBUG_BALL_CONTACT)drawBallContactZone(c,m.player);
     if(mobile){const b=m.ball;c.save();c.beginPath();c.arc(b.x,b.y,b.r+2,0,Math.PI*2);c.lineWidth=1.5;c.strokeStyle='#a0f6ffb0';c.shadowColor='#56d9ff';c.shadowBlur=9;c.stroke();c.restore();}
-    const b=m.ball;c.save();c.translate(b.x,b.y);c.rotate(b.angle);this.fit(b.flash>0?'impact':'ball',-b.r,-b.r,b.r*2,b.r*2);c.restore();
+    const b=m.ball;drawBallShotTrail(c,b,this.images[b.shotColor==='gold'?'shotTrailGold':'shotTrailPurple']);c.save();c.translate(b.x,b.y);c.rotate(b.angle);this.fit(b.flash>0?'impact':'ball',-b.r,-b.r,b.r*2,b.r*2);c.restore();
+    drawBallShotTint(c,b);
     this.fluidIndicator(m.player,m.control);
     c.restore();
     if(camera.active)this.offscreenPlayers(m);

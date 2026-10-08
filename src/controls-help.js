@@ -11,7 +11,7 @@ export class ControlsHelp {
     const info=input.gamepad.status,key=JSON.stringify([info,input.lastMethod,controlSettings.keyboard,controlSettings.gamepad,controlSettings.touch]);if(key===this.last)return;this.last=key;
     this.gamepad.hidden=!info.supported;
     const padBindings=controlSettings.gamepad,keyboardBindings=controlSettings.keyboard;
-    this.keyboard.innerHTML=`<strong>CLAVIER</strong><span>${labelForCode(keyboardBindings.moveLeft[0])} / ${labelForCode(keyboardBindings.moveRight[0])} Déplacement</span><span>${labelForCode(keyboardBindings.jump[0])} Saut</span><span>${labelForCode(keyboardBindings.boost[0])} Jetpack</span><span class="hint">${labelForCode(keyboardBindings.aimUp[0])}/${labelForCode(keyboardBindings.aimLeft[0])}/${labelForCode(keyboardBindings.aimDown[0])}/${labelForCode(keyboardBindings.aimRight[0])} Visée · ${labelForCode(keyboardBindings.shoot[0])} Tir · ${labelForCode(keyboardBindings.rotate[0])} Flip</span>`;
+    this.keyboard.innerHTML=`<strong>CLAVIER</strong><span>${labelForCode(keyboardBindings.moveLeft[0])} / ${labelForCode(keyboardBindings.moveRight[0])} Déplacement</span><span>${labelForCode(keyboardBindings.jump[0])} Saut</span><span>${labelForCode(keyboardBindings.boost[0])} Jetpack</span><span class="hint">${labelForCode(keyboardBindings.aimUp[0])}/${labelForCode(keyboardBindings.aimLeft[0])}/${labelForCode(keyboardBindings.aimDown[0])}/${labelForCode(keyboardBindings.aimRight[0])} Visée · ${labelForCode(keyboardBindings.shoot[0])} Tir · ${labelForCode(keyboardBindings.rotate[0])} Flip · ${labelForCode(keyboardBindings.backPose[0])} Dos (maintenir)</span>`;
     const moveLabel=padBindings.movementStick==='left'?'Stick gauche':'Stick droit';
     const moveEl=document.getElementById('gamepad-move');if(moveEl)moveEl.textContent=moveLabel;
     document.getElementById('gamepad-jump').textContent=labelForButton(padBindings.jump);
@@ -23,7 +23,7 @@ export class ControlsHelp {
     this.keyboard.dataset.active=String(input.lastMethod==='keyboard');this.gamepad.dataset.active=String(input.lastMethod==='gamepad');
     if(!info.available)this.status.textContent='Manette indisponible dans ce navigateur ou cette fenêtre. Le clavier reste disponible.';
     else if(info.connected&&!info.supported)this.status.textContent='Manette détectée, mais ses commandes ne sont pas reconnues par le navigateur. Le clavier reste disponible.';
-    else if(info.connected)this.status.textContent=`${info.label} connectée · Commandes actives : ${input.lastMethod==='gamepad'?'manette':'clavier'} · Les deux restent utilisables.`;
+    else if(info.connected)this.status.textContent=`${info.label} connectée · Commandes actives : ${input.lastMethod==='gamepad'?'manette':'clavier'} · Dos : ${labelForButton(padBindings.backPose)} (maintenir).`;
     else this.status.textContent='PS5 : branche ta manette, puis appuie sur un bouton pour la détecter. Le clavier reste disponible.';
   }
 }

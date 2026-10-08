@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {movementAvailability as a} from '../src/movement-availability.js';
+const p={fuel:100,grounded:false,contactSurface:null,jumpReady:false,impulseReady:false,impulseCooldown:0};
+test('jump indicator follows ground, consumption, cooldown and reset',()=>{assert.equal(a({...p,grounded:true,jumpReady:true}).jump,true);assert.equal(a({...p,impulseReady:true}).jump,true);assert.equal(a(p).jump,false);assert.equal(a({...p,impulseReady:true,impulseCooldown:.2}).jump,false);assert.equal(a({...p,contactSurface:{},jumpReady:true}).jump,true);});
+test('fuel display clamps without changing gameplay state',()=>{const b={...p,fuel:35.6};assert.equal(a(b).fuel,36);assert.equal(b.fuel,35.6);assert.equal(a({...p,fuel:-5}).fuel,0);assert.equal(a({...p,fuel:110}).fuel,100);});

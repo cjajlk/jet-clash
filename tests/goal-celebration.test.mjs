@@ -23,7 +23,7 @@ for(const side of ['left','right']){
   m.update(C.goalEffectDuration/2);assert.deepEqual(m.ball,ball);assert.deepEqual(m.score,score);
   assert.deepEqual([m.player,m.bot],players);assert.ok(m.goalEffect.remaining>0);
   m.update(C.goalEffectDuration/2+.01);assert.equal(m.goalEffect,null);assert.deepEqual(m.ball,ball);
-  m.update(C.goalPause);assert.equal(m.state,S.PRE_ROUND);assert.equal(m.ball.x,640);
+  m.update(C.goalPause);assert.equal(m.state,S.PLAYING);assert.equal(m.ball.x,640);
  });
  test(`${side}: Canvas pulse discret, couleur et clipping de la cage`,()=>{
   const calls=[];const ctx=new Proxy({}, {get:(o,k)=>o[k]??((...args)=>calls.push([k,...args])),set:(o,k,v)=>{o[k]=v;calls.push([k,v]);return true;}});

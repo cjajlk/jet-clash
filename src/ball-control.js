@@ -1,5 +1,6 @@
 import { CONFIG as C } from './config.js';
 import { circlePolygonContact } from './collision-shapes.js';
+import {aimedSpecialShotType,markSpecialShot} from './aerial-shots.js';
 
 // Local contact assistance only: never a spring, position constraint or attraction.
 export const BALL_CONTROL = Object.freeze({captureSpeed:430, releaseSpeed:600,
@@ -63,7 +64,7 @@ export function drawBallContactZone(ctx,p){
 }
 export class BallControl {
   constructor(onShot=()=>{}){this.onShot=onShot;this.showAim=true;this.reset();}
-  reset(){this.owned=false;this.pressure=false;this.shotContact=false;this.shotPrepared=false;this.pendingShot=null;this.pendingShotTime=0;this.recentContactTime=0;this.charge=0;this.charging=false;this.held=false;this.cooldown=0;this.aim=null;}
+  reset(){this.specialShotGrace=0;this.owned=false;this.pressure=false;this.shotContact=false;this.shotPrepared=false;this.pendingShot=null;this.pendingShotTime=0;this.recentContactTime=0;this.charge=0;this.charging=false;this.held=false;this.cooldown=0;this.aim=null;}
   release(){this.owned=false;this.pressure=false;this.shotContact=false;this.shotPrepared=false;this.pendingShot=null;this.pendingShotTime=0;this.recentContactTime=0;this.charging=false;this.charge=0;this.aim=null;this.cooldown=BALL_CONTROL.cooldown;}
   contact(p,b){
     const zone=resolveBallContactZone(p);
@@ -75,6 +76,7 @@ export class BallControl {
     return !!circlePolygonContact({...b,r:b.r+margin},p.facing<0?[...zone.vertices].reverse():zone.vertices);
   }
   update(p,b,input,dt,heavy=null){
+    this.specialShotGrace=Math.max(0,this.specialShotGrace-dt);
     const T=BALL_CONTROL;this.cooldown=Math.max(0,this.cooldown-dt);this.pendingShotTime=Math.max(0,this.pendingShotTime-dt);this.recentContactTime=Math.max(0,this.recentContactTime-dt);if(this.pendingShotTime<=0)this.pendingShot=null;
     const pressed=!!input.shoot,relative=Math.hypot(b.vx-p.vx,b.vy-p.vy);
     const control=normalize(p.controlX,p.controlY)||{x:p.facing||1,y:0};
@@ -86,7 +88,8 @@ export class BallControl {
     if(this.owned&&(Math.hypot(b.x-p.x,b.y-p.y)>T.reach||relative>T.releaseSpeed||coherence<-T.orientationThreshold)){
       this.owned=false;this.pressure=false;
     }
-    const touching=this.contact(p,b);
+    const specialType=aimedSpecialShotType(p,b);
+    const touching=this.contact(p,b)||!!specialType;
     if(!this.owned&&!this.cooldown&&touching&&relative<=T.captureSpeed&&coherence>=T.orientationThreshold)this.owned=true;
     // The visible sporting zone is also the exact shot-enabling zone: the ball's
     // circumference only has to touch it. Orientation still controls possession,
@@ -113,7 +116,7 @@ export class BallControl {
       const canStrike=touching||pressure||(this.recentContactTime>0&&this.prepareContact(p,b,T.contactMargin));
       const low=pressure?T.pressureShotSpeed:T.shotSpeed,high=pressure?T.pressureChargedSpeed:T.chargedSpeed;
       const speed=low+(high-low)*this.chargeFraction;
-      const shot={vx:dir.x*speed+p.vx*.2,vy:dir.y*speed+p.vy*.2};
+      const shot={vx:dir.x*speed+p.vx*.2,vy:dir.y*speed+p.vy*.2,type:specialType};
 
       this.owned=false;this.pressure=false;this.shotContact=false;this.shotPrepared=false;
       this.charging=false;this.charge=0;this.aim=null;this.cooldown=T.cooldown;
@@ -149,7 +152,8 @@ export class BallControl {
   applyShot(b,shot){
     b.vx=shot.vx;b.vy=shot.vy;const speed=Math.hypot(b.vx,b.vy);
     if(speed>C.maxBallSpeed){b.vx*=C.maxBallSpeed/speed;b.vy*=C.maxBallSpeed/speed;}b.flash=.12;
-    this.onShot(Math.min(1,speed/C.maxBallSpeed));
+    if(shot.type){markSpecialShot(b,shot.type);this.specialShotGrace=.25;}
+    this.onShot(Math.min(1,speed/C.maxBallSpeed),shot.type||null);
   }
   finishContacts(b,p,physicalPlayerContact=false){
     // Resolve ordinary body/arena contacts first. A collision solver can separate the
@@ -159,6 +163,7 @@ export class BallControl {
     const genuineEntry=!!physicalPlayerContact||(!p||this.contact(p,b));
     if(genuineEntry)this.recentContactTime=BALL_CONTROL.recentContactSeconds;
     if(this.pendingShot&&this.pendingShotTime>0&&genuineEntry){
+      this.pendingShot.type=aimedSpecialShotType(p,b)||this.pendingShot.type;
       this.applyShot(b,this.pendingShot);this.pendingShot=null;this.pendingShotTime=0;
     }
   }

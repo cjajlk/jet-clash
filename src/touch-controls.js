@@ -11,6 +11,7 @@ export class TouchControls {
       <button type="button" class="touch-button touch-jump" data-touch="jump">SAUT</button>
       <button type="button" class="touch-button touch-rot" data-touch="rot">FLIP</button>
       <button type="button" class="touch-button touch-boost" data-touch="boost">JET</button>
+      <button type="button" class="touch-button touch-back" data-touch="back" aria-label="Maintenir pour présenter le dos sans flip">DOS</button>
       <button type="button" class="touch-button touch-shoot" data-touch="shoot" aria-label="Tir : maintenir pour charger, glisser pour viser, relâcher pour frapper">TIR</button>
       <button type="button" class="touch-button touch-reset" data-touch="reset">RESET</button>
       <button type="button" class="touch-fullscreen" aria-label="Plein écran">⛶</button>

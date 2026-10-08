@@ -12,7 +12,12 @@ export function createPlayer(skin) {
     jumpReady: true, impulseReady: true, impulseCooldown: 0, flipIntent: 0,
     flipHeld:false,flipReady:true,flipTimer:0,flipHit:false,flipX:1,flipY:0 };
 }
+export function setBackPose(body,input){
+  if(input.backPose&&!body.backPoseHeld)body.facing=-(body.facing||1);
+  body.backPoseHeld=!!input.backPose;
+}
 export function drive(body, input, dt) {
+  setBackPose(body,input);
   const rawTouch=input.touchDirection;
   const rawAim=normalize(input.aimX,input.aimY);
   const rawDirection=normalize(input.directionX,input.directionY)||normalize(rawTouch?.x,rawTouch?.y)||rawAim;
@@ -39,7 +44,7 @@ export function drive(body, input, dt) {
   // footX/footY points toward the feet, so the body/head faces opposite the stick.
   // Trajectory is untouched: the stick changes orientation, not existing velocity.
   const stickFootTarget=rawDirection?{x:-rawDirection.x,y:-rawDirection.y}:null;
-  const visualTarget=supported?(support==='ceiling'?{x:0,y:-1}:{x:0,y:1}):(stickFootTarget||(rotationHeld?{x:body.footX||0,y:body.footY||1}:{x:0,y:1}));
+  const visualTarget=supported?(support==='ceiling'?{x:0,y:-1}:{x:0,y:1}):body.backPoseHeld?{x:0,y:1}:(stickFootTarget||(rotationHeld?{x:body.footX||0,y:body.footY||1}:{x:0,y:1}));
   const turnRate=supported?C.groundOrientationRate:rawDirection?(rotationHeld?C.airRotateRate:C.airOrientationRate):C.airReturnOrientationRate;
   const visual=normalize(body.footX,body.footY)||{x:1,y:0};
   const visualEase=1-Math.exp(-turnRate*dt);
@@ -49,10 +54,14 @@ export function drive(body, input, dt) {
   body.footX=Math.cos(angle);body.footY=Math.sin(angle);
   const axis = Math.max(-1, Math.min(1, input.axis || 0));
   const accel = supported ? C.runAcceleration : C.airAcceleration;
-  body.vx += axis * accel * dt;
+  // Walking/air steering caps its own acceleration, never an existing boost,
+  // flip or collision impulse. Opposite input can still brake that momentum.
+  const previousVx=body.vx;
+  const steeredVx=previousVx+axis*accel*dt;
+  body.vx=axis>0?Math.min(steeredVx,Math.max(C.runSpeed,previousVx)):
+    axis<0?Math.max(steeredVx,Math.min(-C.runSpeed,previousVx)):previousVx;
   if (!axis) body.vx *= Math.exp(-(supported ? 13 : C.airHorizontalDrag) * dt);
-  body.vx = Math.max(-C.runSpeed, Math.min(C.runSpeed, body.vx));
-  if (axis) body.facing = Math.sign(axis);
+  if (axis&&!body.backPoseHeld) body.facing = Math.sign(axis);
   body.impulseCooldown=Math.max(0,body.impulseCooldown-dt);
   const airLook=normalize(body.footX,body.footY)||{x:0,y:1};
   const orientedImpulse=normalize(airLook.x,-Math.abs(airLook.y))||{x:0,y:-1};
@@ -100,7 +109,12 @@ export function drive(body, input, dt) {
     const touchJet=normalize(rawTouch?.x,rawTouch?.y);
     const bodyJet=normalize(-body.footX,-body.footY)||{x:0,y:-1};
     const jetDirection=!supported&&body.skin==='fluid'?(touchJet||bodyJet):{x:0,y:-1};
-    body.vx += jetDirection.x * C.thrust * dt;
+    // Bound powered horizontal flight to the existing run + flip speed.
+    const jetLimit=C.runSpeed+C.airImpulseSpeed;
+    const beforeJet=body.vx;
+    const jetVx=beforeJet+jetDirection.x*C.thrust*dt;
+    body.vx=jetDirection.x>0?Math.min(jetVx,Math.max(jetLimit,beforeJet)):
+      jetDirection.x<0?Math.max(jetVx,Math.min(-jetLimit,beforeJet)):beforeJet;
     body.vy += jetDirection.y * C.thrust * dt;
     body.fuel = Math.max(0, body.fuel - C.fuelUse * dt);
   }

@@ -22,7 +22,7 @@ export class KeyboardInput {
     const directionX=Number(any('moveRight'))-Number(any('moveLeft'));
     const directionY=Number(any('aimDown'))-Number(any('aimUp'));
     return { axis:directionX,directionX,directionY,
-      jump:any('jump'), boost:any('boost'), rotate:any('rotate'), resetBall };
+      jump:any('jump'), boost:any('boost'), rotate:any('rotate'), backPose:any('backPose'), resetBall };
   }
 }
 
@@ -48,6 +48,6 @@ export class PlayerInput {
     return {axis:directionHeld?keyboard.axis:pad.axis,
       directionX:directionHeld?keyboard.directionX:pad.directionX,
       directionY:keyboardVertical?keyboard.directionY:pad.directionY,
-      jump:keyboard.jump||pad.jump,boost:keyboard.boost||pad.boost,rotate:keyboard.rotate||pad.rotate,resetBall:keyboard.resetBall||pad.resetBall};
+      jump:keyboard.jump||pad.jump,boost:keyboard.boost||pad.boost,rotate:keyboard.rotate||pad.rotate,backPose:keyboard.backPose||pad.backPose,resetBall:keyboard.resetBall||pad.resetBall};
   }
 }

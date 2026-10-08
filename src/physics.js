@@ -10,6 +10,14 @@ function rechargeSupport(p) {
   if (p.contactSurface === 'ceiling' && p.footY < -.65) { p.jumpReady = true; p.impulseReady = true; }
 }
 function overlaps(p, r) { return !r.vertices && p.x + p.w/2 > r.x && p.x - p.w/2 < r.x+r.w && p.y+p.h/2 > r.y && p.y-p.h/2 < r.y+r.h; }
+function containPlayerHorizontally(p){
+  const inOpening=p.y-p.h/2>=C.goalTop-1e-8&&p.y+p.h/2<=C.goalBottom+1e-8;
+  // The goal line remains open. Only the rear of the painted pocket is solid.
+  const inset=inOpening?C.playerGoalBackInset:0;
+  const left=inset+p.w/2,right=C.width-inset-p.w/2;
+  if(p.x<left){p.x=left;p.vx=Math.max(0,p.vx);}
+  if(p.x>right){p.x=right;p.vx=Math.min(0,p.vx);}
+}
 function surfaceYAt(points,x){
   if(!points?.length)return null;
   for(let i=0;i<points.length-1;i++){
@@ -56,7 +64,7 @@ export function movePlayer(p, solids, dt) {
     else if (p.vx < 0) p.x = r.x+r.w+p.w/2;
     p.vx = 0;
   }
-  p.x = clamp(p.x, p.w/2, C.width - p.w/2);
+  containPlayerHorizontally(p);
   p.y += p.vy * dt; p.grounded = false;
   resolvePlayerRamps(p,solids);
   for (const r of solids) if (overlaps(p,r)) {
@@ -67,11 +75,10 @@ export function movePlayer(p, solids, dt) {
   }
   if (p.y < C.ceiling + p.h/2) { p.y = C.ceiling+p.h/2; p.vy = Math.max(0,p.vy); setSupport(p,1); rechargeSupport(p); }
   // Arena V2: the recessed goal mouths are playable for characters too.
-  // Outer canvas walls remain hard limits; the rectangular goal frame solids
+  // Painted pocket backs and outer canvas walls remain hard limits; the goal frame solids
   // above/below the mouth keep players inside the intended opening.
   for(let pass=0;pass<4;pass++){
-    if(p.x<p.w/2){p.x=p.w/2;p.vx=Math.max(0,p.vx);}
-    if(p.x>C.width-p.w/2){p.x=C.width-p.w/2;p.vx=Math.min(0,p.vx);}
+    containPlayerHorizontally(p);
     if(p.y+p.h/2>C.floor){p.y=C.floor-p.h/2;p.vy=Math.min(0,p.vy);setSupport(p,-1);rechargeSupport(p);}
     if(p.y-p.h/2<C.ceiling){p.y=C.ceiling+p.h/2;p.vy=Math.max(0,p.vy);setSupport(p,1);rechargeSupport(p);}
     resolvePlayerRamps(p,solids.filter(s=>s.goalBoundary));

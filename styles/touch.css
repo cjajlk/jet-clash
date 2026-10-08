@@ -36,3 +36,12 @@
 @media (max-height:380px) and (orientation:landscape){#touch-controls{--edge:12px;--bottom:12px}.touch-match .hud{transform:translateX(-50%) scale(.6)}.touch-match .fuel-hud{top:52px}}
 @media (max-width:600px){.game-back{top:96px}.touch-match .game-back{top:96px;right:calc(12px + env(safe-area-inset-right))}}
 @media (orientation:portrait){.touch-capable .game-back{position:fixed;top:calc(12px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));right:auto}}
+/* Independent rear-facing stance, beside the existing aerial controls. */
+.touch-back{width:var(--rot);height:var(--rot);right:calc(var(--edge) + var(--button) * 2 + var(--gap) * 2 + env(safe-area-inset-right));bottom:calc(var(--bottom) + var(--button) + var(--gap) + env(safe-area-inset-bottom));font-size:10px}
+#touch-controls[data-layout="mirrored"] .touch-back{right:auto;left:calc(var(--edge) + var(--button) * 2 + var(--gap) * 2 + env(safe-area-inset-left))}
+
+.touch-match .fuel-hud>div.boost-panel{width:72px;padding:5px}
+.touch-match .boost-ring{width:40px;height:40px;margin-bottom:4px}
+.touch-match .boost-number{width:30px;height:30px;font-size:12px}
+.touch-match .jump-status{font-size:8px;gap:4px}
+.touch-match .fuel-hud label{letter-spacing:.5px;font-size:7px;margin-bottom:4px}

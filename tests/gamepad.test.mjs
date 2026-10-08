@@ -6,7 +6,7 @@ import { BallControl, BALL_CONTROL } from '../src/ball-control.js';
 import { createBall } from '../src/ball.js';
 import { createPlayer, drive } from '../src/player.js';
 import { CONFIG as C } from '../src/config.js';
-const empty={axis:0,directionX:0,directionY:0,jump:false,boost:false,rotate:false,resetBall:false};
+const empty={axis:0,directionX:0,directionY:0,jump:false,boost:false,rotate:false,backPose:false,resetBall:false};
 class Target{
   listeners=new Map();
   addEventListener(name,fn){if(!this.listeners.has(name))this.listeners.set(name,[]);this.listeners.get(name).push(fn);}
@@ -55,7 +55,7 @@ test('clavier conservé : toutes les commandes gardent leur sens',()=>{
 });
 test('clavier et manette coexistent ; directions clavier prioritaires et actions combinées',()=>{
   const p=pad(),s=setup([p]);p.axes[2]=-1;s.input.read();s.target.emit('keydown',{code:'KeyD'});assert.equal(s.input.read().axis,1);s.target.emit('keydown',{code:'ArrowLeft'});assert.equal(s.input.read().axis,0);
-  p.buttons[1].value=1;s.target.emit('keydown',{code:'Space'});assert.deepEqual(s.input.read(),{axis:0,directionX:0,directionY:0,jump:true,boost:true,rotate:false,resetBall:false});s.target.emit('keyup',{code:'ArrowLeft'});s.target.emit('keyup',{code:'KeyD'});assert.equal(s.input.read().axis,-1);
+  p.buttons[1].value=1;s.target.emit('keydown',{code:'Space'});assert.deepEqual(s.input.read(),{axis:0,directionX:0,directionY:0,jump:true,boost:true,rotate:false,backPose:false,resetBall:false});s.target.emit('keyup',{code:'ArrowLeft'});s.target.emit('keyup',{code:'KeyD'});assert.equal(s.input.read().axis,-1);
   s.target.emit('keydown',{code:'ShiftLeft'});p.buttons[1].value=0;assert.equal(s.input.read().boost,true);s.target.emit('keyup',{code:'ShiftLeft'});assert.equal(s.input.read().boost,false);
 });
 test('dernière entrée : pas de clignotement sous un stick maintenu ou bruit au repos',()=>{
@@ -70,7 +70,7 @@ test('API absente, bloquée ou manette non standard : clavier fonctionnel',()=>{
 test('perte de focus : relâchement, puis retour au neutre avant reprise des commandes manette',()=>{
   const p=pad(),s=setup([p]);p.buttons[1].value=1;s.input.read();s.target.emit('blur');assert.deepEqual(s.input.read(),empty);s.input.clear();assert.deepEqual(s.input.read(),empty);p.buttons[1].value=0;s.input.read();p.buttons[1].value=1;assert.equal(s.input.read().boost,true);
 });
-test('mapping Xbox et PS5 : mêmes entrées, labels distincts',()=>{for(const [id,label]of [['Xbox Controller','Xbox'],['DualSense Wireless Controller','PS5']]){const p=pad(0,id),s=setup([p]);p.buttons[0].value=1;p.buttons[1].value=1;assert.deepEqual(s.input.read(),{axis:0,directionX:0,directionY:0,jump:true,boost:true,rotate:false,resetBall:false});assert.equal(s.input.gamepad.status.label,label);}});
+test('mapping Xbox et PS5 : mêmes entrées, labels distincts',()=>{for(const [id,label]of [['Xbox Controller','Xbox'],['DualSense Wireless Controller','PS5']]){const p=pad(0,id),s=setup([p]);p.buttons[0].value=1;p.buttons[1].value=1;assert.deepEqual(s.input.read(),{axis:0,directionX:0,directionY:0,jump:true,boost:true,rotate:false,backPose:false,resetBall:false});assert.equal(s.input.gamepad.status.label,label);}});
 test('aucun changement de capacités : commandes manette et clavier identiques dans drive',()=>{
   const p=pad(),s=setup([p]),a=createPlayer('fluid'),b=createPlayer('fluid');p.axes[2]=1;p.buttons[1].value=1;
   for(let i=0;i<120;i++){drive(a,s.input.read(),C.step);drive(b,{axis:1,directionX:1,directionY:0,jump:false,boost:true},C.step);}assert.deepEqual(a,b);

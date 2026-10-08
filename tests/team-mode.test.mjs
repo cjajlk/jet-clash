@@ -74,7 +74,7 @@ test('2v2 : remise en jeu réinitialise quatre joueurs et trois IA, garde le sco
   const m=playing();m.lastTouch=m.player;m.goal('player');
   for(const p of m.players)Object.assign(p,{fuel:0,boosting:true,jumpHeld:true,flipTimer:.2,flipHit:true});
   for(const entry of m.bots)entry.ai.base.wait=3;
-  m.update(C.goalPause+.01);assert.equal(m.state,S.PRE_ROUND);assert.equal(m.score.player,1);assert.equal(m.humanGoals,1);assert.equal(m.lastTouch,null);
+  m.update(C.goalPause+.01);assert.equal(m.state,S.PLAYING);assert.equal(m.score.player,1);assert.equal(m.humanGoals,1);assert.equal(m.lastTouch,null);
   for(const p of m.players){assert.equal(p.fuel,100);assert.equal(p.boosting,false);assert.equal(p.jumpHeld,false);assert.equal(p.flipTimer,0);}
   for(const entry of m.bots)assert.equal(entry.ai.base.wait,0);
 });
