@@ -12,7 +12,8 @@ const assert=require('node:assert/strict');
   await track.scrollIntoViewIfNeeded();assert.equal(await previous.isDisabled(),true);
   const before=await page.evaluate(()=>JSON.stringify(window.__jetclash.match.profile.data));
   await next.click();await page.waitForFunction(()=>document.querySelector('.sp-track').scrollLeft>700);
-  const step=await track.evaluate(el=>el.scrollLeft);assert.ok(step<1100);
+  await page.waitForTimeout(400);
+  const step=await track.evaluate(el=>el.scrollLeft);const expected=await track.evaluate(el=>(el.firstElementChild.getBoundingClientRect().width+parseFloat(getComputedStyle(el).columnGap))*5);assert.ok(Math.abs(step-expected)<2);
   // Real arrow clicks, without assigning scrollLeft, must reach both ends.
   for(let i=0;i<12&&!(await next.isDisabled());i++){await next.click();await page.waitForTimeout(400);}
   assert.equal(await next.isDisabled(),true);
