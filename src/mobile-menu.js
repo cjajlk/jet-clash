@@ -51,7 +51,8 @@ export class MobileMenu {
     });
   }
   async toggleFullscreen(){
-    const target=document.getElementById('game-shell')||document.documentElement;
+    // The menu is a sibling of the arena: fullscreen must include both.
+    const target=document.documentElement;
     try{
       if(document.fullscreenElement)await document.exitFullscreen();
       else if(target.requestFullscreen)await target.requestFullscreen();

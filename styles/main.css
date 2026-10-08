@@ -35,3 +35,9 @@
 .jump-status{display:flex;justify-content:center;align-items:center;gap:5px;font-size:9px;letter-spacing:1px;color:#a2aaba}
 .jump-status i{width:9px;height:9px;border-radius:50%;background:#596174}
 .jump-status.ready{color:#bcffd4}.jump-status.ready i{background:#64ed97;box-shadow:0 0 7px #64ed9780}
+
+/* Options fullscreen contains the menu and the arena together. */
+html:fullscreen body:not(.mobile-menu-open)>.topbar{display:none}
+html:fullscreen body:not(.mobile-menu-open) main{max-width:none;padding:0;width:100vw;height:100dvh;display:grid;place-items:center}
+html:fullscreen body:not(.mobile-menu-open) .arena-heading{display:none}
+html:fullscreen body:not(.mobile-menu-open) #game-shell{width:min(100vw,177.777778dvh);aspect-ratio:16/9;border:0;border-radius:0}
