@@ -21,7 +21,7 @@ test('arène V2 : rendu utilise le fond complet sans superposer de cages ni ramp
   const noop=()=>{},ctx=new Proxy({createLinearGradient:()=>({addColorStop:noop})},{get:(o,k)=>o[k]??noop,set:(o,k,v)=>(o[k]=v,true)});
   const renderer=new Renderer({getContext:()=>ctx}),calls=[];
   renderer.camera.update=()=>({zoom:1,x:640,y:360});renderer.arenaV2Goals=()=>calls.push('arenaV2Goals');renderer.goalRamp=()=>calls.push('ramp');renderer.goalGate=()=>calls.push('oldGate');renderer.fit=key=>calls.push(key);
-  const background={width:C.width,height:C.height},draws=[];renderer.images.background=background;ctx.drawImage=(...args)=>draws.push(args);
+  const background={width:C.width,height:C.height},draws=[];renderer.images.backgroundFlat=background;ctx.drawImage=(...args)=>draws.push(args);
   renderer.render({player:createPlayer('fluid'),bot:createPlayer('heavy'),ball:createBall()});
   assert.deepEqual(draws[0],[background,0,0,C.width,C.height]);assert.ok(!calls.includes('arenaV2Goals'));assert.ok(!calls.includes('ramp'));assert.ok(!calls.includes('oldGate'));assert.ok(!calls.includes('platform'));assert.ok(!calls.includes('obstacle'));
 });

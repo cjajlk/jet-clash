@@ -16,7 +16,7 @@ for(const side of ['left','right']){
   for(const y of [C.goalTop+b.r,C.goalBottom-b.r]){b.y=y;assert.equal(goalScorer(b),null);}
   const m=make();Object.assign(m.ball,{x:line+sign*(depth-1),y:245,vx:0,vy:0});m.update(C.step);
   assert.deepEqual(m.score,{player:0,bot:0});assert.equal(m.goalEffect,null);
-  Object.assign(m.ball,{x:line+sign*(depth+1),y:245,vx:0,vy:0});m.update(C.step);
+  Object.assign(m.ball,{x:line+sign*(m.ball.r+12-1),y:245,vx:sign*500,vy:0});m.update(C.step);
   assert.equal(m.score[scorer],1);assert.equal(m.goalEffect.side,side);assert.equal(m.goalEffect.remaining,C.goalEffectDuration);
   const ball={...m.ball},score={...m.score},players=[{...m.player},{...m.bot}];
   assert.equal(m.goal(scorer),false);
@@ -30,14 +30,14 @@ for(const side of ['left','right']){
   const r=Object.create(Renderer.prototype);r.ctx=ctx;r.goalPulse(null);assert.equal(calls.length,0);
   r.goalPulse({side,x:line+sign*50,y:245,remaining:C.goalEffectDuration});
   assert.ok(calls.some(c=>c[0]==='fillStyle'&&c[1]===(left?'#4ad8ff':'#ff5c88')));
-  assert.ok(calls.some(c=>c[0]==='rect'&&c[1]===(left?0:C.goalRight)&&c[3]===165));
+  assert.ok(calls.some(c=>c[0]==='rect'&&c[1]===(left?0:C.goalRight)&&c[3]===C.goalLeft));
   assert.ok(calls.some(c=>c[0]==='rect'&&c[2]===C.goalScoreTop&&c[4]===C.goalScoreBottom-C.goalScoreTop));
   assert.ok(calls.some(c=>c[0]==='arc'));assert.equal(calls.at(-1)[0],'restore');
  });
 }
 test('entraînement : même seuil, effet sans score, remise à zéro habituelle et Fluid intact',()=>{
  const m=make();m.start('training');Object.assign(m.player,{x:640,y:C.floor-m.player.h/2});const p={...m.player};
- Object.assign(m.ball,{x:C.goalRight+goalEntryDepth(m.ball.r)+1,y:245,vx:0,vy:0});
+ Object.assign(m.ball,{x:C.goalRight+m.ball.r+12-1,y:245,vx:500,vy:0});
  m.update(C.step);assert.equal(m.goalEffect.side,'right');assert.deepEqual(m.score,{player:0,bot:0});assert.equal(m.reward,0);
  assert.equal(m.ball.x,640);assert.equal(m.player.x,p.x);assert.equal(m.player.y,p.y);assert.equal(m.state,S.PLAYING);
  m.menu();assert.equal(m.goalEffect,null);m.start();assert.equal(m.goalEffect,null);

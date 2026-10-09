@@ -1,9 +1,9 @@
-import { CONFIG as C, DIFFICULTIES } from './config.js';
+import { CONFIG as DEFAULT, DIFFICULTIES } from './config.js';
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 export class Bot {
   constructor(level, random = Math.random) { this.settings=DIFFICULTIES[level] || DIFFICULTIES.normal; this.random=random; this.reset(); }
   reset() { this.wait=0; this.input={axis:0,jump:false,boost:false}; }
-  update(body, ball, dt) {
+  update(body, ball, dt,players=[],C=DEFAULT) {
     this.wait-=dt;
     if (this.wait>0) return this.input;
     const d=this.settings; this.wait=d.reaction;

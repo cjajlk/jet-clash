@@ -1,9 +1,9 @@
-import {trainingArena,arenaPhysics} from './training-arenas.js';
+import {trainingArena,arenaPhysics,competitiveArena} from './training-arenas.js';
 import { BallControl, BALL_CONTROL } from './ball-control.js';
 import { CONFIG as C } from './config.js';
 import { createPlayer, drive, setBackPose } from './player.js';
 import { createBall, integrateBall, limitBallSpeed } from './ball.js';
-import { solids, resetPositions } from './arena.js';
+import { resetPositions } from './arena.js';
 import { movePlayer, collideBall, hitPlayer, ballOutsideArena } from './physics.js';
 import { Bot } from './bot.js';
 import { goalScorer } from './goals.js';
@@ -23,14 +23,14 @@ export class Match {
     // Optional presentation effects must never interrupt the simulation.
     try{this.onEvent(kind,detail);}catch{}
   }
-  get arena(){return this.training?arenaPhysics(this.trainingArenaId).config:C;}
-  get arenaSolids(){return this.training?arenaPhysics(this.trainingArenaId).solids:solids;}
+  get arena(){return arenaPhysics(this.trainingArenaId).config;}
+  get arenaSolids(){return arenaPhysics(this.trainingArenaId).solids;}
   get players(){return [this.player,this.bot,...this.extraBots.map(entry=>entry.body)].filter(Boolean);}
   get bots(){return [...(this.bot&&this.ai?[{body:this.bot,ai:this.ai}]:[]),...this.extraBots];}
   get rewardGoals(){return this.mode==='2v2'?this.humanGoals:this.score.player;}
   start(modeOrDifficulty='normal',difficultyMaybe,arenaId='current'){
     this.mode=['training','2v2','duel'].includes(modeOrDifficulty)?modeOrDifficulty:'duel';
-    this.training=this.mode==='training';this.trainingArenaId=this.training?trainingArena(arenaId).id:'current';
+    this.training=this.mode==='training';this.trainingArenaId=this.training?trainingArena(arenaId).id:competitiveArena().id;
     this.difficulty=this.training?'normal':(difficultyMaybe||(['2v2','duel'].includes(modeOrDifficulty)?'normal':modeOrDifficulty));
     this.ai=this.training?null:this.mode==='2v2'?new TeamBot(this.difficulty,'bot'):new Bot(this.difficulty);
     this.extraBots=this.mode==='2v2'?createTeamExtras(this.difficulty):[];
@@ -50,7 +50,7 @@ export class Match {
     else if(this.mode==='2v2')resetTeamPositions(this.player,this.bot,this.extraBots,this.ball);
     else resetPositions(this.player,this.bot,this.ball);
     for(const entry of this.bots)entry.ai.reset?.();
-    if(!this.training)Object.assign(this.ball,{x:C.width/2,y:C.floor-this.ball.r,vx:0,vy:0});
+    if(!this.training){for(const p of this.players)p.y=this.arena.floor-p.h/2;Object.assign(this.ball,{x:C.width/2,y:this.arena.floor-this.ball.r,vx:0,vy:0});}
     this.state=!this.training&&countdown?STATES.PRE_ROUND:STATES.PLAYING;
     this.phase=!this.training&&countdown?C.countdown:0;
     if(this.training){this.bot=null;this.remaining=0;}
@@ -84,7 +84,7 @@ export class Match {
     setBackPose(this.player,input);
     const aerialShot=prepareAerialShot(this.player,this.ball,input,dt);
     if(aerialShot)this.control.release();
-    drive(this.player,input,dt);for(const entry of bots)drive(entry.body,entry.ai.update(entry.body,this.ball,dt,players),dt);
+    drive(this.player,input,dt);for(const entry of bots)drive(entry.body,entry.ai.update(entry.body,this.ball,dt,players,arena),dt);
     for(const player of players)movePlayer(player,solids,dt,arena);
     const pressureOpponent=this.mode==='2v2'?(bots.find(entry=>entry.body.team==='bot'&&this.control.contact(entry.body,this.ball))?.body||this.bot):this.bot;
     if(!aerialShot)this.control.update(this.player,this.ball,input,dt,pressureOpponent);

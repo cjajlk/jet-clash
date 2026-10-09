@@ -1,6 +1,6 @@
 // NOUVEAU code Étape 2. Aucun lien de version avec les modules historiques absents.
 export const CONFIG = Object.freeze({
-  width: 1280, height: 720, ceiling: 90, floor: 570, duration: 300,
+  width: 1280, height: 720, ceiling: 90, floor: 556, duration: 300,
   step: 1 / 120, countdown: 3, goalPause: 1.8,
   goalEntryRadiusFactor: 1.75, goalEffectDuration: .8,
   gravity: 1120, runAcceleration: 1750, airAcceleration: 1000, airHorizontalDrag: .8,
@@ -16,11 +16,11 @@ export const CONFIG = Object.freeze({
   airReturnOrientationRate: 4.5, airLeanFactor: .72, airLeanDepth: .42,
   airFlipIntentTime: .22, airFlipIntentY: -.68,
   airFlipDuration: .48, airFlipStrikeSpeed: 420,
-  goalLeft: 165, goalRight: 1115, goalTop: 125, goalBottom: 365, goalRampBottom: 365,
+  goalLeft: 172, goalRight: 1108, goalTop: 176, goalBottom: 386, goalRampBottom: 386,
   // Character-only rear wall aligned with the painted net, inside the canvas edge.
-  playerGoalBackInset: 50,
+  playerGoalBackInset: 35,
   // Visible net interior in the authored arena background; scoring only.
-  goalScoreTop: 195, goalScoreBottom: 350,
+  goalScoreTop: 178, goalScoreBottom: 384,
 });
 export const DIFFICULTIES = Object.freeze({
   easy: { name: 'Facile', reaction: 0.34, error: 64, anticipation: 0.10, aggression: 0.55 },

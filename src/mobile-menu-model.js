@@ -16,7 +16,7 @@ export const COLLECTION_CATEGORIES=Object.freeze([
 ]);
 export const MENU_IDENTITY=Object.freeze({nickname:'Pilote',emblem:'JC'});
 // Future event themes can supply these presentation fields, without a calendar.
-export const DEFAULT_MENU_THEME=Object.freeze({id:'aube',background:'assets/arena/arena_background.png',event:null});
+export const DEFAULT_MENU_THEME=Object.freeze({id:'aube',background:'assets/arena/arena_flat_large_goals_v4.png',event:null});
 export function profilePresentation(profile){
   const value=profile?.data?.xp,xp=Number.isSafeInteger(value)&&value>=0?value:0;
   return {...MENU_IDENTITY,xp,level:1+Math.floor(xp/1000),progress:xp%1000};

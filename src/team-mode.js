@@ -1,4 +1,5 @@
-import { CONFIG as C } from './config.js';
+import { CONFIG as DEFAULT } from './config.js';
+const C=DEFAULT;
 import { Bot } from './bot.js';
 import { createPlayer } from './player.js';
 import { resetPositions } from './arena.js';
@@ -7,7 +8,7 @@ import { resetPositions } from './arena.js';
 export class TeamBot {
   constructor(level,team,random=Math.random){this.team=team;this.base=new Bot(level,random);this.reset();}
   reset(){this.base.reset();this.supportWait=0;this.supporting=false;this.supportInput={axis:0,jump:false,boost:false};}
-  update(body,ball,dt,players=[]){
+  update(body,ball,dt,players=[],C=DEFAULT){
     const direction=this.team==='player'?1:-1;
     const allies=players.filter(p=>p.team===this.team);
     const nearest=allies.slice().sort((a,b)=>(Math.abs(a.x-ball.x)+Math.abs(a.y-ball.y)*.35)-(Math.abs(b.x-ball.x)+Math.abs(b.y-ball.y)*.35))[0];
@@ -27,8 +28,8 @@ export class TeamBot {
       return this.supportInput;
     }
     if(this.supporting){this.base.reset();this.supportWait=0;this.supporting=false;}
-    if(this.team==='bot')return this.base.update(body,ball,dt);
-    const input=this.base.update({...body,x:C.width-body.x,vx:-body.vx},{...ball,x:C.width-ball.x,vx:-ball.vx},dt);
+    if(this.team==='bot')return this.base.update(body,ball,dt,players,C);
+    const input=this.base.update({...body,x:C.width-body.x,vx:-body.vx},{...ball,x:C.width-ball.x,vx:-ball.vx},dt,players,C);
     return {...input,axis:-input.axis};
   }
 }

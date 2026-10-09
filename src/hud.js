@@ -3,7 +3,7 @@ import { STATES } from './match.js';
 export class HUD{
   constructor(){this.lastState=null;this.announcementText='';this.ids={};for(const id of ['menu','hud','fuel-hud','score-player','score-bot','timer','mode-label','fuel-player','fuel-bot','announcement','result','result-title','result-score','xp-earned','xp-breakdown','result-level','profile','save-warning','game-shell','leave-game','team-player-name','team-player-detail','team-bot-name','team-bot-detail','match-type','fuel-bot-label'])this.ids[id]=document.getElementById(id);for(const side of ['player','bot']){const panel=this.ids[`fuel-${side}`].parentElement;panel.classList.add('boost-panel');panel.querySelector('label').textContent=side==='player'?'BOOST · FLUID':'BOOST · HEAVY';panel.insertAdjacentHTML('beforeend',`<div class="boost-ring" id="boost-${side}" role="img"><span class="boost-number">100</span></div><span class="jump-status" id="jump-${side}"><i></i> SAUT</span>`);this.ids[`boost-${side}`]=panel.querySelector('.boost-ring');this.ids[`jump-${side}`]=panel.querySelector('.jump-status');}}
   update(m){const el=this.ids,menu=m.state===STATES.MENU,result=m.state===STATES.POST_MATCH,training=!!m.training;el.menu.hidden=!menu;el.result.hidden=!result;el.hud.hidden=menu||result;el['fuel-hud'].hidden=menu||result;el['score-player'].textContent=m.score.player;el['score-bot'].textContent=m.score.bot;
-    el['game-shell'].classList.toggle('flat-training',training&&m.trainingArenaId==='flat');
+    el['game-shell'].classList.toggle('flat-training',m.trainingArenaId==='flat');
     el['leave-game'].hidden=menu||result;
     const teams=m.mode==='2v2';
     el['match-type'].textContent=training?'ENTRAÎNEMENT SOLO':teams?'2V2 · TOI + 1 BOT CONTRE 2 BOTS':'DUEL · JOUEUR CONTRE BOT';
