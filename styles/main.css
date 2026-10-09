@@ -41,3 +41,5 @@ html:fullscreen body:not(.mobile-menu-open)>.topbar{display:none}
 html:fullscreen body:not(.mobile-menu-open) main{max-width:none;padding:0;width:100vw;height:100dvh;display:grid;place-items:center}
 html:fullscreen body:not(.mobile-menu-open) .arena-heading{display:none}
 html:fullscreen body:not(.mobile-menu-open) #game-shell{width:min(100vw,177.777778dvh);aspect-ratio:16/9;border:0;border-radius:0}
+
+.flat-training .fuel-hud{bottom:3%;top:auto;left:4%;right:4%}

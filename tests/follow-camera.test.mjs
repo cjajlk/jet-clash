@@ -48,3 +48,5 @@ test('suivi : les repères ne se superposent pas pour trois bots hors écran',()
   const r=new Renderer({getContext:()=>ctx});settle(r.camera,m);const before=structuredClone(m);r.offscreenPlayers(m);
   assert.equal(arcs.length,3);assert.equal(new Set(arcs.map(p=>p.y)).size,3);assert.deepEqual(labels,['ALLIÉ','BOT 1','BOT 2']);assert.deepEqual(m,before);
 });
+
+test('training arena uses its own goal bounds even when only the player approaches',()=>{const m=scene();m.arena={...C,goalLeft:172,goalRight:1108,goalTop:176,goalBottom:386};m.player.x=100;m.player.y=340;m.ball.x=650;m.ball.y=556;const c=settle(new MobileCamera(),m);for(const y of [176,386])assert.ok(c.project(172,y).visible);assert.ok(c.project(m.player.x,m.player.y).visible);assert.ok(c.project(m.ball.x,m.ball.y).visible);});

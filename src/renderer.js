@@ -1,9 +1,10 @@
+import {trainingArena} from './training-arenas.js';
 import {drawBallShotTrail,drawBallShotTint} from './ball-shot-trail.js';
 import { CONFIG as C } from './config.js';
 import { solids, OPEN_ARENA } from './arena.js';
 import { MobileCamera } from './mobile-camera.js';
 import { drawBallContactZone } from './ball-control.js';
-const paths={shotTrailGold:'ball/shots/shot_gold_trail.png',shotTrailPurple:'ball/shots/shot_purple_trail.png',background:'arena/arena_background_midfield_goals.png',backgroundLegacy:'arena/arena_background.png',left:'arena/goal_left_blue.png',right:'arena/goal_right_red.png',rampLeft:'arena/goal_ramp_left_blue.png',rampRight:'arena/goal_ramp_right_red.png',platform:'arena/platform_large.png',obstacle:'arena/center_obstacle.png',ball:'ball/ball_idle.png',impact:'ball/ball_glow.png',goalV3Blue:'arena/goal_v3_blue.png',goalV3Red:'arena/goal_v3_red.png'};
+const paths={backgroundFlat:'arena/arena_flat_large_goals_v4.png',backgroundVertical:'arena/arena_background_vertical_goals.png',shotTrailGold:'ball/shots/shot_gold_trail.png',shotTrailPurple:'ball/shots/shot_purple_trail.png',background:'arena/arena_background_midfield_goals.png',backgroundLegacy:'arena/arena_background.png',left:'arena/goal_left_blue.png',right:'arena/goal_right_red.png',rampLeft:'arena/goal_ramp_left_blue.png',rampRight:'arena/goal_ramp_right_red.png',platform:'arena/platform_large.png',obstacle:'arena/center_obstacle.png',ball:'ball/ball_idle.png',impact:'ball/ball_glow.png',goalV3Blue:'arena/goal_v3_blue.png',goalV3Red:'arena/goal_v3_red.png'};
 const FLUID_AIR_POSES=Object.freeze(['air_idle','air_up','air_diagonal_up','air_horizontal','air_turn','ceiling','air_diagonal_down','air_dash']);
 export const FLUID_AIR_ASSETS=Object.freeze(FLUID_AIR_POSES.map(pose=>`fluid_${pose}`));
 const FLUID_VISUAL=Object.freeze({hysteresis:.08,maxRotation:.16,dashWindow:.12,idleY:.82,upY:.58,diagUpY:.22,horizontalY:-.16,diagDownY:-.62,turnY:-.78});
@@ -131,9 +132,10 @@ export class Renderer{
   }
   render(m,{mobile=false,dt=1/60}={}){const c=this.ctx;c.clearRect(0,0,C.width,C.height);
     const camera=this.camera.update(m,true,dt);c.save();
-    const fluidW=86*(C.fluidVisualScale||1),fluidH=96*(C.fluidVisualScale||1);
+    const trainingScale=m.training&&m.trainingArenaId==='flat'?1.18:1;
+    const fluidW=86*(C.fluidVisualScale||1)*trainingScale,fluidH=96*(C.fluidVisualScale||1)*trainingScale;
     if(camera.active){c.translate(C.width/2,C.height/2);c.scale(camera.zoom,camera.zoom);c.translate(-camera.x,-camera.y);}
-    const bg=this.images.background;if(bg){
+    const bg=this.images[m.training?trainingArena(m.trainingArenaId).key:'background'];if(bg){
       // Arena 02 background is authored at the same 16:9 ratio as the gameplay canvas.
       // Draw it edge-to-edge so the painted midfield, side walls and goal mouths stay aligned.
       c.drawImage(bg,0,0,C.width,C.height);
@@ -144,6 +146,18 @@ export class Renderer{
     // Arena 02 uses one complete illustration (floor, walls and vertical goals).
     // Goal/floor/ceiling collisions remain handled by arena.js; no separate goal artwork is overlaid.
 
+    if(m.training&&m.trainingArenaId==='flat'){
+      // Ground shadows anchor sprites to the middle plane of the painted court.
+      const floor=m.arena.floor;
+      c.save();c.setLineDash([5,7]);c.lineWidth=1.5;
+      for(const [x,color] of [[m.arena.goalLeft-m.arena.goalLineInset,'#67eaff80'],[m.arena.goalRight+m.arena.goalLineInset,'#ff68d480']]){c.strokeStyle=color;c.beginPath();c.moveTo(x,m.arena.goalTop+4);c.lineTo(x,m.arena.goalBottom-4);c.stroke();}
+      c.restore();
+      for(const body of [m.player,m.ball]){
+        const half=body.r||body.h/2,height=Math.max(0,floor-body.y-half);
+        const opacity=.28*Math.exp(-height/180),width=(body.r?body.r*.8:25)/(1+height/700);
+        c.save();c.fillStyle=`rgba(3,5,16,${opacity})`;c.beginPath();c.ellipse(body.x,floor+2,width,5,0,0,Math.PI*2);c.fill();c.restore();
+      }
+    }
     this.goalPulse(m.goalEffect);
     for(const p of m.players||[m.player,m.bot].filter(Boolean)){const h=96;
       if(m.mode==='2v2'){

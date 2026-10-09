@@ -21,7 +21,7 @@ const match=new Match(profile,(kind,detail)=>audio.play(kind,detail));const star
 for(const event of ['pointerdown','keydown'])document.addEventListener(event,e=>{if(e.isTrusted)audio.unlock();},{capture:true});
 mobile.onCancel=()=>{match.control.release();input.clear();};
 mobile.onReset=()=>{if(match.training)match.resetTrainingBall();};
-const launch=payload=>{if(!ready)return;input.clear();mobile.clear();const mode=payload?.mode||'duel';if(mode==='training')match.start('training');else{const difficulty=payload?.difficulty||document.getElementById('difficulty').value;document.getElementById('difficulty').value=difficulty;match.start(mode==='2v2'?'2v2':difficulty,difficulty);}mobileMenu.update(match,ready);hud.update(match);canvas.focus();};
+const launch=payload=>{if(!ready)return;input.clear();mobile.clear();const mode=payload?.mode||'duel';if(mode==='training')match.start('training',undefined,payload?.arena);else{const difficulty=payload?.difficulty||document.getElementById('difficulty').value;document.getElementById('difficulty').value=difficulty;match.start(mode==='2v2'?'2v2':difficulty,difficulty);}mobileMenu.update(match,ready);hud.update(match);canvas.focus();};
 const mobileMenu=new MobileMenu({enabled:true,onLaunch:payload=>launch(payload),audio});
 mobileMenu.update(match,false,'Chargement de l’arène…');
 const returnToMenu=()=>{
@@ -30,7 +30,7 @@ const returnToMenu=()=>{
   mobile.update(match.state);mobileMenu.update(match,ready);hud.update(match);
   mobileMenu.root.querySelector('#mobile-play')?.focus();
 };
-start.addEventListener('click',launch);document.getElementById('replay').addEventListener('click',()=>launch({mode:match.mode,difficulty:match.difficulty}));
+start.addEventListener('click',launch);document.getElementById('replay').addEventListener('click',()=>launch({mode:match.mode,difficulty:match.difficulty,arena:match.trainingArenaId}));
 for(const id of ['back-menu','leave-game'])document.getElementById(id).addEventListener('click',returnToMenu);
 let last=performance.now(),accumulator=0,paused=false,touchCancelled=false,touchReleaseAim=null;
 function setPaused(value){paused=value;audio.setPaused(value);if(value)match.control.release();input.clear();mobile.clear();accumulator=0;last=performance.now();document.getElementById('pause').hidden=!value||[STATES.MENU,STATES.POST_MATCH].includes(match.state);}

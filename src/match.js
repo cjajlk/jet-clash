@@ -1,3 +1,4 @@
+import {trainingArena,arenaPhysics} from './training-arenas.js';
 import { BallControl, BALL_CONTROL } from './ball-control.js';
 import { CONFIG as C } from './config.js';
 import { createPlayer, drive, setBackPose } from './player.js';
@@ -22,12 +23,14 @@ export class Match {
     // Optional presentation effects must never interrupt the simulation.
     try{this.onEvent(kind,detail);}catch{}
   }
+  get arena(){return this.training?arenaPhysics(this.trainingArenaId).config:C;}
+  get arenaSolids(){return this.training?arenaPhysics(this.trainingArenaId).solids:solids;}
   get players(){return [this.player,this.bot,...this.extraBots.map(entry=>entry.body)].filter(Boolean);}
   get bots(){return [...(this.bot&&this.ai?[{body:this.bot,ai:this.ai}]:[]),...this.extraBots];}
   get rewardGoals(){return this.mode==='2v2'?this.humanGoals:this.score.player;}
-  start(modeOrDifficulty='normal',difficultyMaybe){
+  start(modeOrDifficulty='normal',difficultyMaybe,arenaId='current'){
     this.mode=['training','2v2','duel'].includes(modeOrDifficulty)?modeOrDifficulty:'duel';
-    this.training=this.mode==='training';
+    this.training=this.mode==='training';this.trainingArenaId=this.training?trainingArena(arenaId).id:'current';
     this.difficulty=this.training?'normal':(difficultyMaybe||(['2v2','duel'].includes(modeOrDifficulty)?'normal':modeOrDifficulty));
     this.ai=this.training?null:this.mode==='2v2'?new TeamBot(this.difficulty,'bot'):new Bot(this.difficulty);
     this.extraBots=this.mode==='2v2'?createTeamExtras(this.difficulty):[];
@@ -43,7 +46,7 @@ export class Match {
     this.goalEffect=null;
     this.lastTouch=null;
     this.control.reset();
-    if (this.training) Object.assign(this.player,{x:300,y:C.floor-C.playerHeight/2,vx:0,vy:0,grounded:true,fuel:100,boosting:false,jumpHeld:false,contactSurface:'floor',footX:0,footY:1,controlX:1,controlY:0,rotateHeld:false,jumpReady:true,impulseReady:true,impulseCooldown:0,flipIntent:0,flipHeld:false,flipReady:true,flipTimer:0,flipHit:false,flipX:1,flipY:0});
+    if (this.training) Object.assign(this.player,{x:300,y:this.arena.floor-C.playerHeight/2,vx:0,vy:0,grounded:true,fuel:100,boosting:false,jumpHeld:false,contactSurface:'floor',footX:0,footY:1,controlX:1,controlY:0,rotateHeld:false,jumpReady:true,impulseReady:true,impulseCooldown:0,flipIntent:0,flipHeld:false,flipReady:true,flipTimer:0,flipHit:false,flipX:1,flipY:0});
     else if(this.mode==='2v2')resetTeamPositions(this.player,this.bot,this.extraBots,this.ball);
     else resetPositions(this.player,this.bot,this.ball);
     for(const entry of this.bots)entry.ai.reset?.();
@@ -76,19 +79,20 @@ export class Match {
       }
     }
     if(this.recoverOutsideBall())return;
-    const bots=this.bots,players=this.players;
+    const ballBeforeStep={x:this.ball.x,y:this.ball.y};
+    const bots=this.bots,players=this.players,solids=this.arenaSolids,arena=this.arena;
     setBackPose(this.player,input);
     const aerialShot=prepareAerialShot(this.player,this.ball,input,dt);
     if(aerialShot)this.control.release();
     drive(this.player,input,dt);for(const entry of bots)drive(entry.body,entry.ai.update(entry.body,this.ball,dt,players),dt);
-    for(const player of players)movePlayer(player,solids,dt);
+    for(const player of players)movePlayer(player,solids,dt,arena);
     const pressureOpponent=this.mode==='2v2'?(bots.find(entry=>entry.body.team==='bot'&&this.control.contact(entry.body,this.ball))?.body||this.bot):this.bot;
     if(!aerialShot)this.control.update(this.player,this.ball,input,dt,pressureOpponent);
     if(this.mode==='2v2'&&this.control.owned&&this.control.contact(this.player,this.ball))this.lastTouch=this.player;
     integrateBall(this.ball,dt);
     const beforeCollision={vx:this.ball.vx,vy:this.ball.vy};
     if(this.recoverOutsideBall())return;
-    collideBall(this.ball,solids);
+    collideBall(this.ball,solids,arena);
     this.control.impact(beforeCollision,this.ball,false);
     const flipStrike=!aerialShot&&this.player.flipTimer>0&&!this.player.flipHit?{x:this.player.flipX,y:this.player.flipY}:null;
     // A rear/feet aimed shot may cross its shooter's body on the way out.
@@ -102,17 +106,17 @@ export class Match {
       heavyContact=true;if(this.mode==='2v2')this.lastTouch=entry.body;
     }
     if(aerialShot){applyAerialShot(this.player,this.ball,aerialShot);if(this.mode==='2v2')this.lastTouch=this.player;this.notify('shot',{power:.85,type:aerialShot.type});}
-    collideBall(this.ball,solids);
+    collideBall(this.ball,solids,arena);
     if(this.recoverOutsideBall())return;
     this.control.impact(beforeOtherContacts,this.ball,heavyContact);
     this.control.finishContacts(this.ball,this.player,playerContact);
     // Simultaneous body contacts and released shots must obey the same speed
     // limit as free flight, before the next simulation step begins.
     limitBallSpeed(this.ball);
-    const scorer=goalScorer(this.ball); if (scorer) this.goal(scorer);
+    const scorer=goalScorer(this.ball,arena,ballBeforeStep); if (scorer) this.goal(scorer);
   }
   recoverOutsideBall(){
-    if(!ballOutsideArena(this.ball))return false;
+    if(!ballOutsideArena(this.ball,this.arena))return false;
     if(this.training){this.resetTrainingBall();return true;}
     // Ultimate safety only: ordinary collisions must keep this counter at zero.
     this.boundaryRecoveries++;this.lastGoal=null;this.prepare();return true;

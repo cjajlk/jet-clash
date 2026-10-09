@@ -9,7 +9,7 @@ export class MobileCamera {
     if(!enabled||m.state&&['MENU','PRE_ROUND','POST_MATCH'].includes(m.state)){this.reset();return this;}
     // Hold the shot framing during the goal celebration, before the wide kickoff.
     if(m.state==='GOAL_SCORED')return this;
-    const player=m.player,ball=m.ball;
+    const player=m.player,ball=m.ball,arena=m.arena||C;
     const players=m.players||[player,m.bot].filter(Boolean);
     // Distant bots must not dictate the zoom. Nearby challenges still fit on screen.
     const nearby=players.filter(p=>p!==player&&Math.hypot(p.x-ball.x,p.y-ball.y)<260);
@@ -18,8 +18,9 @@ export class MobileCamera {
       {x:clamp(ball.x+leadX,0,C.width),y:clamp(ball.y+leadY,0,C.height),r:ball.r+22},
       ...nearby.map(p=>({x:p.x,y:p.y,r:62}))];
     // Include the nearby goal mouth before it becomes relevant to a shot/save.
-    const goalX=ball.x<320?C.goalLeft:ball.x>C.width-320?C.goalRight:null;
-    if(goalX!==null)points.push({x:goalX,y:C.goalTop,r:22},{x:goalX,y:C.goalBottom,r:22});
+    for(const [x,near] of [[arena.goalLeft,Math.min(player.x,ball.x)<320],[arena.goalRight,Math.max(player.x,ball.x)>C.width-320]]){
+      if(near)points.push({x,y:arena.goalTop,r:22},{x,y:arena.goalBottom,r:22});
+    }
     const minX=Math.max(0,Math.min(...points.map(p=>p.x-p.r))-24),maxX=Math.min(C.width,Math.max(...points.map(p=>p.x+p.r))+24);
     const minY=Math.max(0,Math.min(...points.map(p=>p.y-p.r))-24),maxY=Math.min(C.height,Math.max(...points.map(p=>p.y+p.r))+24);
     const desired=Math.max(1,Math.min(MOBILE_FRAMING[this.mode]||1.5,C.width/(maxX-minX),C.height/(maxY-minY)));

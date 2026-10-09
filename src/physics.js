@@ -1,5 +1,6 @@
-import { CONFIG as C } from './config.js';
+import { CONFIG as DEFAULT } from './config.js';
 import { circlePolygonContact, boxPolygonContact } from './collision-shapes.js';
+const C=DEFAULT;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 function setSupport(p, ny) {
   if (ny < -.5) { p.grounded = true; p.contactSurface = 'floor'; }
@@ -10,7 +11,7 @@ function rechargeSupport(p) {
   if (p.contactSurface === 'ceiling' && p.footY < -.65) { p.jumpReady = true; p.impulseReady = true; }
 }
 function overlaps(p, r) { return !r.vertices && p.x + p.w/2 > r.x && p.x - p.w/2 < r.x+r.w && p.y+p.h/2 > r.y && p.y-p.h/2 < r.y+r.h; }
-function containPlayerHorizontally(p){
+function containPlayerHorizontally(p,C=DEFAULT){
   const inOpening=p.y-p.h/2>=C.goalTop-1e-8&&p.y+p.h/2<=C.goalBottom+1e-8;
   // The goal line remains open. Only the rear of the painted pocket is solid.
   const inset=inOpening?C.playerGoalBackInset:0;
@@ -55,7 +56,7 @@ function resolvePlayerRamps(p,solids){
     setSupport(p,hit.ny);
   }
 }
-export function movePlayer(p, solids, dt) {
+export function movePlayer(p, solids, dt,C=DEFAULT) {
   p.x += p.vx * dt;
   p.grounded = false; p.contactSurface = null;
   resolvePlayerRamps(p,solids);
@@ -64,7 +65,7 @@ export function movePlayer(p, solids, dt) {
     else if (p.vx < 0) p.x = r.x+r.w+p.w/2;
     p.vx = 0;
   }
-  containPlayerHorizontally(p);
+  containPlayerHorizontally(p,C);
   p.y += p.vy * dt; p.grounded = false;
   resolvePlayerRamps(p,solids);
   for (const r of solids) if (overlaps(p,r)) {
@@ -78,7 +79,7 @@ export function movePlayer(p, solids, dt) {
   // Painted pocket backs and outer canvas walls remain hard limits; the goal frame solids
   // above/below the mouth keep players inside the intended opening.
   for(let pass=0;pass<4;pass++){
-    containPlayerHorizontally(p);
+    containPlayerHorizontally(p,C);
     if(p.y+p.h/2>C.floor){p.y=C.floor-p.h/2;p.vy=Math.min(0,p.vy);setSupport(p,-1);rechargeSupport(p);}
     if(p.y-p.h/2<C.ceiling){p.y=C.ceiling+p.h/2;p.vy=Math.max(0,p.vy);setSupport(p,1);rechargeSupport(p);}
     resolvePlayerRamps(p,solids.filter(s=>s.goalBoundary));
@@ -112,7 +113,7 @@ function resolveBallShape(ball,rect){
       }
     }
 }
-export function collideBall(ball, solids) {
+export function collideBall(ball, solids,C=DEFAULT) {
   // Resolve the continuous inclined outlines before the flat floor/platforms.
   const ordered=[...solids.filter(s=>s.vertices),...solids.filter(s=>!s.vertices)];
   for (const rect of ordered) resolveBallShape(ball,rect);
@@ -134,7 +135,7 @@ export function collideBall(ball, solids) {
 }
 
 // Strictly outside: mere contact/partial overlap with the boundary is not a reset.
-export function ballOutsideArena(ball){
+export function ballOutsideArena(ball,C=DEFAULT){
   return ball.x+ball.r<0||ball.x-ball.r>C.width||ball.y+ball.r<C.ceiling||ball.y-ball.r>C.floor;
 }
 export function hitPlayer(ball,p,restitution=.88,flipStrike=null) {
