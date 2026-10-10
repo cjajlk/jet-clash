@@ -19,9 +19,10 @@ const audio=new GameplayAudio({enabled:profile.data.settings?.sound!==false,onEn
 }});
 const match=new Match(profile,(kind,detail)=>audio.play(kind,detail));const start=document.getElementById('start');let ready=false;
 for(const event of ['pointerdown','keydown'])document.addEventListener(event,e=>{if(e.isTrusted)audio.unlock();},{capture:true});
-mobile.onCancel=()=>{match.control.release();input.clear();};
+// A touch/layout change cancels pending shots but must not lock a held gamepad stick.
+mobile.onCancel=()=>{match.control.release();input.clear();input.resumeGamepad();};
 mobile.onReset=()=>{if(match.training)match.resetTrainingBall();};
-const launch=payload=>{if(!ready)return;setPaused(false);touchCancelled=false;touchReleaseAim=null;const mode=payload?.mode||'duel';if(mode==='training')match.start('training',undefined,payload?.arena);else{const difficulty=payload?.difficulty||document.getElementById('difficulty').value;document.getElementById('difficulty').value=difficulty;match.start(mode==='2v2'?'2v2':difficulty,difficulty);}mobileMenu.update(match,ready);hud.update(match);canvas.focus();};
+const launch=payload=>{if(!ready)return;setPaused(false);input.resumeGamepad();touchCancelled=false;touchReleaseAim=null;const mode=payload?.mode||'duel';if(mode==='training')match.start('training',undefined,payload?.arena);else{const difficulty=payload?.difficulty||document.getElementById('difficulty').value;document.getElementById('difficulty').value=difficulty;match.start(mode==='2v2'?'2v2':difficulty,difficulty);}mobileMenu.update(match,ready);hud.update(match);canvas.focus();};
 const mobileMenu=new MobileMenu({enabled:true,onLaunch:payload=>launch(payload),audio});
 mobileMenu.update(match,false,'Chargement de l’arène…');
 const returnToMenu=()=>{
