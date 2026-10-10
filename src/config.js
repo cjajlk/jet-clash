@@ -6,7 +6,7 @@ export const CONFIG = Object.freeze({
   gravity: 1120, runAcceleration: 1750, airAcceleration: 1000, airHorizontalDrag: .8,
   runSpeed: 260, jumpSpeed: 545, thrust: 1700, maxRise: 500,
   fuelUse: 31, fuelRecharge: 23, playerWidth: 38, playerHeight: 76,
-  ballRadius: 19, ballScale: 1.50, ballBounce: 0.78, maxBallSpeed: 1100,
+  ballRadius: 19, ballScale: 1.50, ballVisualScale: 1.25/1.50, ballBounce: 0.78, maxBallSpeed: 1100, // Visual-only playtest reduction; preserve shot contacts.
   fluidVisualScale: 1.0,
   ballContactScale: 1.22,
   ballControlWidth: 88, ballControlHeight: 124, ballControlOffsetX: 16, ballControlOffsetY: -20, ballControlAirOffsetY: -18,

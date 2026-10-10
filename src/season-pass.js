@@ -1,3 +1,4 @@
+import { CHARACTER_COSMETICS } from './character-cosmetics.js';
 export const PASS_SEASON=1;
 export const PASS_MAX_LEVEL=50;
 const crates=new Set([3,7,11,15,19,23,27,31,35,43,49]);
@@ -12,7 +13,8 @@ function reward(level,track){
   const rarity=level<10?'common':level<20?'uncommon':level<30?'rare':level<40?'epic':'legendary';
   const amount=type==='coins'?(track==='premium'?200:100):type==='tokens'?(track==='premium'?10:5):type==='xp'?(track==='premium'?200:100):1;
   const id=`s1-${track}-${level}`;
-  return Object.freeze({id,level,track,type,amount,rarity,label:level===50?`Style exclusif Saison 1 · ${track==='premium'?'Couronne':'Aube'}`:type==='crate'?`Caisse ${rarity}`:`${amount>1?amount+' ':''}${names[type]}`,image:type==='crate'?`crates/crate_${rarity}.png`:`rewards/reward_${type==='tokens'?'mystery':type}.png`});
+  const character=level===50?CHARACTER_COSMETICS.find(c=>c.rewardId===id):null;
+  return Object.freeze({id,level,track,type,amount,rarity,...(character?{characterCosmetic:character.id,palette:character.palette}:{}),label:character?character.label:type==='crate'?`Caisse ${rarity}`:`${amount>1?amount+' ':''}${names[type]}`,image:type==='crate'?`crates/crate_${rarity}.png`:`rewards/reward_${type==='tokens'?'mystery':type}.png`});
 }
 export const PASS_LEVELS=Object.freeze(Array.from({length:50},(_,i)=>Object.freeze({level:i+1,free:reward(i+1,'free'),premium:reward(i+1,'premium')})));
 export class SeasonPass {

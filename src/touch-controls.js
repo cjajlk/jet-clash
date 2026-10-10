@@ -26,7 +26,8 @@ export class TouchControls {
       const notice=this.layer.querySelector('.touch-notice');
       try{
         if(document.fullscreenElement)await document.exitFullscreen();
-        else if(shell.requestFullscreen)await shell.requestFullscreen();
+        // Include the menu, which is outside game-shell, in the fullscreen surface.
+        else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();
         else notice.textContent='Plein écran non disponible ; le jeu reste utilisable.';
       }catch{notice.textContent='Plein écran non disponible ; le jeu reste utilisable.';}
     });

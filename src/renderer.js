@@ -1,3 +1,4 @@
+import { characterCosmetic } from './character-cosmetics.js';
 import { CAPSULE_CATALOG, CAPSULE_COLORS, capsuleAssetKey, capsuleImage, capsuleModel } from './capsules.js';
 import { cosmeticVisual } from './collection.js';
 import {trainingArena} from './training-arenas.js';
@@ -21,9 +22,17 @@ export function resolveFluidContactIndicator(player,control){
   const offset=Math.max(player.w*.36,player.h*.18)*(C.fluidVisualScale||1);
   return {x:player.x+direction.x*offset,y:player.y+direction.y*offset,direction,charge};
 }
-for(const pose of FLUID_AIR_POSES)paths[`fluid_${pose}`]=`characters/fluid/fluid_${pose}.png`;
+// Reuse the established wolf silhouette instead of the old astronaut aerial artwork.
+for(const pose of FLUID_AIR_POSES)paths[`fluid_${pose}`]=`characters/fluid/fluid_${pose==='air_dash'?'jetpack':'jump'}.png`;
 for(const pose of ['idle','walk','jump','sprint','jetpack','attack'])paths[`fluid_${pose}`]=`characters/fluid/fluid_${pose}.png`;
-for(const pose of ['walk','jump','jetpack','sprint'])paths[`heavy_${pose}`]=`characters/heavy/heavy_${pose}.png`;
+for(const pose of ['idle','walk','sprint','jump','jetpack','attack'])paths[`heavy_${pose}`]=`characters/heavy/heavy_${pose}.png`;
+paths.fluid_attack='characters/fluid/fluid_attack_wolf.png';
+paths.heavy_idle='characters/heavy/heavy_idle_clean.png';
+export function coherentAirVisual(player){
+  const foot=normalize(player.footX,player.footY)||{x:0,y:1};
+  const rotation=player.contactSurface==='ceiling'?Math.PI:Math.atan2(-foot.x,foot.y);
+  return {rotation,flip:player.facing<0};
+}
 export function resolveFluidVisualPose(p,cache={}){
   const supported=!!p.grounded||p.contactSurface==='ceiling';
   const look=normalize(p.footX,p.footY)||{x:0,y:1};
@@ -175,6 +184,7 @@ export class Renderer{
       }
     }
     const equipment=m.profile?.collection;
+    const character=characterCosmetic(equipment?.equipped('skin'));
     const skin=cosmeticVisual(equipment?.equipped('skin')),trail=cosmeticVisual(equipment?.equipped('trail')),ballStyle=cosmeticVisual(equipment?.equipped('ball'));
     if(trail){
       const p=m.player;let points=this.cosmeticTrails.get(p)||[];
@@ -185,6 +195,7 @@ export class Renderer{
     }else this.cosmeticTrails.delete(m.player);
     this.goalPulse(m.goalEffect);
     for(const p of m.players||[m.player,m.bot].filter(Boolean)){const h=96;
+      const displayCharacter=p===m.player&&character?character.character:p.skin;
       if(m.mode==='2v2'){
         c.save();c.strokeStyle=c.fillStyle=p.team==='player'?'#65e8ff':'#ff5b79';c.lineWidth=2;
         c.beginPath();c.ellipse(p.x,p.y+p.h/2+2,25,5,0,0,Math.PI*2);c.stroke();
@@ -192,21 +203,23 @@ export class Renderer{
         c.fillText(p.label,p.x,p.y-p.h/2-14);c.restore();
       }
       c.save();if(p===m.player&&skin)c.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${skin.hue}deg)`;
-      if(p.skin==='fluid'&&(!p.grounded||p.contactSurface==='ceiling')){
+      if(displayCharacter==='fluid'&&(!p.grounded||p.contactSurface==='ceiling')){
         const cache=this.fluidVisuals.get(p)||{};this.fluidVisuals.set(p,cache);
         const visual=resolveFluidVisualPose(p,cache);
-        this.drawSprite(visual.key,p.x-fluidW/2,p.y+p.h/2-fluidH,fluidW,fluidH,{flip:visual.flip,rotation:visual.rotation});
+        const key=p.boosting?'fluid_jetpack':visual.key;
+        this.drawSprite(key,p.x-fluidW/2,p.y+p.h/2-fluidH,fluidW,fluidH,coherentAirVisual(p));
       }else{
         const pose=p.boosting?'jetpack':!p.grounded?'jump':Math.abs(p.vx)>45?'sprint':'walk';
-        const visualW=p.skin==='fluid'?fluidW:86,visualH=p.skin==='fluid'?fluidH:h;
-        this.fit(`${p.skin}_${pose}`,p.x-visualW/2,p.y+p.h/2-visualH,visualW,visualH,p.facing<0);
+        const visualW=displayCharacter==='fluid'?fluidW:86,visualH=displayCharacter==='fluid'?fluidH:h;
+        if(!p.grounded||p.contactSurface==='ceiling')this.drawSprite(`${displayCharacter}_${pose}`,p.x-visualW/2,p.y+p.h/2-visualH,visualW,visualH,coherentAirVisual(p));
+        else this.fit(`${displayCharacter}_${pose}`,p.x-visualW/2,p.y+p.h/2-visualH,visualW,visualH,p.facing<0);
       }
       c.restore();
       if(p===m.player)this.capsulePlayerEffects(p,equipment);
     }
     if(C.DEBUG_BALL_CONTACT)drawBallContactZone(c,m.player);
-    if(mobile){const b=m.ball;c.save();c.beginPath();c.arc(b.x,b.y,b.r+2,0,Math.PI*2);c.lineWidth=1.5;c.strokeStyle='#a0f6ffb0';c.shadowColor='#56d9ff';c.shadowBlur=9;c.stroke();c.restore();}
-    const b=m.ball;drawBallShotTrail(c,b,this.images[b.shotColor==='gold'?'shotTrailGold':'shotTrailPurple']);c.save();c.translate(b.x,b.y);c.rotate(b.angle);if(ballStyle&&!capsuleModel(equipment?.equipped('ball')))c.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${ballStyle.hue}deg)`;this.fit(capsuleAssetKey(equipment?.equipped('ball'))||(b.flash>0?'impact':'ball'),-b.r,-b.r,b.r*2,b.r*2);c.restore();
+    if(mobile){const b=m.ball;c.save();c.beginPath();c.arc(b.x,b.y,b.r*(C.ballVisualScale||1)+2,0,Math.PI*2);c.lineWidth=1.5;c.strokeStyle='#a0f6ffb0';c.shadowColor='#56d9ff';c.shadowBlur=9;c.stroke();c.restore();}
+    const b=m.ball;drawBallShotTrail(c,b,this.images[b.shotColor==='gold'?'shotTrailGold':'shotTrailPurple']);c.save();c.translate(b.x,b.y);c.rotate(b.angle);if(ballStyle&&!capsuleModel(equipment?.equipped('ball')))c.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${ballStyle.hue}deg)`;this.fit(capsuleAssetKey(equipment?.equipped('ball'))||(b.flash>0?'impact':'ball'),-b.r*(C.ballVisualScale||1),-b.r*(C.ballVisualScale||1),b.r*2*(C.ballVisualScale||1),b.r*2*(C.ballVisualScale||1));c.restore();
     const impact=equipment?.equipped('impact');
     if(b.flash>0&&capsuleModel(impact)){
       this.fit(capsuleAssetKey(impact),b.x-b.r*2,b.y-b.r*1.5,b.r*4,b.r*3,false,Math.min(1,b.flash/.08));

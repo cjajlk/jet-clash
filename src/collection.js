@@ -1,3 +1,4 @@
+import { characterCosmetic } from './character-cosmetics.js';
 import { capsuleCategory, capsuleModel, CAPSULE_COLORS } from './capsules.js';
 export const COSMETIC_SLOTS=Object.freeze(['skin','trail','ball','banner','explosion']);
 export const EQUIPMENT_SLOTS=Object.freeze([...COSMETIC_SLOTS,'propulsion','impact','style']);
@@ -7,6 +8,8 @@ const palettes=COSMETIC_PALETTES;
 export function cosmeticVisual(item){
   if(!item||!EQUIPMENT_SLOTS.includes(item.type))return null;
   if(capsuleModel(item))return CAPSULE_COLORS[Number.isInteger(item.palette)&&item.palette>=0&&item.palette<4?item.palette:0];
+  const character=characterCosmetic(item);
+  if(character)return palettes[Number.isInteger(item.palette)&&item.palette>=0&&item.palette<palettes.length?item.palette:character.palette];
   const hash=[...String(item.id)].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,0);
   return palettes[Number.isInteger(item.palette)&&item.palette>=0&&item.palette<palettes.length?item.palette:hash%palettes.length];
 }
@@ -20,7 +23,7 @@ export class Collection {
   }
   items(){return [...(Array.isArray(this.profile.data.passInventory)?this.profile.data.passInventory:[]),...(this.profile.data.capsuleInventory||[])].filter(i=>i&&typeof i.id==='string');}
   item(id){return this.items().find(i=>i.id===id);}
-  appearance(item){const palette=this.profile.data.cosmeticColors[item?.id];return Number.isInteger(palette)?{...item,palette}:item;}
+  appearance(item){const character=characterCosmetic(item),base=character?{...item,label:character.label,characterCosmetic:character.id,palette:character.palette}:item;const palette=this.profile.data.cosmeticColors[item?.id];return Number.isInteger(palette)?{...base,palette}:base;}
   equipped(slot){return this.appearance(this.item(this.profile.data.equipment[slot]));}
   setColor(id,palette){if(!cosmeticVisual(this.item(id))||!Number.isInteger(palette)||palette<0||palette>=palettes.length)return false;this.profile.data.cosmeticColors[id]=palette;this.profile.save();return true;}
   equip(id){const item=this.item(id);if(!item||!EQUIPMENT_SLOTS.includes(item.type))return false;this.profile.data.equipment[item.type]=id;this.profile.save();return true;}

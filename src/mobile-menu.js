@@ -1,3 +1,4 @@
+import { characterCosmetic } from './character-cosmetics.js';
 import { CAPSULE_CATALOG, CAPSULE_COLORS, capsuleCategory, capsuleModel, capsuleImage } from './capsules.js';
 import { cosmeticVisual, COSMETIC_PALETTES } from './collection.js';
 import {TRAINING_ARENAS} from './training-arenas.js';
@@ -158,9 +159,9 @@ export class MobileMenu {
         const filter=this.inventoryFilter||'all';if(filter!=='all'&&item.type!==filter&&!(filter==='crate'&&item.type==='mystery'))continue;
         const card=document.createElement('article');card.className='collection-item';
         const visual=cosmeticVisual(appearance);if(visual)card.style.setProperty('--item-color',visual.color);
-        const image=document.createElement('img');image.alt='';image.loading='lazy';image.src=capsuleModel(item)?capsuleImage(appearance):capsuleCategory(item.capsuleCategory)?.image|| (visual?`assets/pass/rewards/reward_${item.type}.png`:`assets/pass/crates/crate_${['common','uncommon','rare','epic','legendary'].includes(item.rarity)?item.rarity:'common'}.png`);if(visual&&!capsuleModel(item))image.style.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${visual.hue}deg)`;card.append(image);
-        const label=document.createElement('strong');label.textContent=item.label;card.append(label);
-        const detail=document.createElement('span');detail.textContent=item.source==='shop'?(item.type==='crate'?`${item.pricePaid} Coins · 1 modèle aléatoire`:'4 couleurs incluses'):`${item.rarity||'common'} · Saison ${item.season||1}`;card.append(detail);
+        const image=document.createElement('img');image.alt='';image.loading='lazy';image.src=characterCosmetic(item)?.preview|| (capsuleModel(item)?capsuleImage(appearance):capsuleCategory(item.capsuleCategory)?.image|| (visual?`assets/pass/rewards/reward_${item.type}.png`:`assets/pass/crates/crate_${['common','uncommon','rare','epic','legendary'].includes(item.rarity)?item.rarity:'common'}.png`));if(visual&&!capsuleModel(item))image.style.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${visual.hue}deg)`;card.append(image);
+        const label=document.createElement('strong');label.textContent=appearance.label;card.append(label);
+        const detail=document.createElement('span');detail.textContent=characterCosmetic(item)?'Apparence complète · Niveau 50 · Capacités identiques':item.source==='shop'?(item.type==='crate'?`${item.pricePaid} Coins · 1 modèle aléatoire`:'4 couleurs incluses'):`${item.rarity||'common'} · Saison ${item.season||1}`;card.append(detail);
         if(visual){
           const colors=document.createElement('div');colors.className='collection-colors';colors.setAttribute('role','group');colors.setAttribute('aria-label',`Couleur de ${item.label}`);
           for(const [index,palette] of (capsuleModel(item)?CAPSULE_COLORS:COSMETIC_PALETTES).entries()){
@@ -198,7 +199,7 @@ export class MobileMenu {
     const banner=cosmeticVisual(this.profileStore?.collection.equipped('banner'));
     this.root.querySelector('.mm-profile').style.background=banner?`linear-gradient(110deg,${banner.color}66,transparent)`:'';
     const skin=cosmeticVisual(this.profileStore?.collection.equipped('skin'));
-    const hero=this.root.querySelector('#mobile-fluid');if(hero)hero.style.filter=skin?`grayscale(1) sepia(1) saturate(5) hue-rotate(${skin.hue}deg)`:'';
+    const hero=this.root.querySelector('#mobile-fluid'),character=characterCosmetic(this.profileStore?.collection.equipped('skin'));if(hero){if(character){hero.src=character.preview;hero.alt=character.label;const label=this.root.querySelector('.mm-pilot-label');if(label)label.firstChild.textContent=character.character.toUpperCase()+' ';}hero.style.filter=skin?`grayscale(1) sepia(1) saturate(5) hue-rotate(${skin.hue}deg)`:'';}
     if(route==='modes'){
       this.selectDifficulty(this.difficulty);
       this.root.querySelector('#mobile-load-status').textContent=this.ready?'Match local · 5 minutes':this.status||'Chargement de l’arène…';
