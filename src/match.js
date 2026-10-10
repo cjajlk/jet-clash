@@ -1,3 +1,4 @@
+import { cosmeticVisual } from './collection.js';
 import {trainingArena,arenaPhysics,competitiveArena} from './training-arenas.js';
 import { BallControl, BALL_CONTROL } from './ball-control.js';
 import { CONFIG as C } from './config.js';
@@ -123,7 +124,7 @@ export class Match {
   }
   goal(scorer) {
     if (this.state!==STATES.PLAYING || this.finished || !['player','bot'].includes(scorer)) return false;
-    this.goalEffect={side:scorer==='bot'?'left':'right',x:this.ball.x,y:this.ball.y,remaining:C.goalEffectDuration};
+    this.goalEffect={side:scorer==='bot'?'left':'right',x:this.ball.x,y:this.ball.y,remaining:C.goalEffectDuration,cosmeticColor:scorer==='player'?cosmeticVisual(this.profile.collection?.equipped('explosion'))?.color:undefined};
     this.notify('goal',{scorer,training:this.training});
     if(this.training){this.resetTrainingBall();this.control.release();this.lastGoal=null;return true;}
     this.control.reset();this.score[scorer]++; this.lastGoal=scorer;

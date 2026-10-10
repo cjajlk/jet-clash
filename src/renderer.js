@@ -1,3 +1,4 @@
+import { cosmeticVisual } from './collection.js';
 import {trainingArena} from './training-arenas.js';
 import {drawBallShotTrail,drawBallShotTint} from './ball-shot-trail.js';
 import { CONFIG as C } from './config.js';
@@ -48,7 +49,7 @@ export function resolveFluidVisualPose(p,cache={}){
   return {key:`fluid_${pose}`,flip,rotation:p.backPoseHeld?0:rotation+flipRotation,pose};
 }
 export class Renderer{
-  constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.images={};this.camera=new MobileCamera();this.fluidVisuals=new WeakMap();}
+  constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.images={};this.camera=new MobileCamera();this.fluidVisuals=new WeakMap();this.cosmeticTrails=new WeakMap();}
   async load(){await Promise.all(Object.entries(paths).map(([name,path])=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>{this.images[name]=im;resolve();};im.onerror=()=>reject(new Error(path));im.src=`assets/${path}`;})));}
   fit(key,x,y,w,h,flip=false,alpha=1){const im=this.images[key];if(!im)return;const s=Math.min(w/im.width,h/im.height),dw=im.width*s,dh=im.height*s;const c=this.ctx;c.save();c.globalAlpha=alpha;c.translate(x+w/2,y+h/2);if(flip)c.scale(-1,1);c.drawImage(im,-dw/2,-dh/2,dw,dh);c.restore();}
   drawSprite(key,x,y,w,h,{flip=false,rotation=0,alpha=1}={}){const im=this.images[key];if(!im)return;const s=Math.min(w/im.width,h/im.height),dw=im.width*s,dh=im.height*s;const c=this.ctx;c.save();c.globalAlpha=alpha;c.translate(x+w/2,y+h/2);if(rotation)c.rotate(rotation);if(flip)c.scale(-1,1);c.drawImage(im,-dw/2,-dh/2,dw,dh);c.restore();}
@@ -112,7 +113,7 @@ export class Renderer{
     const c=this.ctx,left=effect.side==='left';
     const x=left?0:C.goalRight,w=left?C.goalLeft:C.width-C.goalRight;
     const progress=1-effect.remaining/C.goalEffectDuration;
-    const color=left?'#4ad8ff':'#ff5c88';
+    const color=effect.cosmeticColor||(left?'#4ad8ff':'#ff5c88');
     c.save();c.beginPath();c.rect(x,C.goalScoreTop,w,C.goalScoreBottom-C.goalScoreTop);c.clip();
     c.globalAlpha=(1-progress)*.22;c.fillStyle=color;
     c.fillRect(x,C.goalScoreTop,w,C.goalScoreBottom-C.goalScoreTop);
@@ -158,6 +159,15 @@ export class Renderer{
         c.save();c.fillStyle=`rgba(3,5,16,${opacity})`;c.beginPath();c.ellipse(body.x,floor+2,width,5,0,0,Math.PI*2);c.fill();c.restore();
       }
     }
+    const equipment=m.profile?.collection;
+    const skin=cosmeticVisual(equipment?.equipped('skin')),trail=cosmeticVisual(equipment?.equipped('trail')),ballStyle=cosmeticVisual(equipment?.equipped('ball'));
+    if(trail){
+      const p=m.player;let points=this.cosmeticTrails.get(p)||[];
+      if(points.length&&Math.hypot(points.at(-1).x-p.x,points.at(-1).y-p.y)>100)points=[];
+      points.push({x:p.x,y:p.y});if(points.length>16)points.shift();this.cosmeticTrails.set(p,points);
+      c.save();c.strokeStyle=trail.color;c.shadowColor=trail.color;c.shadowBlur=12;c.lineWidth=5;
+      for(let i=1;i<points.length;i++){c.globalAlpha=i/points.length*.65;c.beginPath();c.moveTo(points[i-1].x,points[i-1].y);c.lineTo(points[i].x,points[i].y);c.stroke();}c.restore();
+    }else this.cosmeticTrails.delete(m.player);
     this.goalPulse(m.goalEffect);
     for(const p of m.players||[m.player,m.bot].filter(Boolean)){const h=96;
       if(m.mode==='2v2'){
@@ -166,6 +176,7 @@ export class Renderer{
         c.font='bold 11px Segoe UI, sans-serif';c.textAlign='center';c.shadowColor='#050817';c.shadowBlur=4;
         c.fillText(p.label,p.x,p.y-p.h/2-14);c.restore();
       }
+      c.save();if(p===m.player&&skin)c.filter=`hue-rotate(${skin.hue}deg)`;
       if(p.skin==='fluid'&&(!p.grounded||p.contactSurface==='ceiling')){
         const cache=this.fluidVisuals.get(p)||{};this.fluidVisuals.set(p,cache);
         const visual=resolveFluidVisualPose(p,cache);
@@ -175,10 +186,11 @@ export class Renderer{
         const visualW=p.skin==='fluid'?fluidW:86,visualH=p.skin==='fluid'?fluidH:h;
         this.fit(`${p.skin}_${pose}`,p.x-visualW/2,p.y+p.h/2-visualH,visualW,visualH,p.facing<0);
       }
+      c.restore();
     }
     if(C.DEBUG_BALL_CONTACT)drawBallContactZone(c,m.player);
     if(mobile){const b=m.ball;c.save();c.beginPath();c.arc(b.x,b.y,b.r+2,0,Math.PI*2);c.lineWidth=1.5;c.strokeStyle='#a0f6ffb0';c.shadowColor='#56d9ff';c.shadowBlur=9;c.stroke();c.restore();}
-    const b=m.ball;drawBallShotTrail(c,b,this.images[b.shotColor==='gold'?'shotTrailGold':'shotTrailPurple']);c.save();c.translate(b.x,b.y);c.rotate(b.angle);this.fit(b.flash>0?'impact':'ball',-b.r,-b.r,b.r*2,b.r*2);c.restore();
+    const b=m.ball;drawBallShotTrail(c,b,this.images[b.shotColor==='gold'?'shotTrailGold':'shotTrailPurple']);c.save();c.translate(b.x,b.y);c.rotate(b.angle);if(ballStyle)c.filter=`hue-rotate(${ballStyle.hue}deg)`;this.fit(b.flash>0?'impact':'ball',-b.r,-b.r,b.r*2,b.r*2);c.restore();
     drawBallShotTint(c,b);
     this.fluidIndicator(m.player,m.control);
     c.restore();

@@ -1,8 +1,9 @@
+import { Collection } from './collection.js';
 import { ChallengeManager } from './challenges.js';
 import { SeasonPass } from './season-pass.js';
 const KEY='jetclash.etape2.profile.v1';
 export class ProfileStore {
-  constructor(storage,clock) { this.storage=storage; this.warning=''; this.data={xp:0,completed:[]}; this.load(); this.pass=new SeasonPass(this); this.challenges=new ChallengeManager(this,clock); }
+  constructor(storage,clock) { this.storage=storage; this.warning=''; this.data={xp:0,completed:[]}; this.load(); this.pass=new SeasonPass(this); this.collection=new Collection(this); this.challenges=new ChallengeManager(this,clock); }
   load() {
     try {
       const raw=this.storage?.getItem(KEY);

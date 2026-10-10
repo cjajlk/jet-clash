@@ -1,3 +1,4 @@
+import { cosmeticVisual } from './collection.js';
 import {TRAINING_ARENAS} from './training-arenas.js';
 import { bindPassTrackNavigation } from './pass-track-navigation.js';
 import { passMarkup } from './season-pass-view.js';
@@ -24,8 +25,12 @@ export class MobileMenu {
       const button=e.target.closest('button');if(!button||button.disabled)return;
       if(button.dataset.route){this.model.navigate(button.dataset.route);this.render();}
       else if(button.hasAttribute('data-back')){this.model.back();this.render();}
+      else if(button.dataset.inventoryFilter){this.inventoryFilter=button.dataset.inventoryFilter;this.render();}
       else if(button.dataset.category){this.model.selectCategory(button.dataset.category);this.render();}
       else if(button.hasAttribute('data-pass-claim')){const scroll=this.body.querySelector('.sp-track').scrollLeft;const top=this.body.querySelector('.sp-pass').scrollTop;this.profileStore.pass.claim(Number(button.dataset.passClaim),button.dataset.passTrack);this.last='';this.render();this.body.querySelector('.sp-track').scrollLeft=scroll;this.body.querySelector('.sp-pass').scrollTop=top;}
+      else if(button.dataset.crateOpen){this.revealed=this.profileStore.collection.open(button.dataset.crateOpen);this.inventoryFilter='all';this.last='';this.render();}
+      else if(button.dataset.equip){this.profileStore.collection.equip(button.dataset.equip);this.last='';this.render();}
+      else if(button.dataset.unequip){this.profileStore.collection.unequip(button.dataset.unequip);this.last='';this.render();}
       else if(button.hasAttribute('data-pass-view'))this.body.querySelector('.sp-track')?.scrollIntoView({block:'nearest'});
       else if(button.hasAttribute('data-pass-upgrade'))this.body.querySelector('[data-pass-message]').textContent='Activation Premium à venir. Aucun paiement disponible actuellement.';
       else if(button.dataset.difficulty)this.selectDifficulty(button.dataset.difficulty);
@@ -76,7 +81,7 @@ export class MobileMenu {
     this.root.hidden=!visible;document.body.classList.toggle('mobile-menu-open',visible);
     if(!visible)return;
     this.challengeView=match.profile.challenges?.snapshot();this.saveWarning=match.profile.warning;
-    const key=JSON.stringify([this.profile,ready,status,this.challengeView,this.profileStore.pass.snapshot(),this.saveWarning]);
+    const key=JSON.stringify([this.profile,ready,status,this.challengeView,this.profileStore.pass.snapshot(),this.profileStore.data.equipment,this.profileStore.data.openedCrates,this.saveWarning]);
     if(key!==this.last){
       this.last=key;this.render();
       this.root.querySelector('[data-profile-name]').textContent=this.profile.nickname;
@@ -96,8 +101,7 @@ export class MobileMenu {
     if(route==='home')this.body.innerHTML=`<section class="mm-home" aria-label="Accueil"><div class="mm-intro"><p class="mm-kicker">LA COUR DE L’AUBE</p><h1>LE CIEL<br> EST À TOI.</h1><p>Entre dans l’arène.<br>Fais parler ton énergie.</p></div><div class="mm-hero"><div class="mm-orbit"></div><img id="mobile-fluid" src="assets/characters/fluid/fluid_idle.png" alt="Fluid, combattant équipé d’un jetpack"><img class="mm-hero-ball" src="assets/ball/ball_idle.png" alt=""></div><div class="mm-play-area"><span class="mm-pilot-label">FLUID <small>PRÊT POUR LE DUEL</small></span><button id="mobile-play" class="mm-primary" data-route="modes">JOUER <span aria-hidden="true">↗</span></button><p>1 contre 1 · Face à Heavy</p></div></section>`;
     else if(route==='modes')this.body.innerHTML=`<section class="mm-page">${heading('Choisis ton mode','DIRECTION L’ARÈNE')}<div class="mm-modes"><div class="mm-duel-card"><div class="mm-duel-art"><img src="assets/characters/fluid/fluid_jetpack.png" alt=""><span>VS</span><img src="assets/characters/heavy/heavy_walk.png" alt=""></div><div><span class="mm-kicker">LA COUR DE L’AUBE</span><h3>DUEL 1V1</h3><p>Toi face à Heavy. Cinq minutes pour gagner.</p></div></div><div class="mm-duel-actions"><div id="difficulty-title" class="mm-difficulty-title">Difficulté des bots</div><div id="mobile-difficulty" class="mm-difficulty" role="radiogroup" aria-labelledby="difficulty-title">${[['easy','Facile'],['normal','Normal'],['elite','Élite']].map(([value,label])=>`<button type="button" role="radio" data-difficulty="${value}">${label}</button>`).join('')}</div><button id="mobile-duel" class="mm-primary" ${this.ready?'':'disabled'}>DUEL 1V1 <span aria-hidden="true">→</span></button><button id="mobile-teams" class="mm-secondary" ${this.ready?'':'disabled'}>2V2 · AVEC 3 BOTS</button><p>Toi + un bot allié contre deux bots.</p><p class="mm-training-title">Décor de l’entraînement</p><div class="mm-training-arenas" aria-label="Fonds de l’entraînement">${TRAINING_ARENAS.map(a=>`<button type="button" class="mm-arena-card" data-training-arena="${a.id}" aria-pressed="${a.id===this.trainingArenaId}"><img src="${a.image}" alt="" loading="lazy"><strong>${a.name}</strong><small>${a.detail}</small></button>`).join('')}</div><button id="mobile-training" class="mm-secondary" ${this.ready?'':'disabled'}>ENTRAÎNEMENT</button><p id="mobile-load-status" role="status"></p><span class="mm-future-modes">Hoops · Goal Rush<br><strong>Bientôt</strong></span></div></div></section>`;
     else if(route==='collection'){
-      const item=COLLECTION_CATEGORIES.find(c=>c.id===this.model.category);
-      this.body.innerHTML=`<section class="mm-page">${heading('Collection','TON IDENTITÉ')}<div class="mm-collection"><div class="mm-categories" aria-label="Catégories">${COLLECTION_CATEGORIES.map(c=>`<button data-category="${c.id}" aria-pressed="${c.id===item.id}">${c.label}</button>`).join('')}</div><article class="mm-preview">${item.image?`<img src="assets/${item.image}" alt="${item.title}">`:`<span class="mm-preview-icon">${icon('collection')}</span>`}<div><span class="mm-kicker">${item.id==='fluid'?'ÉQUIPÉ':'APERÇU'}</span><h3>${item.title}</h3><p>${item.detail}</p></div></article></div></section>`;
+      this.body.innerHTML=`<section class="mm-page">${heading('Collection','TON IDENTITÉ')}<div class="collection-filters" aria-label="Catégories de récompenses">${[['all','Tout'],['crate','Caisses'],['skin','Styles'],['trail','Traînées'],['ball','Ballons'],['banner','Bannières'],['explosion','Buts']].map(([id,label])=>`<button type="button" data-inventory-filter="${id}" aria-pressed="${id===(this.inventoryFilter||'all')}">${label}</button>`).join('')}</div><div class="collection-library"></div></section>`;
     }else if(route==='shop')this.body.innerHTML=`<section class="mm-page">${heading('Boutique','DU STYLE, BIENTÔT')}<div class="mm-card-grid">${preview('Objets permanents','Une collection de styles pour te démarquer.','shop')}${preview('Événements','Des collections pour les grandes occasions.','challenges')}</div></section>`;
     else if(route==='pass'){
       this.body.innerHTML=`<section class="mm-page">${heading('Pass','SAISON 1')}${passMarkup(this.profileStore.pass)}</section>`;
@@ -113,10 +117,30 @@ export class MobileMenu {
     if(route==='collection'&&this.profileStore){
       const inventory=document.createElement('div');inventory.className='sp-inventory';
       const title=document.createElement('h3');title.textContent='Récompenses du Pass';inventory.append(title);
-      for(const item of this.profileStore.data.passInventory||[]){const entry=document.createElement('p');entry.textContent=`${item.label} · Saison ${item.season} · Ouverture / équipement à venir`;inventory.append(entry);}
-      if(!inventory.querySelector('p')){const empty=document.createElement('p');empty.textContent='Tes caisses et styles récupérés apparaîtront ici.';inventory.append(empty);}
-      this.body.querySelector('.mm-preview').append(inventory);
+      const collection=this.profileStore.collection;
+      const reveal=document.createElement('p');reveal.className='collection-reveal';reveal.setAttribute('role','status');
+      reveal.textContent=this.revealed?`Caisse ouverte ! ${this.revealed.label} · ${this.revealed.rarity}`:'Ouvre tes caisses, puis équipe tes objets. Un objet par catégorie.';inventory.append(reveal);
+      const grid=document.createElement('div');grid.className='collection-grid';inventory.append(grid);
+      for(const item of collection.items()){
+        const filter=this.inventoryFilter||'all';if(filter!=='all'&&item.type!==filter&&!(filter==='crate'&&item.type==='mystery'))continue;
+        const card=document.createElement('article');card.className='collection-item';
+        const visual=cosmeticVisual(item);if(visual)card.style.setProperty('--item-color',visual.color);
+        const image=document.createElement('img');image.alt='';image.loading='lazy';image.src=visual?`assets/pass/rewards/reward_${item.type}.png`:`assets/pass/crates/crate_${['common','uncommon','rare','epic','legendary'].includes(item.rarity)?item.rarity:'common'}.png`;card.append(image);
+        const label=document.createElement('strong');label.textContent=item.label;card.append(label);
+        const detail=document.createElement('span');detail.textContent=`${item.rarity||'common'} · Saison ${item.season||1}`;card.append(detail);
+        const button=document.createElement('button');button.type='button';button.className='mm-secondary';
+        if(['crate','mystery'].includes(item.type)){const opened=Object.hasOwn(this.profileStore.data.openedCrates,item.id);button.textContent=opened?'OUVERTE':'OUVRIR';button.disabled=opened;button.dataset.crateOpen=item.id;}
+        else if(visual){const equipped=collection.equipped(item.type)?.id===item.id;button.textContent=equipped?'ÉQUIPÉ · RETIRER':'ÉQUIPER';button.setAttribute('aria-pressed',String(equipped));if(equipped)button.dataset.unequip=item.type;else button.dataset.equip=item.id;}
+        else continue;
+        card.append(button);grid.append(card);
+      }
+      if(!grid.children.length){const empty=document.createElement('p');empty.textContent='Tes caisses et styles récupérés apparaîtront ici.';grid.append(empty);}
+      this.body.querySelector('.collection-library').append(inventory);
     }
+    const banner=cosmeticVisual(this.profileStore?.collection.equipped('banner'));
+    this.root.querySelector('.mm-profile').style.background=banner?`linear-gradient(110deg,${banner.color}66,transparent)`:'';
+    const skin=cosmeticVisual(this.profileStore?.collection.equipped('skin'));
+    const hero=this.root.querySelector('#mobile-fluid');if(hero)hero.style.filter=skin?`hue-rotate(${skin.hue}deg)`:'';
     if(route==='modes'){
       this.selectDifficulty(this.difficulty);
       this.root.querySelector('#mobile-load-status').textContent=this.ready?'Match local · 5 minutes':this.status||'Chargement de l’arène…';
