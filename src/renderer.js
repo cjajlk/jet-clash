@@ -1,3 +1,4 @@
+import { CAPSULE_CATALOG, CAPSULE_COLORS, capsuleAssetKey, capsuleImage, capsuleModel } from './capsules.js';
 import { cosmeticVisual } from './collection.js';
 import {trainingArena} from './training-arenas.js';
 import {drawBallShotTrail,drawBallShotTint} from './ball-shot-trail.js';
@@ -6,6 +7,7 @@ import { solids, OPEN_ARENA } from './arena.js';
 import { MobileCamera } from './mobile-camera.js';
 import { drawBallContactZone } from './ball-control.js';
 const paths={backgroundFlat:'arena/arena_flat_large_goals_v4.png',shotTrailGold:'ball/shots/shot_gold_trail.png',shotTrailPurple:'ball/shots/shot_purple_trail.png',left:'arena/goal_left_blue.png',right:'arena/goal_right_red.png',rampLeft:'arena/goal_ramp_left_blue.png',rampRight:'arena/goal_ramp_right_red.png',platform:'arena/platform_large.png',obstacle:'arena/center_obstacle.png',ball:'ball/ball_idle.png',impact:'ball/ball_glow.png',goalV3Blue:'arena/goal_v3_blue.png',goalV3Red:'arena/goal_v3_red.png'};
+for(const category of CAPSULE_CATALOG)for(const model of category.models)for(let palette=0;palette<CAPSULE_COLORS.length;palette++){const item={...model,palette};paths[capsuleAssetKey(item)]=capsuleImage(item).slice('assets/'.length);}
 const FLUID_AIR_POSES=Object.freeze(['air_idle','air_up','air_diagonal_up','air_horizontal','air_turn','ceiling','air_diagonal_down','air_dash']);
 export const FLUID_AIR_ASSETS=Object.freeze(FLUID_AIR_POSES.map(pose=>`fluid_${pose}`));
 const FLUID_VISUAL=Object.freeze({hysteresis:.08,maxRotation:.16,dashWindow:.12,idleY:.82,upY:.58,diagUpY:.22,horizontalY:-.16,diagDownY:-.62,turnY:-.78});
@@ -131,6 +133,19 @@ export class Renderer{
     c.beginPath();c.moveTo(-shaft,0);c.lineTo(head,0);c.strokeStyle=`rgba(144,248,255,${.8+.2*charge})`;c.lineWidth=3+charge*.8;c.stroke();
     c.restore();
   }
+  capsulePlayerEffects(player,equipment){
+    const style=equipment?.equipped('style'),propulsion=equipment?.equipped('propulsion'),c=this.ctx;
+    if(capsuleModel(style)){
+      const model=capsuleModel(style).model,key=capsuleAssetKey(style),x=player.x;
+      // These decorations follow the player's body without changing its collision box.
+      const positions={aura:[x-52,player.y+player.h/2-24,104,45],halo:[x-39,player.y-player.h/2-35,78,35],crete:[x-21,player.y-player.h/2-20,42,34],epaulieres:[x-39,player.y-player.h/2+10,78,39]};
+      this.fit(key,...positions[model]);
+    }
+    if(player.boosting&&capsuleModel(propulsion)){
+      const angle=Math.hypot(player.vx,player.vy)>10?Math.atan2(player.vy,player.vx)+Math.PI/2:0;
+      c.save();c.translate(player.x,player.y);c.rotate(angle);this.fit(capsuleAssetKey(propulsion),-42,12,84,80);c.restore();
+    }
+  }
   render(m,{mobile=false,dt=1/60}={}){const c=this.ctx;c.clearRect(0,0,C.width,C.height);
     const camera=this.camera.update(m,true,dt);c.save();
     const trainingScale=m.trainingArenaId==='flat'?1.18:1;
@@ -187,10 +202,15 @@ export class Renderer{
         this.fit(`${p.skin}_${pose}`,p.x-visualW/2,p.y+p.h/2-visualH,visualW,visualH,p.facing<0);
       }
       c.restore();
+      if(p===m.player)this.capsulePlayerEffects(p,equipment);
     }
     if(C.DEBUG_BALL_CONTACT)drawBallContactZone(c,m.player);
     if(mobile){const b=m.ball;c.save();c.beginPath();c.arc(b.x,b.y,b.r+2,0,Math.PI*2);c.lineWidth=1.5;c.strokeStyle='#a0f6ffb0';c.shadowColor='#56d9ff';c.shadowBlur=9;c.stroke();c.restore();}
-    const b=m.ball;drawBallShotTrail(c,b,this.images[b.shotColor==='gold'?'shotTrailGold':'shotTrailPurple']);c.save();c.translate(b.x,b.y);c.rotate(b.angle);if(ballStyle)c.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${ballStyle.hue}deg)`;this.fit(b.flash>0?'impact':'ball',-b.r,-b.r,b.r*2,b.r*2);c.restore();
+    const b=m.ball;drawBallShotTrail(c,b,this.images[b.shotColor==='gold'?'shotTrailGold':'shotTrailPurple']);c.save();c.translate(b.x,b.y);c.rotate(b.angle);if(ballStyle&&!capsuleModel(equipment?.equipped('ball')))c.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${ballStyle.hue}deg)`;this.fit(capsuleAssetKey(equipment?.equipped('ball'))||(b.flash>0?'impact':'ball'),-b.r,-b.r,b.r*2,b.r*2);c.restore();
+    const impact=equipment?.equipped('impact');
+    if(b.flash>0&&capsuleModel(impact)){
+      this.fit(capsuleAssetKey(impact),b.x-b.r*2,b.y-b.r*1.5,b.r*4,b.r*3,false,Math.min(1,b.flash/.08));
+    }
     drawBallShotTint(c,b);
     this.fluidIndicator(m.player,m.control);
     c.restore();

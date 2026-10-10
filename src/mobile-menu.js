@@ -1,5 +1,5 @@
-import { PASS_LEVELS } from './season-pass.js';
-import { cosmeticVisual, COSMETIC_PALETTES, COSMETIC_SLOTS } from './collection.js';
+import { CAPSULE_CATALOG, CAPSULE_COLORS, capsuleCategory, capsuleModel, capsuleImage } from './capsules.js';
+import { cosmeticVisual, COSMETIC_PALETTES } from './collection.js';
 import {TRAINING_ARENAS} from './training-arenas.js';
 import { bindPassTrackNavigation } from './pass-track-navigation.js';
 import { passMarkup } from './season-pass-view.js';
@@ -24,12 +24,13 @@ export class MobileMenu {
     document.body.append(this.root);this.body=this.root.querySelector('.mm-body');
     this.root.addEventListener('click',e=>{
       const button=e.target.closest('button');if(!button||button.disabled)return;
-      if(button.dataset.route){this.model.navigate(button.dataset.route);this.render();}
+      if(button.dataset.route){if(button.hasAttribute('data-show-capsules'))this.inventoryFilter='crate';this.model.navigate(button.dataset.route);this.render();}
       else if(button.hasAttribute('data-back')){this.model.back();this.render();}
       else if(button.dataset.inventoryFilter){this.inventoryFilter=button.dataset.inventoryFilter;this.render();}
       else if(button.dataset.category){this.model.selectCategory(button.dataset.category);this.render();}
       else if(button.hasAttribute('data-pass-claim')){const scroll=this.body.querySelector('.sp-track').scrollLeft;const top=this.body.querySelector('.sp-pass').scrollTop;this.profileStore.pass.claim(Number(button.dataset.passClaim),button.dataset.passTrack);this.last='';this.render();this.body.querySelector('.sp-track').scrollLeft=scroll;this.body.querySelector('.sp-pass').scrollTop=top;}
-      else if(button.dataset.crateOpen){this.revealed=this.profileStore.collection.open(button.dataset.crateOpen);this.inventoryFilter='all';this.last='';this.render();}
+      else if(button.dataset.capsuleBuy){const crate=this.profileStore.collection.buyCapsule(button.dataset.capsuleBuy);this.shopMessage=crate?`${crate.label} achetée ! Ouvre-la dans Collection.`:'Coins insuffisants pour cette capsule.';this.last='';this.render();}
+      else if(button.dataset.crateOpen)this.openCrate(button.dataset.crateOpen);
       else if(button.dataset.itemColor){const scroll=this.body.querySelector('.collection-library')?.scrollTop||0;const id=button.dataset.itemColor,color=Number(button.dataset.palette);if(!this.profileStore.collection.setColor(id,color)){this.colorPreviews||={};this.colorPreviews[id]=color;}this.last='';this.render();this.body.querySelector('.collection-library').scrollTop=scroll;}
       else if(button.dataset.equip){this.profileStore.collection.equip(button.dataset.equip);this.last='';this.render();}
       else if(button.dataset.unequip){this.profileStore.collection.unequip(button.dataset.unequip);this.last='';this.render();}
@@ -59,6 +60,34 @@ export class MobileMenu {
       this.selectDifficulty(options[next].dataset.difficulty);options[next].focus();
     });
   }
+  openCrate(id){
+    if(this.openingDialog?.open)return;
+    const collection=this.profileStore.collection,crate=collection.item(id),reward=collection.open(id);
+    if(!reward)return;
+    // Award and save before the presentation: closing/reloading never loses the reward.
+    this.revealed=reward;this.inventoryFilter='all';this.last='';this.render();
+    const dialog=document.createElement('dialog');dialog.className='crate-opening';dialog.setAttribute('aria-labelledby','crate-opening-title');
+    dialog.innerHTML='<h2 id="crate-opening-title">Ouverture de la caisse…</h2><div class="crate-opening-stage"><div class="crate-opening-glow" aria-hidden="true"></div><img class="crate-opening-box" alt=""><img class="crate-opening-reward" alt="" hidden></div><p class="crate-opening-description" role="status">Une surprise arrive…</p><div class="crate-opening-actions" hidden><button type="button" data-opening-equip>ÉQUIPER</button><button type="button" data-opening-close>CONTINUER</button></div>';
+    const rarity=['common','uncommon','rare','epic','legendary'].includes(crate.rarity)?crate.rarity:'common';
+    dialog.querySelector('.crate-opening-box').src=capsuleCategory(crate.capsuleCategory)?.image||`assets/pass/crates/crate_${rarity}.png`;
+    const visual=cosmeticVisual(collection.appearance(reward));dialog.style.setProperty('--reveal-color',visual.color);
+    const image=dialog.querySelector('.crate-opening-reward');image.src=capsuleImage(collection.appearance(reward))||`assets/pass/rewards/reward_${reward.type}.png`;if(!capsuleModel(reward))image.style.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${visual.hue}deg)`;
+    document.body.append(dialog);this.openingDialog=dialog;
+    const finish=()=>{
+      if(!dialog.open)return;
+      dialog.classList.add('is-revealed');dialog.querySelector('.crate-opening-box').hidden=true;image.hidden=false;
+      dialog.querySelector('h2').textContent=reward.duplicate?'Déjà obtenu !':'Nouvel objet !';dialog.querySelector('.crate-opening-description').textContent=reward.duplicate?`${reward.label} · +${reward.refund} Coins remboursés (25 % du prix payé)`:`${reward.label}${reward.rarity?' · '+reward.rarity:''}`;
+      dialog.querySelector('.crate-opening-actions').hidden=false;
+      dialog.querySelector('[data-opening-close]').focus();
+    };
+    dialog.addEventListener('click',event=>{
+      if(event.target.closest('[data-opening-equip]')){collection.equip(reward.id);this.last='';this.render();dialog.close();}
+      else if(event.target.closest('[data-opening-close]'))dialog.close();
+    });
+    dialog.addEventListener('close',()=>{clearTimeout(timer);dialog.remove();this.openingDialog=null;this.root.querySelector(`[data-crate-open="${id}"]`)?.closest('.collection-item')?.querySelector('strong')?.scrollIntoView({block:'nearest'});this.root.querySelector('[data-inventory-filter="all"]')?.focus({preventScroll:true});},{once:true});
+    dialog.showModal();
+    const timer=setTimeout(finish,matchMedia('(prefers-reduced-motion: reduce)').matches?0:1400);
+  }
   async toggleFullscreen(){
     // The menu is a sibling of the arena: fullscreen must include both.
     const target=document.documentElement;
@@ -83,7 +112,7 @@ export class MobileMenu {
     this.root.hidden=!visible;document.body.classList.toggle('mobile-menu-open',visible);
     if(!visible)return;
     this.challengeView=match.profile.challenges?.snapshot();this.saveWarning=match.profile.warning;
-    const key=JSON.stringify([this.profile,ready,status,this.challengeView,this.profileStore.pass.snapshot(),this.profileStore.data.equipment,this.profileStore.data.openedCrates,this.profileStore.data.cosmeticColors,this.saveWarning]);
+    const key=JSON.stringify([this.profile,ready,status,this.challengeView,this.profileStore.pass.snapshot(),this.profileStore.data.equipment,this.profileStore.data.openedCrates,this.profileStore.data.cosmeticColors,this.profileStore.data.coins,this.profileStore.data.capsuleInventory,this.saveWarning]);
     if(key!==this.last){
       this.last=key;this.render();
       this.root.querySelector('[data-profile-name]').textContent=this.profile.nickname;
@@ -103,8 +132,8 @@ export class MobileMenu {
     if(route==='home')this.body.innerHTML=`<section class="mm-home" aria-label="Accueil"><div class="mm-intro"><p class="mm-kicker">LA COUR DE L’AUBE</p><h1>LE CIEL<br> EST À TOI.</h1><p>Entre dans l’arène.<br>Fais parler ton énergie.</p></div><div class="mm-hero"><div class="mm-orbit"></div><img id="mobile-fluid" src="assets/characters/fluid/fluid_idle.png" alt="Fluid, combattant équipé d’un jetpack"><img class="mm-hero-ball" src="assets/ball/ball_idle.png" alt=""></div><div class="mm-play-area"><span class="mm-pilot-label">FLUID <small>PRÊT POUR LE DUEL</small></span><button id="mobile-play" class="mm-primary" data-route="modes">JOUER <span aria-hidden="true">↗</span></button><p>1 contre 1 · Face à Heavy</p></div></section>`;
     else if(route==='modes')this.body.innerHTML=`<section class="mm-page">${heading('Choisis ton mode','DIRECTION L’ARÈNE')}<div class="mm-modes"><div class="mm-duel-card"><div class="mm-duel-art"><img src="assets/characters/fluid/fluid_jetpack.png" alt=""><span>VS</span><img src="assets/characters/heavy/heavy_walk.png" alt=""></div><div><span class="mm-kicker">LA COUR DE L’AUBE</span><h3>DUEL 1V1</h3><p>Toi face à Heavy. Cinq minutes pour gagner.</p></div></div><div class="mm-duel-actions"><div id="difficulty-title" class="mm-difficulty-title">Difficulté des bots</div><div id="mobile-difficulty" class="mm-difficulty" role="radiogroup" aria-labelledby="difficulty-title">${[['easy','Facile'],['normal','Normal'],['elite','Élite']].map(([value,label])=>`<button type="button" role="radio" data-difficulty="${value}">${label}</button>`).join('')}</div><button id="mobile-duel" class="mm-primary" ${this.ready?'':'disabled'}>DUEL 1V1 <span aria-hidden="true">→</span></button><button id="mobile-teams" class="mm-secondary" ${this.ready?'':'disabled'}>2V2 · AVEC 3 BOTS</button><p>Toi + un bot allié contre deux bots.</p><p class="mm-training-title">Décor de l’entraînement</p><div class="mm-training-arenas" aria-label="Fonds de l’entraînement">${TRAINING_ARENAS.map(a=>`<button type="button" class="mm-arena-card" data-training-arena="${a.id}" aria-pressed="${a.id===this.trainingArenaId}"><img src="${a.image}" alt="" loading="lazy"><strong>${a.name}</strong><small>${a.detail}</small></button>`).join('')}</div><button id="mobile-training" class="mm-secondary" ${this.ready?'':'disabled'}>ENTRAÎNEMENT</button><p id="mobile-load-status" role="status"></p><span class="mm-future-modes">Hoops · Goal Rush<br><strong>Bientôt</strong></span></div></div></section>`;
     else if(route==='collection'){
-      this.body.innerHTML=`<section class="mm-page">${heading('Collection','TON IDENTITÉ')}<div class="collection-filters" aria-label="Catégories de récompenses">${[['all','Tout'],['crate','Caisses'],['skin','Styles'],['trail','Traînées'],['ball','Ballons'],['banner','Bannières'],['explosion','Buts']].map(([id,label])=>`<button type="button" data-inventory-filter="${id}" aria-pressed="${id===(this.inventoryFilter||'all')}">${label}</button>`).join('')}</div><div class="collection-library"></div></section>`;
-    }else if(route==='shop')this.body.innerHTML=`<section class="mm-page collection-shop">${heading('Boutique','LES COULEURS DU PASS')}<div class="collection-library"></div></section>`;
+      this.body.innerHTML=`<section class="mm-page">${heading('Collection','TON IDENTITÉ')}<div class="collection-filters" aria-label="Catégories de récompenses">${[['all','Tout'],['crate','Caisses'],['skin','Personnage'],['style','Styles'],['propulsion','Propulsions'],['impact','Impacts'],['trail','Traînées'],['ball','Ballons'],['banner','Bannières'],['explosion','Buts']].map(([id,label])=>`<button type="button" data-inventory-filter="${id}" aria-pressed="${id===(this.inventoryFilter||'all')}">${label}</button>`).join('')}</div><div class="collection-library"></div></section>`;
+    }else if(route==='shop')this.body.innerHTML=`<section class="mm-page collection-shop">${heading('Boutique','CAPSULES DU PILOTE')}<div class="collection-library"></div></section>`;
     else if(route==='pass'){
       this.body.innerHTML=`<section class="mm-page">${heading('Pass','SAISON 1')}${passMarkup(this.profileStore.pass)}</section>`;
       this.body.querySelector('[data-save-warning]').textContent=this.profileStore.warning||'';
@@ -116,25 +145,25 @@ export class MobileMenu {
       this.body.querySelector('[data-save-warning]').textContent=this.saveWarning||'';
     }
     else if(route==='options')this.body.innerHTML=`<section class="mm-page">${heading('Options','TES COMMANDES')}<div class="mm-options"><article class="mm-card"><h3>Clavier</h3><p>Régle chaque action. Les touches sont sauvegardées automatiquement.</p><div class="mm-control-grid">${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.moveLeft[0],'keyboard','moveLeft')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.moveRight[0],'keyboard','moveRight')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.jump[0],'keyboard','jump')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.boost[0],'keyboard','boost')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.shoot[0],'keyboard','shoot')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.rotate[0],'keyboard','rotate')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.backPose[0],'keyboard','backPose')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.resetBall[0],'keyboard','resetBall')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.aimLeft[0],'keyboard','aimLeft')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.aimRight[0],'keyboard','aimRight')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.aimUp[0],'keyboard','aimUp')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.aimDown[0],'keyboard','aimDown')}</div></article><article class="mm-card"><h3>Manette PS5 / Xbox</h3><p>Croix/A : saut, Rond/B : boost, Carré/X : flip aérien, L2/LT : tir.</p><div class="mm-control-grid">${selectMarkup(STICK_OPTIONS,controlSettings.gamepad.movementStick,'gamepad','movementStick')} ${selectMarkup(GAMEPAD_BUTTON_OPTIONS,controlSettings.gamepad.jump,'gamepad','jump')} ${selectMarkup(GAMEPAD_BUTTON_OPTIONS,controlSettings.gamepad.boost,'gamepad','boost')} ${selectMarkup(GAMEPAD_BUTTON_OPTIONS,controlSettings.gamepad.shoot,'gamepad','shoot')} ${selectMarkup(GAMEPAD_BUTTON_OPTIONS,controlSettings.gamepad.rotate,'gamepad','rotate')} ${selectMarkup(GAMEPAD_BUTTON_OPTIONS,controlSettings.gamepad.backPose,'gamepad','backPose')} ${selectMarkup(GAMEPAD_BUTTON_OPTIONS,controlSettings.gamepad.resetBall,'gamepad','resetBall')}</div></article><article class="mm-card"><h3>Tactile</h3><p>Le contrôle tactile garde les mêmes actions, avec une disposition miroir au besoin.</p><div class="mm-control-grid">${selectMarkup(TOUCH_LAYOUT_OPTIONS,controlSettings.touch.layout,'touch','layout')}</div></article><article class="mm-card"><h3>Réglages</h3><p>Choisis tes commandes ici, puis reviens jouer.</p><button type="button" class="mm-primary" data-fullscreen>${document.fullscreenElement?'QUITTER LE PLEIN ÉCRAN':'PLEIN ÉCRAN'}</button>${this.audio?`<button type="button" class="mm-secondary" data-toggle-sound aria-pressed="${this.audio.enabled}">SONS : ${this.audio.enabled?'ACTIVÉS':'COUPÉS'}</button>`:''}<button type="button" class="mm-secondary" data-reset-controls>Réinitialiser par défaut</button><p class="mm-small-note">Échap quitte le plein écran. Le jeu applique les changements immédiatement.</p></article></div></section>`;
-    if(['collection','shop'].includes(route)&&this.profileStore){
+    if(route==='collection'&&this.profileStore){
       const inventory=document.createElement('div');inventory.className='sp-inventory';
-      const title=document.createElement('h3');title.textContent=route==='shop'?'Personnalise les objets du Pass':'Récompenses du Pass';inventory.append(title);
+      const title=document.createElement('h3');title.textContent='Tes objets et capsules';inventory.append(title);
       const collection=this.profileStore.collection;
       const reveal=document.createElement('p');reveal.className='collection-reveal';reveal.setAttribute('role','status');
-      reveal.textContent=route==='shop'?'Choisis une couleur. Récupère l’objet dans le Pass pour pouvoir l’équiper.':this.revealed?`Caisse ouverte ! ${this.revealed.label} · ${this.revealed.rarity}`:'Ouvre tes caisses, puis équipe tes objets. Un objet par catégorie.';inventory.append(reveal);
+      reveal.textContent=this.revealed?this.revealed.duplicate?`Doublon : ${this.revealed.label} · +${this.revealed.refund} Coins`:`Caisse ouverte ! ${this.revealed.label}${this.revealed.rarity?' · '+this.revealed.rarity:''}`:'Ouvre tes caisses, puis équipe tes objets. Un objet par catégorie.';inventory.append(reveal);
       const grid=document.createElement('div');grid.className='collection-grid';inventory.append(grid);
-      const catalogue=route==='shop'?COSMETIC_SLOTS.map(type=>collection.items().find(i=>i.type===type)||PASS_LEVELS.flatMap(row=>[row.free,row.premium]).find(i=>i.type===type)):collection.items();
+      const catalogue=collection.items();
       for(const item of catalogue){
         const owned=!!collection.item(item.id);const appearance=owned?collection.appearance(item):{...item,palette:this.colorPreviews?.[item.id]??item.palette};
-        const filter=route==='shop'?'all':this.inventoryFilter||'all';if(filter!=='all'&&item.type!==filter&&!(filter==='crate'&&item.type==='mystery'))continue;
+        const filter=this.inventoryFilter||'all';if(filter!=='all'&&item.type!==filter&&!(filter==='crate'&&item.type==='mystery'))continue;
         const card=document.createElement('article');card.className='collection-item';
         const visual=cosmeticVisual(appearance);if(visual)card.style.setProperty('--item-color',visual.color);
-        const image=document.createElement('img');image.alt='';image.loading='lazy';image.src=visual?`assets/pass/rewards/reward_${item.type}.png`:`assets/pass/crates/crate_${['common','uncommon','rare','epic','legendary'].includes(item.rarity)?item.rarity:'common'}.png`;if(visual)image.style.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${visual.hue}deg)`;card.append(image);
+        const image=document.createElement('img');image.alt='';image.loading='lazy';image.src=capsuleModel(item)?capsuleImage(appearance):capsuleCategory(item.capsuleCategory)?.image|| (visual?`assets/pass/rewards/reward_${item.type}.png`:`assets/pass/crates/crate_${['common','uncommon','rare','epic','legendary'].includes(item.rarity)?item.rarity:'common'}.png`);if(visual&&!capsuleModel(item))image.style.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${visual.hue}deg)`;card.append(image);
         const label=document.createElement('strong');label.textContent=item.label;card.append(label);
-        const detail=document.createElement('span');detail.textContent=`${item.rarity||'common'} · Saison ${item.season||1}`;card.append(detail);
+        const detail=document.createElement('span');detail.textContent=item.source==='shop'?(item.type==='crate'?`${item.pricePaid} Coins · 1 modèle aléatoire`:'4 couleurs incluses'):`${item.rarity||'common'} · Saison ${item.season||1}`;card.append(detail);
         if(visual){
           const colors=document.createElement('div');colors.className='collection-colors';colors.setAttribute('role','group');colors.setAttribute('aria-label',`Couleur de ${item.label}`);
-          for(const [index,palette] of COSMETIC_PALETTES.entries()){
+          for(const [index,palette] of (capsuleModel(item)?CAPSULE_COLORS:COSMETIC_PALETTES).entries()){
             const swatch=document.createElement('button');swatch.type='button';swatch.className='collection-swatch';swatch.dataset.itemColor=item.id;swatch.dataset.palette=String(index);swatch.style.setProperty('--swatch-color',palette.color);swatch.setAttribute('aria-label',palette.name);swatch.title=palette.name;swatch.setAttribute('aria-pressed',String(visual===palette));colors.append(swatch);
           }
           card.append(colors);const colorName=document.createElement('span');colorName.className='collection-color-name';colorName.textContent=`Couleur : ${visual.name}`;card.append(colorName);
@@ -148,6 +177,23 @@ export class MobileMenu {
       }
       if(!grid.children.length){const empty=document.createElement('p');empty.textContent='Tes caisses et styles récupérés apparaîtront ici.';grid.append(empty);}
       this.body.querySelector('.collection-library').append(inventory);
+    }
+    if(route==='shop'&&this.profileStore){
+      const library=this.body.querySelector('.collection-library');
+      const balance=document.createElement('p');balance.className='shop-balance';balance.textContent=`${this.profileStore.data.coins??0} Coins`;library.append(balance);
+      const note=document.createElement('p');note.textContent='200 Coins par capsule · 1 modèle aléatoire · 4 couleurs incluses. Doublon : remboursement de 25 % du prix payé.';library.append(note);
+      const message=document.createElement('p');message.setAttribute('role','status');message.textContent=this.shopMessage||this.profileStore.warning||'';library.append(message);
+      const collectionButton=document.createElement('button');collectionButton.className='mm-secondary';collectionButton.dataset.route='collection';collectionButton.setAttribute('data-show-capsules','');collectionButton.textContent='OUVRIR MES CAPSULES · COLLECTION';library.append(collectionButton);
+      const grid=document.createElement('div');grid.className='collection-grid shop-capsules';library.append(grid);
+      for(const category of CAPSULE_CATALOG){
+        const card=document.createElement('article');card.className='collection-item';
+        const image=document.createElement('img');image.src=category.image;image.alt='';card.append(image);
+        const title=document.createElement('h3');title.textContent=`Capsule ${category.label}`;card.append(title);
+        const detail=document.createElement('p');detail.textContent=`${category.models.length} modèles · ${category.price} Coins`;card.append(detail);
+        const contents=document.createElement('details');const summary=document.createElement('summary');summary.textContent='Voir le contenu';contents.append(summary);
+        for(const model of category.models){const entry=document.createElement('div');entry.className='shop-content';const img=document.createElement('img');img.src=capsuleImage(model,0);img.alt='';img.loading='lazy';const label=document.createElement('span');label.textContent=`${model.label} · ${(100/category.models.length).toLocaleString('fr-FR',{maximumFractionDigits:1})} %`;entry.append(img,label);contents.append(entry);}card.append(contents);
+        const buy=document.createElement('button');buy.type='button';buy.className='mm-secondary';buy.dataset.capsuleBuy=category.id;buy.textContent=`ACHETER · ${category.price} COINS`;buy.disabled=(this.profileStore.data.coins??0)<category.price;card.append(buy);grid.append(card);
+      }
     }
     const banner=cosmeticVisual(this.profileStore?.collection.equipped('banner'));
     this.root.querySelector('.mm-profile').style.background=banner?`linear-gradient(110deg,${banner.color}66,transparent)`:'';

@@ -4,11 +4,9 @@ const assert=require('node:assert/strict');
 for(const viewport of [{width:1440,height:900},{width:390,height:844},{width:844,height:390}]){
 const context=await browser.newContext({viewport,isMobile:viewport.width<900,hasTouch:viewport.width<900});const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
 await page.addInitScript(()=>navigator.getGamepads=()=>[]);await page.goto('http://127.0.0.1:4173/?test=1');await page.waitForFunction(()=>window.__jetclash&&!document.querySelector('#start').disabled);
-await page.locator('.mm-nav [data-route=shop]').click();assert.equal(await page.locator('.collection-item').count(),5);assert.equal(await page.locator('[data-equip]').count(),0);
-await page.locator('[data-item-color][data-palette="2"]').first().click();assert.equal(await page.evaluate(()=>Object.keys(__jetclash.match.profile.data.equipment).length),0);assert.equal(await page.evaluate(()=>Object.keys(__jetclash.match.profile.data.cosmeticColors).length),0);
+await page.locator('.mm-nav [data-route=shop]').click();assert.equal(await page.locator('[data-capsule-buy]').count(),4);assert.equal(await page.locator('[data-equip]').count(),0);assert.equal(await page.locator('[data-capsule-buy]:disabled').count(),4);
 await page.evaluate(()=>{const p=__jetclash.match.profile;p.pass.addXp(50000);p.pass.setPremium(true);for(let n=1;n<=50;n++)p.pass.claim(n,'premium');});
-await page.locator('.mm-nav [data-route=shop]').click();
-assert.equal(await page.locator('.collection-item').count(),5);
+await page.locator('.mm-nav [data-route=collection]').click();
 const ballId=await page.evaluate(()=>__jetclash.match.profile.collection.items().find(i=>i.type==='ball').id);
 await page.locator(`[data-item-color="${ballId}"][data-palette="2"]`).click();
 assert.equal(await page.locator(`[data-item-color="${ballId}"][data-palette="2"]`).getAttribute('aria-pressed'),'true');
@@ -17,6 +15,13 @@ await page.screenshot({path:`C:/Users/User/Documents/Codex/2026-10-08/e-cj-proje
 await page.locator('.mm-nav [data-route=collection]').click();
 await page.locator('[data-crate-open="s1-premium-3"]').click();await page.waitForFunction(()=>document.querySelector('.collection-reveal').textContent.includes('Caisse ouverte'));
 assert.ok(await page.locator('[data-crate-open="s1-premium-3"]').isDisabled());
+await page.locator('.crate-opening').waitFor({state:'visible'});assert.equal(await page.locator('.crate-opening-actions').isVisible(),false);
+await page.locator('.crate-opening.is-revealed').waitFor();assert.ok(await page.locator('.crate-opening-reward').isVisible());
+await page.screenshot({path:`C:/Users/User/Documents/Codex/2026-10-08/e-cj-project-jet-clash/outputs/crate-opening-${viewport.width}x${viewport.height}.png`});
+await page.locator('[data-opening-equip]').click();await page.locator('.crate-opening').waitFor({state:'detached'});
+assert.equal(await page.evaluate(()=>__jetclash.match.profile.collection.items().filter(i=>i.id==='s1-premium-3-content').length),1);
+await page.emulateMedia({reducedMotion:'reduce'});await page.locator('[data-crate-open="s1-premium-7"]').click();await page.locator('.crate-opening.is-revealed').waitFor();await page.locator('[data-opening-close]').click();
+await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('[data-crate-open="s1-premium-11"]').click();await page.keyboard.press('Escape');await page.locator('.crate-opening').waitFor({state:'detached'});assert.equal(await page.evaluate(()=>__jetclash.match.profile.collection.items().filter(i=>i.id==='s1-premium-11-content').length),1);
 const ids=await page.evaluate(()=>{const p=__jetclash.match.profile;return ['skin','trail','ball','banner','explosion'].map(type=>p.collection.items().find(i=>i.type===type).id);});
 for(const id of ids)await page.locator(`[data-equip="${id}"]`).click();
 assert.equal(await page.locator('[data-unequip]').count(),5);
