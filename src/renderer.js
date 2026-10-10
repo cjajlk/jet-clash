@@ -176,7 +176,7 @@ export class Renderer{
         c.font='bold 11px Segoe UI, sans-serif';c.textAlign='center';c.shadowColor='#050817';c.shadowBlur=4;
         c.fillText(p.label,p.x,p.y-p.h/2-14);c.restore();
       }
-      c.save();if(p===m.player&&skin)c.filter=`hue-rotate(${skin.hue}deg)`;
+      c.save();if(p===m.player&&skin)c.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${skin.hue}deg)`;
       if(p.skin==='fluid'&&(!p.grounded||p.contactSurface==='ceiling')){
         const cache=this.fluidVisuals.get(p)||{};this.fluidVisuals.set(p,cache);
         const visual=resolveFluidVisualPose(p,cache);
@@ -190,7 +190,7 @@ export class Renderer{
     }
     if(C.DEBUG_BALL_CONTACT)drawBallContactZone(c,m.player);
     if(mobile){const b=m.ball;c.save();c.beginPath();c.arc(b.x,b.y,b.r+2,0,Math.PI*2);c.lineWidth=1.5;c.strokeStyle='#a0f6ffb0';c.shadowColor='#56d9ff';c.shadowBlur=9;c.stroke();c.restore();}
-    const b=m.ball;drawBallShotTrail(c,b,this.images[b.shotColor==='gold'?'shotTrailGold':'shotTrailPurple']);c.save();c.translate(b.x,b.y);c.rotate(b.angle);if(ballStyle)c.filter=`hue-rotate(${ballStyle.hue}deg)`;this.fit(b.flash>0?'impact':'ball',-b.r,-b.r,b.r*2,b.r*2);c.restore();
+    const b=m.ball;drawBallShotTrail(c,b,this.images[b.shotColor==='gold'?'shotTrailGold':'shotTrailPurple']);c.save();c.translate(b.x,b.y);c.rotate(b.angle);if(ballStyle)c.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${ballStyle.hue}deg)`;this.fit(b.flash>0?'impact':'ball',-b.r,-b.r,b.r*2,b.r*2);c.restore();
     drawBallShotTint(c,b);
     this.fluidIndicator(m.player,m.control);
     c.restore();

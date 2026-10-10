@@ -1,4 +1,5 @@
-import { cosmeticVisual } from './collection.js';
+import { PASS_LEVELS } from './season-pass.js';
+import { cosmeticVisual, COSMETIC_PALETTES, COSMETIC_SLOTS } from './collection.js';
 import {TRAINING_ARENAS} from './training-arenas.js';
 import { bindPassTrackNavigation } from './pass-track-navigation.js';
 import { passMarkup } from './season-pass-view.js';
@@ -29,6 +30,7 @@ export class MobileMenu {
       else if(button.dataset.category){this.model.selectCategory(button.dataset.category);this.render();}
       else if(button.hasAttribute('data-pass-claim')){const scroll=this.body.querySelector('.sp-track').scrollLeft;const top=this.body.querySelector('.sp-pass').scrollTop;this.profileStore.pass.claim(Number(button.dataset.passClaim),button.dataset.passTrack);this.last='';this.render();this.body.querySelector('.sp-track').scrollLeft=scroll;this.body.querySelector('.sp-pass').scrollTop=top;}
       else if(button.dataset.crateOpen){this.revealed=this.profileStore.collection.open(button.dataset.crateOpen);this.inventoryFilter='all';this.last='';this.render();}
+      else if(button.dataset.itemColor){const scroll=this.body.querySelector('.collection-library')?.scrollTop||0;const id=button.dataset.itemColor,color=Number(button.dataset.palette);if(!this.profileStore.collection.setColor(id,color)){this.colorPreviews||={};this.colorPreviews[id]=color;}this.last='';this.render();this.body.querySelector('.collection-library').scrollTop=scroll;}
       else if(button.dataset.equip){this.profileStore.collection.equip(button.dataset.equip);this.last='';this.render();}
       else if(button.dataset.unequip){this.profileStore.collection.unequip(button.dataset.unequip);this.last='';this.render();}
       else if(button.hasAttribute('data-pass-view'))this.body.querySelector('.sp-track')?.scrollIntoView({block:'nearest'});
@@ -81,7 +83,7 @@ export class MobileMenu {
     this.root.hidden=!visible;document.body.classList.toggle('mobile-menu-open',visible);
     if(!visible)return;
     this.challengeView=match.profile.challenges?.snapshot();this.saveWarning=match.profile.warning;
-    const key=JSON.stringify([this.profile,ready,status,this.challengeView,this.profileStore.pass.snapshot(),this.profileStore.data.equipment,this.profileStore.data.openedCrates,this.saveWarning]);
+    const key=JSON.stringify([this.profile,ready,status,this.challengeView,this.profileStore.pass.snapshot(),this.profileStore.data.equipment,this.profileStore.data.openedCrates,this.profileStore.data.cosmeticColors,this.saveWarning]);
     if(key!==this.last){
       this.last=key;this.render();
       this.root.querySelector('[data-profile-name]').textContent=this.profile.nickname;
@@ -102,7 +104,7 @@ export class MobileMenu {
     else if(route==='modes')this.body.innerHTML=`<section class="mm-page">${heading('Choisis ton mode','DIRECTION L’ARÈNE')}<div class="mm-modes"><div class="mm-duel-card"><div class="mm-duel-art"><img src="assets/characters/fluid/fluid_jetpack.png" alt=""><span>VS</span><img src="assets/characters/heavy/heavy_walk.png" alt=""></div><div><span class="mm-kicker">LA COUR DE L’AUBE</span><h3>DUEL 1V1</h3><p>Toi face à Heavy. Cinq minutes pour gagner.</p></div></div><div class="mm-duel-actions"><div id="difficulty-title" class="mm-difficulty-title">Difficulté des bots</div><div id="mobile-difficulty" class="mm-difficulty" role="radiogroup" aria-labelledby="difficulty-title">${[['easy','Facile'],['normal','Normal'],['elite','Élite']].map(([value,label])=>`<button type="button" role="radio" data-difficulty="${value}">${label}</button>`).join('')}</div><button id="mobile-duel" class="mm-primary" ${this.ready?'':'disabled'}>DUEL 1V1 <span aria-hidden="true">→</span></button><button id="mobile-teams" class="mm-secondary" ${this.ready?'':'disabled'}>2V2 · AVEC 3 BOTS</button><p>Toi + un bot allié contre deux bots.</p><p class="mm-training-title">Décor de l’entraînement</p><div class="mm-training-arenas" aria-label="Fonds de l’entraînement">${TRAINING_ARENAS.map(a=>`<button type="button" class="mm-arena-card" data-training-arena="${a.id}" aria-pressed="${a.id===this.trainingArenaId}"><img src="${a.image}" alt="" loading="lazy"><strong>${a.name}</strong><small>${a.detail}</small></button>`).join('')}</div><button id="mobile-training" class="mm-secondary" ${this.ready?'':'disabled'}>ENTRAÎNEMENT</button><p id="mobile-load-status" role="status"></p><span class="mm-future-modes">Hoops · Goal Rush<br><strong>Bientôt</strong></span></div></div></section>`;
     else if(route==='collection'){
       this.body.innerHTML=`<section class="mm-page">${heading('Collection','TON IDENTITÉ')}<div class="collection-filters" aria-label="Catégories de récompenses">${[['all','Tout'],['crate','Caisses'],['skin','Styles'],['trail','Traînées'],['ball','Ballons'],['banner','Bannières'],['explosion','Buts']].map(([id,label])=>`<button type="button" data-inventory-filter="${id}" aria-pressed="${id===(this.inventoryFilter||'all')}">${label}</button>`).join('')}</div><div class="collection-library"></div></section>`;
-    }else if(route==='shop')this.body.innerHTML=`<section class="mm-page">${heading('Boutique','DU STYLE, BIENTÔT')}<div class="mm-card-grid">${preview('Objets permanents','Une collection de styles pour te démarquer.','shop')}${preview('Événements','Des collections pour les grandes occasions.','challenges')}</div></section>`;
+    }else if(route==='shop')this.body.innerHTML=`<section class="mm-page collection-shop">${heading('Boutique','LES COULEURS DU PASS')}<div class="collection-library"></div></section>`;
     else if(route==='pass'){
       this.body.innerHTML=`<section class="mm-page">${heading('Pass','SAISON 1')}${passMarkup(this.profileStore.pass)}</section>`;
       this.body.querySelector('[data-save-warning]').textContent=this.profileStore.warning||'';
@@ -114,22 +116,32 @@ export class MobileMenu {
       this.body.querySelector('[data-save-warning]').textContent=this.saveWarning||'';
     }
     else if(route==='options')this.body.innerHTML=`<section class="mm-page">${heading('Options','TES COMMANDES')}<div class="mm-options"><article class="mm-card"><h3>Clavier</h3><p>Régle chaque action. Les touches sont sauvegardées automatiquement.</p><div class="mm-control-grid">${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.moveLeft[0],'keyboard','moveLeft')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.moveRight[0],'keyboard','moveRight')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.jump[0],'keyboard','jump')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.boost[0],'keyboard','boost')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.shoot[0],'keyboard','shoot')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.rotate[0],'keyboard','rotate')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.backPose[0],'keyboard','backPose')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.resetBall[0],'keyboard','resetBall')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.aimLeft[0],'keyboard','aimLeft')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.aimRight[0],'keyboard','aimRight')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.aimUp[0],'keyboard','aimUp')} ${selectMarkup(KEY_OPTIONS,controlSettings.keyboard.aimDown[0],'keyboard','aimDown')}</div></article><article class="mm-card"><h3>Manette PS5 / Xbox</h3><p>Croix/A : saut, Rond/B : boost, Carré/X : flip aérien, L2/LT : tir.</p><div class="mm-control-grid">${selectMarkup(STICK_OPTIONS,controlSettings.gamepad.movementStick,'gamepad','movementStick')} ${selectMarkup(GAMEPAD_BUTTON_OPTIONS,controlSettings.gamepad.jump,'gamepad','jump')} ${selectMarkup(GAMEPAD_BUTTON_OPTIONS,controlSettings.gamepad.boost,'gamepad','boost')} ${selectMarkup(GAMEPAD_BUTTON_OPTIONS,controlSettings.gamepad.shoot,'gamepad','shoot')} ${selectMarkup(GAMEPAD_BUTTON_OPTIONS,controlSettings.gamepad.rotate,'gamepad','rotate')} ${selectMarkup(GAMEPAD_BUTTON_OPTIONS,controlSettings.gamepad.backPose,'gamepad','backPose')} ${selectMarkup(GAMEPAD_BUTTON_OPTIONS,controlSettings.gamepad.resetBall,'gamepad','resetBall')}</div></article><article class="mm-card"><h3>Tactile</h3><p>Le contrôle tactile garde les mêmes actions, avec une disposition miroir au besoin.</p><div class="mm-control-grid">${selectMarkup(TOUCH_LAYOUT_OPTIONS,controlSettings.touch.layout,'touch','layout')}</div></article><article class="mm-card"><h3>Réglages</h3><p>Choisis tes commandes ici, puis reviens jouer.</p><button type="button" class="mm-primary" data-fullscreen>${document.fullscreenElement?'QUITTER LE PLEIN ÉCRAN':'PLEIN ÉCRAN'}</button>${this.audio?`<button type="button" class="mm-secondary" data-toggle-sound aria-pressed="${this.audio.enabled}">SONS : ${this.audio.enabled?'ACTIVÉS':'COUPÉS'}</button>`:''}<button type="button" class="mm-secondary" data-reset-controls>Réinitialiser par défaut</button><p class="mm-small-note">Échap quitte le plein écran. Le jeu applique les changements immédiatement.</p></article></div></section>`;
-    if(route==='collection'&&this.profileStore){
+    if(['collection','shop'].includes(route)&&this.profileStore){
       const inventory=document.createElement('div');inventory.className='sp-inventory';
-      const title=document.createElement('h3');title.textContent='Récompenses du Pass';inventory.append(title);
+      const title=document.createElement('h3');title.textContent=route==='shop'?'Personnalise les objets du Pass':'Récompenses du Pass';inventory.append(title);
       const collection=this.profileStore.collection;
       const reveal=document.createElement('p');reveal.className='collection-reveal';reveal.setAttribute('role','status');
-      reveal.textContent=this.revealed?`Caisse ouverte ! ${this.revealed.label} · ${this.revealed.rarity}`:'Ouvre tes caisses, puis équipe tes objets. Un objet par catégorie.';inventory.append(reveal);
+      reveal.textContent=route==='shop'?'Choisis une couleur. Récupère l’objet dans le Pass pour pouvoir l’équiper.':this.revealed?`Caisse ouverte ! ${this.revealed.label} · ${this.revealed.rarity}`:'Ouvre tes caisses, puis équipe tes objets. Un objet par catégorie.';inventory.append(reveal);
       const grid=document.createElement('div');grid.className='collection-grid';inventory.append(grid);
-      for(const item of collection.items()){
-        const filter=this.inventoryFilter||'all';if(filter!=='all'&&item.type!==filter&&!(filter==='crate'&&item.type==='mystery'))continue;
+      const catalogue=route==='shop'?COSMETIC_SLOTS.map(type=>collection.items().find(i=>i.type===type)||PASS_LEVELS.flatMap(row=>[row.free,row.premium]).find(i=>i.type===type)):collection.items();
+      for(const item of catalogue){
+        const owned=!!collection.item(item.id);const appearance=owned?collection.appearance(item):{...item,palette:this.colorPreviews?.[item.id]??item.palette};
+        const filter=route==='shop'?'all':this.inventoryFilter||'all';if(filter!=='all'&&item.type!==filter&&!(filter==='crate'&&item.type==='mystery'))continue;
         const card=document.createElement('article');card.className='collection-item';
-        const visual=cosmeticVisual(item);if(visual)card.style.setProperty('--item-color',visual.color);
-        const image=document.createElement('img');image.alt='';image.loading='lazy';image.src=visual?`assets/pass/rewards/reward_${item.type}.png`:`assets/pass/crates/crate_${['common','uncommon','rare','epic','legendary'].includes(item.rarity)?item.rarity:'common'}.png`;card.append(image);
+        const visual=cosmeticVisual(appearance);if(visual)card.style.setProperty('--item-color',visual.color);
+        const image=document.createElement('img');image.alt='';image.loading='lazy';image.src=visual?`assets/pass/rewards/reward_${item.type}.png`:`assets/pass/crates/crate_${['common','uncommon','rare','epic','legendary'].includes(item.rarity)?item.rarity:'common'}.png`;if(visual)image.style.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${visual.hue}deg)`;card.append(image);
         const label=document.createElement('strong');label.textContent=item.label;card.append(label);
         const detail=document.createElement('span');detail.textContent=`${item.rarity||'common'} · Saison ${item.season||1}`;card.append(detail);
+        if(visual){
+          const colors=document.createElement('div');colors.className='collection-colors';colors.setAttribute('role','group');colors.setAttribute('aria-label',`Couleur de ${item.label}`);
+          for(const [index,palette] of COSMETIC_PALETTES.entries()){
+            const swatch=document.createElement('button');swatch.type='button';swatch.className='collection-swatch';swatch.dataset.itemColor=item.id;swatch.dataset.palette=String(index);swatch.style.setProperty('--swatch-color',palette.color);swatch.setAttribute('aria-label',palette.name);swatch.title=palette.name;swatch.setAttribute('aria-pressed',String(visual===palette));colors.append(swatch);
+          }
+          card.append(colors);const colorName=document.createElement('span');colorName.className='collection-color-name';colorName.textContent=`Couleur : ${visual.name}`;card.append(colorName);
+        }
         const button=document.createElement('button');button.type='button';button.className='mm-secondary';
-        if(['crate','mystery'].includes(item.type)){const opened=Object.hasOwn(this.profileStore.data.openedCrates,item.id);button.textContent=opened?'OUVERTE':'OUVRIR';button.disabled=opened;button.dataset.crateOpen=item.id;}
+        if(!owned){button.textContent='VOIR DANS LE PASS';button.dataset.route='pass';}
+        else if(['crate','mystery'].includes(item.type)){const opened=Object.hasOwn(this.profileStore.data.openedCrates,item.id);button.textContent=opened?'OUVERTE':'OUVRIR';button.disabled=opened;button.dataset.crateOpen=item.id;}
         else if(visual){const equipped=collection.equipped(item.type)?.id===item.id;button.textContent=equipped?'ÉQUIPÉ · RETIRER':'ÉQUIPER';button.setAttribute('aria-pressed',String(equipped));if(equipped)button.dataset.unequip=item.type;else button.dataset.equip=item.id;}
         else continue;
         card.append(button);grid.append(card);
@@ -140,7 +152,7 @@ export class MobileMenu {
     const banner=cosmeticVisual(this.profileStore?.collection.equipped('banner'));
     this.root.querySelector('.mm-profile').style.background=banner?`linear-gradient(110deg,${banner.color}66,transparent)`:'';
     const skin=cosmeticVisual(this.profileStore?.collection.equipped('skin'));
-    const hero=this.root.querySelector('#mobile-fluid');if(hero)hero.style.filter=skin?`hue-rotate(${skin.hue}deg)`:'';
+    const hero=this.root.querySelector('#mobile-fluid');if(hero)hero.style.filter=skin?`grayscale(1) sepia(1) saturate(5) hue-rotate(${skin.hue}deg)`:'';
     if(route==='modes'){
       this.selectDifficulty(this.difficulty);
       this.root.querySelector('#mobile-load-status').textContent=this.ready?'Match local · 5 minutes':this.status||'Chargement de l’arène…';
