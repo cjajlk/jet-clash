@@ -45,3 +45,51 @@ html:fullscreen body:not(.mobile-menu-open) #game-shell{width:min(100vw,177.7777
 .flat-training .fuel-hud{bottom:3%;top:auto;left:4%;right:4%}
 
 .game-back{width:44px;height:44px;min-width:44px;padding:0;display:grid;place-items:center;border-radius:10px}.game-back svg{display:block}
+
+/* Match fullscreen: maximum contained 16:9 surface, with compact overlays. */
+html:fullscreen body:not(.mobile-menu-open) main{
+  position:fixed;inset:0;margin:0;overflow:hidden;background:#090c18;
+}
+html:fullscreen body:not(.mobile-menu-open) #game-shell,
+#game-shell:fullscreen{
+  width:min(100vw,calc(100dvh * 16 / 9));
+  height:min(100dvh,calc(100vw * 9 / 16));
+  min-width:0;min-height:0;max-width:100vw;max-height:100dvh;
+  margin:auto;border:0;border-radius:0;box-shadow:none;aspect-ratio:16/9;
+}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) #arena{
+  width:100%;height:100%;object-fit:contain;
+}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .hud{
+  top:max(6px,env(safe-area-inset-top));gap:3px;transform:translateX(-50%);
+}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .team{
+  min-width:112px;padding:6px 10px;gap:14px;
+}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .team span{font-size:10px;letter-spacing:1px}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .team small{font-size:7px;margin-top:2px}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .team strong{font-size:25px}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .clock{min-width:90px;padding:5px 10px}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .clock strong{font-size:21px}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .clock span{font-size:7px;letter-spacing:1px}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .game-back{
+  top:max(8px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));
+  left:auto;width:36px;height:36px;min-width:36px;min-height:36px;border-radius:8px;
+}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .game-back svg{width:19px;height:19px}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .fuel-hud{
+  top:auto;bottom:max(8px,env(safe-area-inset-bottom));left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));
+}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .boost-panel{width:78px;padding:6px;border-radius:9px}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .boost-ring{width:44px;height:44px;margin-bottom:3px}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .boost-number{width:34px;height:34px;font-size:12px}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .fuel-hud label{font-size:7px;letter-spacing:.6px;margin-bottom:3px}
+:is(html:fullscreen #game-shell,#game-shell:fullscreen) .jump-status{font-size:8px;gap:4px}
+html:fullscreen .input-help,html:fullscreen .footnote{display:none}
+/* Touch buttons retain their lower corners; indicators stay above them. */
+html:fullscreen body.touch-match #game-shell .game-back{right:calc(64px + env(safe-area-inset-right));width:44px;height:44px}
+html:fullscreen body.touch-match #game-shell .fuel-hud{top:62px;bottom:auto}
+@media(max-height:500px){
+  :is(html:fullscreen #game-shell,#game-shell:fullscreen) .hud{transform:translateX(-50%) scale(.8);transform-origin:top center}
+  html:fullscreen body.touch-match #game-shell .fuel-hud{top:52px}
+}
