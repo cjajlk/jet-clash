@@ -43,3 +43,5 @@ html:fullscreen body:not(.mobile-menu-open) .arena-heading{display:none}
 html:fullscreen body:not(.mobile-menu-open) #game-shell{width:min(100vw,177.777778dvh);aspect-ratio:16/9;border:0;border-radius:0}
 
 .flat-training .fuel-hud{bottom:3%;top:auto;left:4%;right:4%}
+
+.game-back{width:44px;height:44px;min-width:44px;padding:0;display:grid;place-items:center;border-radius:10px}.game-back svg{display:block}

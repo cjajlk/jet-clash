@@ -57,6 +57,7 @@ function resolvePlayerRamps(p,solids){
   }
 }
 export function movePlayer(p, solids, dt,C=DEFAULT) {
+  solids=solids.filter(shape=>!shape.ballOnly);
   p.x += p.vx * dt;
   p.grounded = false; p.contactSurface = null;
   resolvePlayerRamps(p,solids);

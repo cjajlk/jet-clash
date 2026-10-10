@@ -111,6 +111,14 @@ test('2v2 : cadrage suit humain et ballon sans dézoomer pour les bots éloigné
 });
 test('2v2 : match complet avec buts physiques, chrono actif et récompense unique',()=>{
   const m=make();for(const entry of m.bots)entry.ai.base.random=()=>.5;
+  m.update(C.countdown+.01);
+  // Exercise each goal physically before the long bot simulation; a changed
+  // corner bounce must not require a particular team to win a random rally.
+  for(const sign of [-1,1]){const A=m.arena,mouth=sign<0?A.goalLeft:A.goalRight;
+    Object.assign(m.ball,{x:mouth-sign*70,y:(A.goalTop+A.goalBottom)/2,vx:sign*600,vy:-50});
+    for(let i=0;i<60&&m.state===S.PLAYING;i++)m.update(C.step,{});
+    assert.equal(m.state,S.GOAL_SCORED);m.update(C.goalPause+.01);
+  }
   for(let i=0;i<Math.ceil(600/C.step)&&m.state!==S.POST_MATCH;i++){
     const time=i*C.step;
     m.update(C.step,{axis:Math.sin(time*.7)*.4,jump:time%3<.08,boost:time%4<.2,shoot:time%1.5<.75,aimX:1,aimY:-.5,aimIntent:true});
