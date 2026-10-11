@@ -11,7 +11,7 @@ const assert=require('node:assert/strict');
       // A result/menu can hide the pause overlay while the window is inactive.
       // Launch must explicitly release that stale pause, regardless of focus events.
       if(i%4===0)await page.evaluate(()=>__jetclash.setPaused(true));
-      await page.locator('#mobile-play').click();const mode=['duel','teams','training'][i%3];await page.locator(`#mobile-${mode}`).click();
+      await page.locator('#mobile-play').click();const mode=['duel','teams','training'][i%3];await page.locator(`#mobile-${mode}`).click();await page.locator('#mobile-launch').click();
       const elapsed=await page.evaluate(()=>__jetclash.match.elapsed);
       await page.waitForFunction(before=>__jetclash.match.elapsed>before,elapsed);
       await page.evaluate(i=>{
@@ -25,23 +25,23 @@ const assert=require('node:assert/strict');
       assert.equal(await page.evaluate(()=>__jetclash.match.state),'MENU');assert.deepEqual(errors,[]);
     }
     // One transient drawing failure previously stopped requestAnimationFrame forever.
-    await page.locator('#mobile-play').click();await page.locator('#mobile-duel').click();
+    await page.locator('#mobile-play').click();await page.locator('#mobile-duel').click();await page.locator('#mobile-launch').click();
     await page.evaluate(()=>{const r=__jetclash.renderer,render=r.render;r.render=function(...args){r.render=render;throw Error('return-menu-test-transient-render');};});
     await page.waitForFunction(()=>__jetclash.match.elapsed>.2);
     assert.equal(errors.filter(e=>e.includes('return-menu-test-transient-render')).length,1);
     errors.splice(0);
-    await page.locator('#leave-game').click();await page.locator('#mobile-play').click();await page.locator('#mobile-training').click();
+    await page.locator('#leave-game').click();await page.locator('#mobile-play').click();await page.locator('#mobile-training').click();await page.locator('#mobile-launch').click();
     await page.waitForFunction(()=>__jetclash.match.elapsed>.2);assert.deepEqual(errors,[]);
     if(await page.evaluate(()=>!!document.fullscreenElement))await page.evaluate(()=>document.exitFullscreen());
     await page.evaluate(()=>{window.__testPads=[];});
     await page.locator('.touch-fullscreen').click();await page.waitForFunction(()=>document.fullscreenElement===document.documentElement);
     await page.locator('#leave-game').click();await page.locator('.mm-gear').click();await page.locator('[data-fullscreen]').click();await page.waitForFunction(()=>!document.fullscreenElement);
-    await page.locator('.mm-nav [data-route=home]').click();await page.locator('#mobile-play').click();await page.locator('#mobile-duel').click();
+    await page.locator('.mm-nav [data-route=home]').click();await page.locator('#mobile-play').click();await page.locator('#mobile-duel').click();await page.locator('#mobile-launch').click();
     // Reproduce the old arena-only fullscreen path, then verify return leaves it.
     await page.evaluate(()=>document.querySelector('#game-shell').requestFullscreen());await page.waitForFunction(()=>document.fullscreenElement?.id==='game-shell');
     await page.evaluate(()=>{const m=__jetclash.match;m.state='PLAYING';m.score={player:2,bot:0};m.finish();});
     await page.locator('#back-menu').click();await page.waitForFunction(()=>!document.fullscreenElement);
-    await page.locator('#mobile-play').click();await page.locator('#mobile-duel').click();await page.waitForFunction(()=>__jetclash.match.elapsed>.2);
+    await page.locator('#mobile-play').click();await page.locator('#mobile-duel').click();await page.locator('#mobile-launch').click();await page.waitForFunction(()=>__jetclash.match.elapsed>.2);
     await page.evaluate(()=>{window.__testPads=[];window.savedFullscreen=document.documentElement.requestFullscreen;document.documentElement.requestFullscreen=()=>Promise.reject(Error('Fullscreen unavailable'));});
     await page.locator('.touch-fullscreen').click();await page.waitForFunction(()=>document.querySelector('.touch-notice').textContent.includes('non disponible'));
     await page.evaluate(()=>{document.documentElement.requestFullscreen=window.savedFullscreen;});

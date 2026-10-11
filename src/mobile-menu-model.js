@@ -2,6 +2,7 @@
 export const MENU_TABS=Object.freeze([
   {id:'home',label:'Accueil'},{id:'collection',label:'Collection'},
   {id:'shop',label:'Boutique'},{id:'pass',label:'Pass'},{id:'challenges',label:'Défis'},
+  {id:'profile',label:'Profil'},
 ]);
 export const COLLECTION_CATEGORIES=Object.freeze([
   {id:'fluid',label:'Fluid',title:'Fluid équipé',detail:'Ton combattant pour le duel.',image:'characters/fluid/fluid_idle.png'},
@@ -19,17 +20,18 @@ export const MENU_IDENTITY=Object.freeze({nickname:'Pilote',emblem:'JC'});
 export const DEFAULT_MENU_THEME=Object.freeze({id:'aube',background:'assets/arena/arena_flat_large_goals_v4.png',event:null});
 export function profilePresentation(profile){
   const value=profile?.data?.xp,xp=Number.isSafeInteger(value)&&value>=0?value:0;
-  return {...MENU_IDENTITY,xp,level:1+Math.floor(xp/1000),progress:xp%1000};
+  return {...MENU_IDENTITY,nickname:profile?.data?.identity?.nickname||MENU_IDENTITY.nickname,xp,level:1+Math.floor(xp/1000),progress:xp%1000};
 }
 export class MobileMenuModel {
-  constructor(){this.route='home';this.previous='home';this.category='fluid';}
+  constructor(){this.route='home';this.previous='home';this.category='fluid';this.selectedMode=null;}
   navigate(route){
     if(![...MENU_TABS.map(t=>t.id),'options','modes'].includes(route))return false;
     if(route==='options')this.previous=['options','modes'].includes(this.route)?'home':this.route;
-    this.route=route;return true;
+    if(route==='modes')this.selectedMode=null;this.route=route;return true;
   }
-  back(){this.route=this.route==='options'?this.previous:'home';}
-  home(){this.route='home';this.previous='home';}
+  back(){if(this.route==='modes'&&this.selectedMode){this.selectedMode=null;return;}this.route=this.route==='options'?this.previous:'home';}
+  home(){this.route='home';this.previous='home';this.selectedMode=null;}
+  selectMode(mode){if(this.route!=='modes'||!['duel','2v2','training'].includes(mode))return false;this.selectedMode=mode;return true;}
   selectCategory(id){if(!COLLECTION_CATEGORIES.some(c=>c.id===id))return false;this.category=id;return true;}
-  canLaunch(mode,ready){return this.route==='modes'&&['duel','2v2'].includes(mode)&&ready===true;}
+  canLaunch(mode,ready){return this.route==='modes'&&this.selectedMode===mode&&['duel','2v2','training'].includes(mode)&&ready===true;}
 }

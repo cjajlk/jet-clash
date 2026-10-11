@@ -100,7 +100,7 @@ test('2v2 : transitions vers duel et entraînement sans bot résiduel',()=>{
 });
 test('2v2 : menu bloque le lancement sans assets ou hors du choix des modes',()=>{
   const model=new MobileMenuModel();assert.equal(model.canLaunch('2v2',true),false);model.navigate('modes');
-  assert.equal(model.canLaunch('2v2',false),false);assert.equal(model.canLaunch('2v2',true),true);assert.equal(model.canLaunch('duel',true),true);
+  assert.equal(model.canLaunch('2v2',false),false);assert.equal(model.canLaunch('2v2',true),false);model.selectMode('2v2');assert.equal(model.canLaunch('2v2',true),true);assert.equal(model.canLaunch('duel',true),false);
 });
 test('2v2 : cadrage suit humain et ballon sans dézoomer pour les bots éloignés',()=>{
   const m=playing();m.player.x=550;m.ball.x=600;m.ball.y=m.player.y;

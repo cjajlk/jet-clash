@@ -25,10 +25,10 @@ function check(value){
     page.on('pageerror',e=>errors.push(e.message));
     await page.addInitScript(()=>{window.testPad={index:0,id:'Bluetooth DualSense test',mapping:'standard',connected:false,axes:[0,0,0,0],buttons:Array.from({length:18},()=>({value:0,pressed:false}))};navigator.getGamepads=()=>testPad.connected?[testPad]:[];});
     await page.goto('http://127.0.0.1:4173/?test=1');await page.waitForFunction(()=>window.__jetclash&&!document.querySelector('#start').disabled);
-    await page.locator('#mobile-play').click();await page.locator('#mobile-duel').click();await page.waitForFunction(()=>__jetclash.match.state==='PLAYING');
+    await page.locator('#mobile-play').click();await page.locator('#mobile-duel').click();await page.locator('#mobile-launch').click();await page.waitForFunction(()=>__jetclash.match.state==='PLAYING');
     const normal=await page.locator('#arena').boundingBox();
     await page.locator('#leave-game').click();await page.locator('.mm-gear').click();await page.locator('[data-fullscreen]').click();await page.waitForFunction(()=>document.fullscreenElement===document.documentElement);
-    await page.locator('.mm-nav [data-route=home]').click();await page.locator('#mobile-play').click();await page.locator('#mobile-duel').click();await page.waitForFunction(()=>__jetclash.match.state==='PLAYING');
+    await page.locator('.mm-nav [data-route=home]').click();await page.locator('#mobile-play').click();await page.locator('#mobile-duel').click();await page.locator('#mobile-launch').click();await page.waitForFunction(()=>__jetclash.match.state==='PLAYING');
     check(await layout(page));assert.equal(await page.locator('#leave-game').isVisible(),true);
     assert.equal(await page.locator('#arena').getAttribute('width'),'1280');assert.equal(await page.locator('#arena').getAttribute('height'),'720');
     await page.screenshot({path:`${output}/${width}x${height}.png`});
@@ -37,7 +37,7 @@ function check(value){
     await page.evaluate(()=>{Object.assign(__jetclash.match.player,{x:500,vx:0});testPad.axes[2]=1;});const x=await page.evaluate(()=>__jetclash.match.player.x);
     await page.waitForFunction(before=>__jetclash.match.player.x>before+10,x);await page.evaluate(()=>{testPad.axes[2]=0;});check(await layout(page));
     await page.locator('#leave-game').click();await page.locator('.mm-gear').click();await page.locator('[data-fullscreen]').click();await page.waitForFunction(()=>!document.fullscreenElement);
-    await page.locator('.mm-nav [data-route=home]').click();await page.locator('#mobile-play').click();await page.locator('#mobile-duel').click();await page.waitForFunction(()=>__jetclash.match.state==='PLAYING');
+    await page.locator('.mm-nav [data-route=home]').click();await page.locator('#mobile-play').click();await page.locator('#mobile-duel').click();await page.locator('#mobile-launch').click();await page.waitForFunction(()=>__jetclash.match.state==='PLAYING');
     assert.ok(await page.evaluate(()=>__jetclash.input.gamepad.status.connected));
     if(!touch){const restored=await page.locator('#arena').boundingBox();assert.ok(Math.abs(normal.width-restored.width)<2&&Math.abs(normal.height-restored.height)<2);}
     await page.locator('#leave-game').click();assert.deepEqual(errors,[]);

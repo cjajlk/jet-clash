@@ -1,9 +1,11 @@
 import { Collection } from './collection.js';
 import { ChallengeManager } from './challenges.js';
 import { SeasonPass } from './season-pass.js';
+import {QuickReactions} from './quick-reactions.js';
 const KEY='jetclash.etape2.profile.v1';
 export class ProfileStore {
-  constructor(storage,clock) { this.storage=storage; this.warning=''; this.data={xp:0,completed:[]}; this.load(); this.pass=new SeasonPass(this); this.collection=new Collection(this); this.challenges=new ChallengeManager(this,clock); }
+  constructor(storage,clock) { this.storage=storage; this.warning=''; this.data={xp:0,completed:[]}; this.load(); this.pass=new SeasonPass(this); this.collection=new Collection(this); this.challenges=new ChallengeManager(this,clock);this.reactions=new QuickReactions(this);this.normalizeIdentity();this.save(); }
+  normalizeIdentity(){const d=this.data;if(!d.identity||typeof d.identity!=='object'||Array.isArray(d.identity))d.identity={};if(typeof d.identity.nickname!=='string'||!d.identity.nickname.trim())d.identity.nickname=typeof d.nickname==='string'?d.nickname:'Pilote';d.identity.nickname=d.identity.nickname.slice(0,24);if(!d.stats||typeof d.stats!=='object'||Array.isArray(d.stats))d.stats={matches:d.completed.length,wins:0,goals:0,partial:d.completed.length>0};for(const key of ['matches','wins','goals'])if(!Number.isSafeInteger(d.stats[key])||d.stats[key]<0)d.stats[key]=0;d.stats.matches=Math.max(d.stats.matches,d.completed.length);}
   load() {
     try {
       const raw=this.storage?.getItem(KEY);
@@ -22,7 +24,7 @@ export class ProfileStore {
   award(id, goals, won) {
     if (this.data.completed.includes(id)) return 0;
     const xp=100+(won?50:0)+10*Math.max(0,Math.floor(goals));
-    this.data.xp+=xp; this.data.completed.push(id); this.save();
+    this.data.xp+=xp; this.data.completed.push(id);this.data.stats.matches++;if(won)this.data.stats.wins++;this.data.stats.goals+=Math.max(0,Math.floor(goals)); this.save();
     return xp;
   }
 }

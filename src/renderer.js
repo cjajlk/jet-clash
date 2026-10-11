@@ -1,3 +1,4 @@
+import {DEFAULT_BACKGROUND} from './arena-backgrounds.js';
 import { characterCosmetic } from './character-cosmetics.js';
 import { CAPSULE_CATALOG, CAPSULE_COLORS, capsuleAssetKey, capsuleImage, capsuleModel } from './capsules.js';
 import { cosmeticVisual } from './collection.js';
@@ -62,6 +63,14 @@ export function resolveFluidVisualPose(p,cache={}){
 export class Renderer{
   constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.images={};this.camera=new MobileCamera();this.fluidVisuals=new WeakMap();this.cosmeticTrails=new WeakMap();}
   async load(){await Promise.all(Object.entries(paths).map(([name,path])=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>{this.images[name]=im;resolve();};im.onerror=()=>reject(new Error(path));im.src=`assets/${path}`;})));}
+  async setBackground(theme){
+    const token=this.backgroundToken=(this.backgroundToken||0)+1;
+    this.arenaTheme=theme||{id:'default',image:DEFAULT_BACKGROUND};
+    if(!theme){this.themeImage=null;this.themeImagePath=null;return true;}
+    if(this.themeImagePath===theme.image&&this.themeImage)return true;
+    this.themeImage=null;this.themeImagePath=null;
+    return new Promise(resolve=>{const image=new Image();image.onload=()=>{if(token===this.backgroundToken){this.themeImage=image;this.themeImagePath=theme.image;}resolve(true);};image.onerror=()=>resolve(false);image.src=theme.image;});
+  }
   fit(key,x,y,w,h,flip=false,alpha=1){const im=this.images[key];if(!im)return;const s=Math.min(w/im.width,h/im.height),dw=im.width*s,dh=im.height*s;const c=this.ctx;c.save();c.globalAlpha=alpha;c.translate(x+w/2,y+h/2);if(flip)c.scale(-1,1);c.drawImage(im,-dw/2,-dh/2,dw,dh);c.restore();}
   drawSprite(key,x,y,w,h,{flip=false,rotation=0,alpha=1}={}){const im=this.images[key];if(!im)return;const s=Math.min(w/im.width,h/im.height),dw=im.width*s,dh=im.height*s;const c=this.ctx;c.save();c.globalAlpha=alpha;c.translate(x+w/2,y+h/2);if(rotation)c.rotate(rotation);if(flip)c.scale(-1,1);c.drawImage(im,-dw/2,-dh/2,dw,dh);c.restore();}
   goalRamp(key,mirrored=false){
@@ -148,11 +157,11 @@ export class Renderer{
       const model=capsuleModel(style).model,key=capsuleAssetKey(style),x=player.x;
       // These decorations follow the player's body without changing its collision box.
       const positions={aura:[x-52,player.y+player.h/2-24,104,45],halo:[x-39,player.y-player.h/2-35,78,35],crete:[x-21,player.y-player.h/2-20,42,34],epaulieres:[x-39,player.y-player.h/2+10,78,39]};
-      this.fit(key,...positions[model]);
+        c.save();if(cosmeticVisual(style)?.prismatic)c.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${cosmeticVisual(style).hue}deg)`;this.fit(key,...positions[model]);c.restore();
     }
     if(player.boosting&&capsuleModel(propulsion)){
       const angle=Math.hypot(player.vx,player.vy)>10?Math.atan2(player.vy,player.vx)+Math.PI/2:0;
-      c.save();c.translate(player.x,player.y);c.rotate(angle);this.fit(capsuleAssetKey(propulsion),-42,12,84,80);c.restore();
+      c.save();if(cosmeticVisual(propulsion)?.prismatic)c.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${cosmeticVisual(propulsion).hue}deg)`;c.translate(player.x,player.y);c.rotate(angle);this.fit(capsuleAssetKey(propulsion),-42,12,84,80);c.restore();
     }
   }
   render(m,{mobile=false,dt=1/60}={}){const c=this.ctx;c.clearRect(0,0,C.width,C.height);
@@ -160,7 +169,7 @@ export class Renderer{
     const trainingScale=m.trainingArenaId==='flat'?1.18:1;
     const fluidW=86*(C.fluidVisualScale||1)*trainingScale,fluidH=96*(C.fluidVisualScale||1)*trainingScale;
     if(camera.active){c.translate(C.width/2,C.height/2);c.scale(camera.zoom,camera.zoom);c.translate(-camera.x,-camera.y);}
-    const bg=this.images[trainingArena(m.trainingArenaId).key];if(bg){
+    const bg=(!m.training&&this.themeImage)||this.images[trainingArena(m.trainingArenaId).key];if(bg){
       // Arena 02 background is authored at the same 16:9 ratio as the gameplay canvas.
       // Draw it edge-to-edge so the painted midfield, side walls and goal mouths stay aligned.
       c.drawImage(bg,0,0,C.width,C.height);
@@ -219,10 +228,12 @@ export class Renderer{
     }
     if(C.DEBUG_BALL_CONTACT)drawBallContactZone(c,m.player);
     if(mobile){const b=m.ball;c.save();c.beginPath();c.arc(b.x,b.y,b.r*(C.ballVisualScale||1)+2,0,Math.PI*2);c.lineWidth=1.5;c.strokeStyle='#a0f6ffb0';c.shadowColor='#56d9ff';c.shadowBlur=9;c.stroke();c.restore();}
-    const b=m.ball;drawBallShotTrail(c,b,this.images[b.shotColor==='gold'?'shotTrailGold':'shotTrailPurple']);c.save();c.translate(b.x,b.y);c.rotate(b.angle);if(ballStyle&&!capsuleModel(equipment?.equipped('ball')))c.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${ballStyle.hue}deg)`;this.fit(capsuleAssetKey(equipment?.equipped('ball'))||(b.flash>0?'impact':'ball'),-b.r*(C.ballVisualScale||1),-b.r*(C.ballVisualScale||1),b.r*2*(C.ballVisualScale||1),b.r*2*(C.ballVisualScale||1));c.restore();
+    const b=m.ball;drawBallShotTrail(c,b,this.images[b.shotColor==='gold'?'shotTrailGold':'shotTrailPurple']);c.save();c.translate(b.x,b.y);c.rotate(b.angle);if(ballStyle&&(!capsuleModel(equipment?.equipped('ball'))||ballStyle.prismatic))c.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${ballStyle.hue}deg)`;this.fit(capsuleAssetKey(equipment?.equipped('ball'))||(b.flash>0?'impact':'ball'),-b.r*(C.ballVisualScale||1),-b.r*(C.ballVisualScale||1),b.r*2*(C.ballVisualScale||1),b.r*2*(C.ballVisualScale||1));c.restore();
     const impact=equipment?.equipped('impact');
     if(b.flash>0&&capsuleModel(impact)){
+      c.save();if(cosmeticVisual(impact)?.prismatic)c.filter=`grayscale(1) sepia(1) saturate(5) hue-rotate(${cosmeticVisual(impact).hue}deg)`;
       this.fit(capsuleAssetKey(impact),b.x-b.r*2,b.y-b.r*1.5,b.r*4,b.r*3,false,Math.min(1,b.flash/.08));
+        c.restore();
     }
     drawBallShotTint(c,b);
     this.fluidIndicator(m.player,m.control);

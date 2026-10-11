@@ -1,3 +1,4 @@
+import {getCurrentArenaTheme} from './arena-backgrounds.js';
 import { CONFIG as C } from './config.js';
 import { Match, STATES } from './match.js';
 import { ProfileStore } from './profile-store.js';
@@ -10,10 +11,12 @@ import { combineTouch } from './touch-input.js';
 import { MobileMenu } from './mobile-menu.js';
 import { controlSettings } from './control-settings.js';
 import { GameplayAudio } from './gameplay-audio.js';
+import {QuickReactionUI} from './quick-reactions.js';
 const canvas=document.getElementById('arena'),renderer=new Renderer(canvas),hud=new HUD(),input=new PlayerInput(),controlsHelp=new ControlsHelp();
 const mobile=new TouchControls(document.getElementById('game-shell'));
 let storage;try{storage=localStorage;}catch{}
 const profile=new ProfileStore(storage);
+const quickChat=new QuickReactionUI(document.getElementById('game-shell'),profile.reactions);
 const audio=new GameplayAudio({enabled:profile.data.settings?.sound!==false,onEnabledChange:enabled=>{
   profile.data.settings={...profile.data.settings,sound:enabled};profile.save();
 }});
@@ -22,7 +25,7 @@ for(const event of ['pointerdown','keydown'])document.addEventListener(event,e=>
 // A touch/layout change cancels pending shots but must not lock a held gamepad stick.
 mobile.onCancel=()=>{match.control.release();input.clear();input.resumeGamepad();};
 mobile.onReset=()=>{if(match.training)match.resetTrainingBall();};
-const launch=payload=>{if(!ready)return;setPaused(false);input.resumeGamepad();touchCancelled=false;touchReleaseAim=null;const mode=payload?.mode||'duel';if(mode==='training')match.start('training',undefined,payload?.arena);else{const difficulty=payload?.difficulty||document.getElementById('difficulty').value;document.getElementById('difficulty').value=difficulty;match.start(mode==='2v2'?'2v2':difficulty,difficulty);}mobileMenu.update(match,ready);hud.update(match);canvas.focus();};
+const launch=payload=>{if(!ready)return;setPaused(false);input.resumeGamepad();touchCancelled=false;touchReleaseAim=null;const mode=payload?.mode||'duel';if(mode==='training')match.start('training',undefined,payload?.arena);else{const difficulty=payload?.difficulty||document.getElementById('difficulty').value;document.getElementById('difficulty').value=difficulty;match.start(mode==='2v2'?'2v2':difficulty,difficulty);}renderer.setBackground(mode==='training'?null:getCurrentArenaTheme());mobileMenu.update(match,ready);hud.update(match);canvas.focus();};
 const mobileMenu=new MobileMenu({enabled:true,onLaunch:payload=>launch(payload),audio});
 mobileMenu.update(match,false,'Chargement de l’arène…');
 const returnToMenu=()=>{
@@ -40,7 +43,7 @@ for(const id of ['back-menu','leave-game'])document.getElementById(id).addEventL
 let last=performance.now(),accumulator=0,paused=false,touchCancelled=false,touchReleaseAim=null;
 function setPaused(value){paused=value;audio.setPaused(value);if(value)match.control.release();input.clear();mobile.clear();accumulator=0;last=performance.now();document.getElementById('pause').hidden=!value||[STATES.MENU,STATES.POST_MATCH].includes(match.state);}
 window.addEventListener('blur',()=>setPaused(true));window.addEventListener('focus',()=>{input.resumeGamepad();setPaused(false);});document.addEventListener('visibilitychange',()=>{if(!document.hidden)input.resumeGamepad();setPaused(document.hidden);});document.addEventListener('fullscreenchange',()=>{input.resumeGamepad();if(!document.hidden)setPaused(false);if(match.state===STATES.MENU)mobileMenu.root.querySelector('[data-fullscreen],.mm-gear')?.focus();else canvas.focus();});
-try{await renderer.load();ready=true;start.disabled=false;start.textContent='ENTRER DANS L’ARÈNE →';document.getElementById('load-status').textContent='5 MIN · MORT SUBITE EN CAS D’ÉGALITÉ';}catch(error){document.getElementById('load-status').textContent=`Asset inaccessible : ${error.message}. Vérifie que le ZIP est entièrement extrait.`;start.textContent='CHARGEMENT IMPOSSIBLE';}
+try{await renderer.load();await renderer.setBackground(getCurrentArenaTheme());ready=true;start.disabled=false;start.textContent='ENTRER DANS L’ARÈNE →';document.getElementById('load-status').textContent='5 MIN · MORT SUBITE EN CAS D’ÉGALITÉ';}catch(error){document.getElementById('load-status').textContent=`Asset inaccessible : ${error.message}. Vérifie que le ZIP est entièrement extrait.`;start.textContent='CHARGEMENT IMPOSSIBLE';}
 function frame(now){
   // Schedule first: an isolated input/presentation error must not kill every future frame.
   requestAnimationFrame(frame);
@@ -69,7 +72,7 @@ function frame(now){
     accumulator+=delta;
     while(accumulator>=C.step){match.update(C.step,controls);accumulator-=C.step;touchCancelled=false;touchReleaseAim=null;}
   }else accumulator=0;
-  if(!mobileMenu.visible)renderer.render(match,{mobile:mobile.active&&!mobile.portrait,dt:delta});hud.update(match);
+  if(!mobileMenu.visible)renderer.render(match,{mobile:mobile.active&&!mobile.portrait,dt:delta});hud.update(match);quickChat.update(match);
 }requestAnimationFrame(frame);
 // Explicitly enabled only for automated local test sessions.
 if(new URLSearchParams(location.search).get('test')==='1')window.__jetclash={match,input,renderer,setPaused,mobile,audio};

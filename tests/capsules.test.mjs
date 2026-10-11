@@ -14,22 +14,24 @@ test('buy deducts exactly once; unopened capsule survives reload and cannot over
   const reload=new ProfileStore(storage);assert.deepEqual(reload.collection.item(crate.id),crate);assert.equal(reload.data.coins,0);
   assert.ok(reload.collection.open(crate.id,()=>0));assert.equal(reload.collection.open(crate.id),null);
 });
-test('every model can drop and equip with all four authored colors, retaining Pass and balances',()=>{
+test('every model drops with one color; duplicate choices unlock other authored colors',()=>{
   for(const category of CAPSULE_CATALOG)for(let i=0;i<category.models.length;i++){
     const {p,storage}=fixture();p.pass.addXp(50000);p.pass.claim(3,'free');const before=structuredClone(p.data.passInventory),xp=p.data.xp;
     const crate=p.collection.buyCapsule(category.id),reward=p.collection.open(crate.id,()=>i/category.models.length);
     assert.equal(reward.id,category.models[i].id);assert.equal(reward.duplicate,false);assert.equal(reward.refund,0);assert.equal(p.data.coins,800);
-    assert.ok(p.collection.equip(reward.id));for(let palette=0;palette<4;palette++){assert.ok(p.collection.setColor(reward.id,palette));assert.equal(p.collection.equipped(category.type).palette,palette);}
+    assert.deepEqual(p.collection.variants(reward.id).normal,[0]);assert.ok(p.collection.equip(reward.id));
+    for(let palette=0;palette<4;palette++){if(palette){assert.equal(p.collection.setColor(reward.id,palette),false);const duplicate=p.collection.buyCapsule(category.id);const result=p.collection.open(duplicate.id,()=>i/category.models.length);assert.equal(result.choice,duplicate.id);assert.ok(p.collection.chooseVariant(duplicate.id,palette));}assert.ok(p.collection.setColor(reward.id,palette));assert.equal(p.collection.equipped(category.type).palette,palette);}
     const reload=new ProfileStore(storage);assert.equal(reload.collection.equipped(category.type).id,reward.id);assert.equal(reload.collection.equipped(category.type).palette,3);assert.equal(reload.collection.open(crate.id),null);
     assert.deepEqual(p.data.passInventory,before);assert.equal(p.data.xp,xp);
   }
 });
-test('duplicate refunds one quarter of price paid once without adding another object or changing color',()=>{
-  const {p,storage}=fixture();let crate=p.collection.buyCapsule('noyau'),reward=p.collection.open(crate.id,()=>0);p.collection.equip(reward.id);p.collection.setColor(reward.id,2);
-  crate=p.collection.buyCapsule('noyau');reward=p.collection.open(crate.id,()=>0);assert.equal(reward.duplicate,true);assert.equal(reward.refund,50);assert.equal(p.data.coins,650);
+test('completed cosmetic duplicates refund one quarter once without changing equipment',()=>{
+  const {p,storage}=fixture();let crate=p.collection.buyCapsule('noyau'),reward=p.collection.open(crate.id,()=>0);p.collection.equip(reward.id);
+  for(const color of [1,2,3]){const duplicate=p.collection.buyCapsule('noyau');p.collection.open(duplicate.id,()=>0);p.collection.chooseVariant(duplicate.id,color);}p.collection.setColor(reward.id,2);
+  crate=p.collection.buyCapsule('noyau');reward=p.collection.open(crate.id,()=>0);assert.equal(reward.duplicate,true);assert.equal(reward.refund,50);assert.equal(p.data.coins,50);
   assert.equal(p.collection.items().filter(i=>i.id===reward.id).length,1);assert.equal(p.collection.equipped('ball').palette,2);
-  assert.equal(p.collection.open(crate.id,()=>0),null);assert.equal(p.collection.openCapsule(crate,()=>0),null);assert.equal(p.data.coins,650);
-  const reload=new ProfileStore(storage);assert.equal(reload.collection.open(crate.id,()=>0),null);assert.equal(reload.data.coins,650);
+  assert.equal(p.collection.open(crate.id,()=>0),null);assert.equal(p.collection.openCapsule(crate,()=>0),null);assert.equal(p.data.coins,50);
+  const reload=new ProfileStore(storage);assert.equal(reload.collection.open(crate.id,()=>0),null);assert.equal(reload.data.coins,50);
 });
 test('invalid balance, category, random and unowned equipment never grants a reward or charges',()=>{
   for(const coins of [-1,199,1.5,NaN,Infinity,'1000']){const {p}=fixture(coins);assert.equal(p.collection.buyCapsule('noyau'),null);assert.equal(p.collection.items().length,0);}

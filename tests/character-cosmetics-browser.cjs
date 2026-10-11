@@ -17,12 +17,12 @@ const output='C:/Users/User/AppData/Local/Temp/jetclash-cosmetic-audit';fs.mkdir
       }
     });
     for(const track of ['free','premium'])await page.locator(`[data-pass-claim="50"][data-pass-track="${track}"]`).click();
-    await page.locator('.mm-nav [data-route=collection]').click();await page.locator('[data-inventory-filter=skin]').click();assert.equal(await page.locator('.collection-item').count(),2);
+    await page.locator('.mm-nav [data-route=collection]').click();await page.locator('[data-inventory-filter=skin]').click();assert.equal(await page.locator('.collection-item').count(),3);
     for(const [track,name] of [['premium','heavy'],['free','fluid']]){
-      const id=`s1-${track}-50`;await page.locator(`[data-equip="${id}"]`).click();await page.locator(`[data-item-color="${id}"][data-palette="2"]`).click();
+      const palette=track==='free'?0:2,id=`s1-${track}-50`;await page.locator(`[data-collection-select="${id}"]`).click();await page.locator(`[data-equip="${id}"]`).click();await page.locator(`[data-item-color="${id}"][data-palette="${palette}"]`).click();
       await page.locator('.mm-nav [data-route=home]').click();assert.match(await page.locator('#mobile-fluid').getAttribute('src'),new RegExp(name));
-      await page.reload();await page.waitForFunction(()=>window.__jetclash&&!document.querySelector('#start').disabled);assert.equal(await page.evaluate(()=>__jetclash.match.profile.collection.equipped('skin').id),id);assert.equal(await page.evaluate(()=>__jetclash.match.profile.collection.equipped('skin').palette),2);
-      await page.locator('#mobile-play').click();await page.locator('#mobile-training').click();
+      await page.reload();await page.waitForFunction(()=>window.__jetclash&&!document.querySelector('#start').disabled);assert.equal(await page.evaluate(()=>__jetclash.match.profile.collection.equipped('skin').id),id);assert.equal(await page.evaluate(()=>__jetclash.match.profile.collection.equipped('skin').palette),palette);
+      await page.locator('#mobile-play').click();await page.locator('#mobile-training').click();await page.locator('#mobile-launch').click();
       await page.evaluate(name=>{
         const {match:m,renderer:r,setPaused}=__jetclash;setPaused(true);const fit=r.fit.bind(r),sprite=r.drawSprite.bind(r);
         for(const mode of ['duel','2v2','training']){
@@ -42,7 +42,7 @@ const output='C:/Users/User/AppData/Local/Temp/jetclash-cosmetic-audit';fs.mkdir
     }
     await page.locator('[data-unequip=skin]').click();assert.equal(await page.evaluate(()=>__jetclash.match.profile.collection.equipped('skin')),undefined);
     await page.evaluate(()=>{const p=__jetclash.match.profile;p.data.coins=400;p.save();});await page.locator('.mm-nav [data-route=shop]').click();assert.equal(await page.locator('[data-capsule-buy]').count(),4);await page.locator('[data-capsule-buy=noyau]').click();assert.equal(await page.evaluate(()=>__jetclash.match.profile.data.coins),200);
-    await page.locator('[data-show-capsules]').click();await page.locator('[data-crate-open="purchased-capsule-1"]').click();await page.locator('.crate-opening.is-revealed').waitFor();await page.locator('[data-opening-close]').click();assert.equal(await page.evaluate(()=>__jetclash.match.profile.data.passInventory.length),2);
+    await page.locator('[data-show-capsules]').click();await page.locator('[data-collection-select="purchased-capsule-1"]').click();await page.locator('[data-crate-open="purchased-capsule-1"]').click();await page.locator('.crate-opening.is-revealed').waitFor();await page.locator('[data-opening-close]').click();assert.equal(await page.evaluate(()=>__jetclash.match.profile.data.passInventory.length),2);
     for(const selector of ['.mm-header','.mm-nav']){const rect=await page.locator(selector).boundingBox();assert.ok(rect.y>=0&&rect.y+rect.height<=viewport.height+1);}assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.deepEqual(errors,[]);
     console.log(`Pass level-50 cosmetics verified ${viewport.width}x${viewport.height}`);await context.close();
   }

@@ -47,9 +47,9 @@ export class ChallengeManager {
       if(state.claimed)continue;
       const progress=Math.min(def.target,state.progress+amount);
       if(progress!==state.progress){state.progress=progress;changed=true;}
-      if(progress===def.target){state.claimed=true;this.profile.pass.addXp(def.xp,{save:false});changed=true;}
     }
     if(changed)this.profile.save();
   }
+  claim(id){this.refresh();const def=CHALLENGES.find(d=>d.id===id);if(!def)return false;const state=this.profile.data.challenges[def.period].entries[id];if(state.claimed||state.progress<def.target||!this.profile.pass.addXp(def.xp,{save:false}))return false;state.claimed=true;this.profile.save();return true;}
   snapshot(){this.refresh();return {seasonXp:this.profile.data.seasonXp,periods:this.profile.data.challenges,items:CHALLENGES.map(def=>({...def,...this.profile.data.challenges[def.period].entries[def.id]}))};}
 }

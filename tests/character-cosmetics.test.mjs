@@ -23,8 +23,8 @@ test('level 50 uses two audited existing full render sets and actual previews',a
 });
 test('level and Premium locks, unique claims, equipment colors and persistence remain intact',()=>{
   const {p,storage}=fixture();p.pass.addXp(49000);assert.equal(p.pass.claim(50,'free'),false);p.pass.addXp(1000);assert.equal(p.pass.claim(50,'free'),true);assert.equal(p.pass.claim(50,'free'),false);assert.equal(p.pass.claim(50,'premium'),false);p.pass.setPremium(true);assert.equal(p.pass.claim(50,'premium'),true);
-  const before=[p.data.xp,p.data.coins,p.data.tokens,p.data.seasonXp];assert.ok(p.collection.equip('s1-premium-50'));assert.equal(characterCosmetic(p.collection.equipped('skin')).character,'heavy');assert.ok(p.collection.setColor('s1-premium-50',3));
-  const reload=new ProfileStore(storage);assert.equal(characterCosmetic(reload.collection.equipped('skin')).character,'heavy');assert.equal(reload.collection.equipped('skin').palette,3);assert.equal(reload.data.passInventory.length,2);assert.deepEqual([reload.data.xp,reload.data.coins,reload.data.tokens,reload.data.seasonXp],before);
+  const before=[p.data.xp,p.data.coins,p.data.tokens,p.data.seasonXp];assert.ok(p.collection.equip('s1-premium-50'));assert.equal(characterCosmetic(p.collection.equipped('skin')).character,'heavy');assert.equal(p.collection.setColor('s1-premium-50',3),false);assert.ok(p.collection.setColor('s1-premium-50',2));
+  const reload=new ProfileStore(storage);assert.equal(characterCosmetic(reload.collection.equipped('skin')).character,'heavy');assert.equal(reload.collection.equipped('skin').palette,2);assert.equal(reload.data.passInventory.length,2);assert.deepEqual([reload.data.xp,reload.data.coins,reload.data.tokens,reload.data.seasonXp],before);
   reload.collection.unequip('skin');assert.equal(reload.collection.equipped('skin'),undefined);
 });
 test('already claimed old level-50 rewards acquire presentation metadata without changing stored inventory',()=>{
