@@ -40,3 +40,5 @@
 
 .arena-theme-preview{margin:12px 0}.arena-theme-preview img{display:block;width:100%;max-height:170px;aspect-ratio:16/9;object-fit:contain;border:1px solid #7d71b966;border-radius:10px;background:#090d20}.arena-theme-preview figcaption{font-size:11px;color:#b7cbe2;line-height:1.5;margin-top:6px}
 @media(max-height:500px) and (orientation:landscape){.arena-theme-preview img{max-height:90px}}
+
+.quick-chat button{position:relative}.quick-reaction-key{position:absolute;top:-7px;left:3px;padding:1px 3px;border-radius:3px;background:#0a1029;color:#daf7ff;font-size:9px;line-height:12px;pointer-events:none}

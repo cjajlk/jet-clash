@@ -72,7 +72,7 @@ function frame(now){
     accumulator+=delta;
     while(accumulator>=C.step){match.update(C.step,controls);accumulator-=C.step;touchCancelled=false;touchReleaseAim=null;}
   }else accumulator=0;
-  if(!mobileMenu.visible)renderer.render(match,{mobile:mobile.active&&!mobile.portrait,dt:delta});hud.update(match);quickChat.update(match);
+  if(!mobileMenu.visible)renderer.render(match,{mobile:mobile.active&&!mobile.portrait,dt:delta});hud.update(match);quickChat.update(match,input.gamepad.index);
 }requestAnimationFrame(frame);
 // Explicitly enabled only for automated local test sessions.
 if(new URLSearchParams(location.search).get('test')==='1')window.__jetclash={match,input,renderer,setPaused,mobile,audio};
