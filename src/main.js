@@ -29,6 +29,7 @@ const launch=payload=>{if(!ready)return;setPaused(false);input.resumeGamepad();t
 const mobileMenu=new MobileMenu({enabled:true,onLaunch:payload=>launch(payload),audio});
 mobileMenu.update(match,false,'Chargement de l’arène…');
 const returnToMenu=()=>{
+  window.CJGameIntegration?.suspend();
   setPaused(false);touchCancelled=false;touchReleaseAim=null;
   audio.stop();match.menu();renderer.camera.reset();document.getElementById('pause').hidden=true;
   // Recover older arena-only fullscreen sessions: the menu is a sibling of the arena.
@@ -41,12 +42,17 @@ const returnToMenu=()=>{
 start.addEventListener('click',launch);document.getElementById('replay').addEventListener('click',()=>launch({mode:match.mode,difficulty:match.difficulty,arena:match.trainingArenaId}));
 for(const id of ['back-menu','leave-game'])document.getElementById(id).addEventListener('click',returnToMenu);
 let last=performance.now(),accumulator=0,paused=false,touchCancelled=false,touchReleaseAim=null;
-function setPaused(value){paused=value;audio.setPaused(value);if(value)match.control.release();input.clear();mobile.clear();accumulator=0;last=performance.now();document.getElementById('pause').hidden=!value||[STATES.MENU,STATES.POST_MATCH].includes(match.state);}
+function setPaused(value){window.CJGameIntegration?.suspend();paused=value;audio.setPaused(value);if(value)match.control.release();input.clear();mobile.clear();accumulator=0;last=performance.now();document.getElementById('pause').hidden=!value||[STATES.MENU,STATES.POST_MATCH].includes(match.state);}
 window.addEventListener('blur',()=>setPaused(true));window.addEventListener('focus',()=>{input.resumeGamepad();setPaused(false);});document.addEventListener('visibilitychange',()=>{if(!document.hidden)input.resumeGamepad();setPaused(document.hidden);});document.addEventListener('fullscreenchange',()=>{input.resumeGamepad();if(!document.hidden)setPaused(false);if(match.state===STATES.MENU)mobileMenu.root.querySelector('[data-fullscreen],.mm-gear')?.focus();else canvas.focus();});
 try{await renderer.load();await renderer.setBackground(getCurrentArenaTheme());ready=true;start.disabled=false;start.textContent='ENTRER DANS L’ARÈNE →';document.getElementById('load-status').textContent='5 MIN · MORT SUBITE EN CAS D’ÉGALITÉ';}catch(error){document.getElementById('load-status').textContent=`Asset inaccessible : ${error.message}. Vérifie que le ZIP est entièrement extrait.`;start.textContent='CHARGEMENT IMPOSSIBLE';}
+window.getGameState = () => ({
+  running: window.CJajlkAccount?.isIdentityReady?.() !== false && ready && match.state === STATES.PLAYING && !match.training && !match.finished,
+  paused: paused || mobile.portrait || mobileMenu.visible
+});
 function frame(now){
   // Schedule first: an isolated input/presentation error must not kill every future frame.
   requestAnimationFrame(frame);
+  window.CJGameIntegration?.tick(now, 'jetclash');
   const delta=Math.min((now-last)/1000,0.1);last=now;
   mobileMenu.update(match,ready,document.getElementById('load-status').textContent);
   const touch=mobile.input.read();touchCancelled ||= touch.cancelShot;

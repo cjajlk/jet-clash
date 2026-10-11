@@ -6,7 +6,7 @@ function playerCard(profile,banner){
   const collection=profile.collection,character=characterCosmetic(collection.equipped('skin')),avatar=collection.equipped('avatar'),title=collection.equipped('title'),visual=cosmeticVisual(banner);
   const card=node('div','collection-player-card');card.dataset.bannerId=banner?.id||'base';if(visual)card.style.setProperty('--identity-color',visual.color);if(visual?.prismatic)card.classList.add('is-prismatic');
   const image=node('img','collection-avatar');image.alt='Avatar';image.src=typeof avatar?.image==='string'&&avatar.image.startsWith('assets/')&&!avatar.image.includes('..')?avatar.image:character?.preview||'assets/characters/fluid/fluid_idle.png';
-  const content=node('div','collection-player-name');content.append(node('strong','',profile.data.identity.nickname),node('span','',title?.label||'Pilote de l’Aube'),node('small','',`${character?.label||'Fluid'} · ${banner?.label||'Bannière de base'}`));card.append(image,content);return card;
+  const content=node('div','collection-player-name');content.append(node('strong','',globalThis.CJajlkAccount?.getDisplayPseudo?.(profile.data.identity.nickname)||profile.data.identity.nickname),node('span','',title?.label||'Pilote de l’Aube'),node('small','',`${character?.label||'Fluid'} · ${banner?.label||'Bannière de base'}`));card.append(image,content);return card;
 }
 export function enhanceCollectionPreviews(menu,inventory,detail,card){
   const profile=menu.profileStore,collection=profile.collection;

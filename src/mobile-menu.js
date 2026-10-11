@@ -59,7 +59,6 @@ export class MobileMenu {
     this.root.addEventListener('change',e=>{
       if(e.target.matches('[data-character-select]')){this.profileStore.collection.selectCharacter(e.target.value);this.last='';this.render();return;}
       if(e.target.matches('[data-reaction-slot]')){this.profileStore.reactions.equip(Number(e.target.dataset.reactionSlot),e.target.value);this.last='';this.render();return;}
-      if(e.target.matches('[data-profile-nickname]')){const name=e.target.value.trim().slice(0,24);if(name){this.profileStore.data.identity.nickname=name;this.profileStore.save();this.last='';queueMicrotask(()=>this.update({state:'MENU',profile:this.profileStore},this.ready,this.status));}return;}
       const target=e.target.closest('select[data-setting]');if(!target)return;
       const {setting,action}=target.dataset;
       if(setting==='keyboard')controlSettings.setKeyboard(action,target.value);
@@ -127,8 +126,6 @@ export class MobileMenu {
     this.visible=visible;this.ready=ready;this.status=status;this.profileStore=match.profile;this.profile=profilePresentation(match.profile);
     this.root.hidden=!visible;document.body.classList.toggle('mobile-menu-open',visible);
     if(!visible)return;
-    // Keep the editable nickname intact while background profile updates arrive.
-    if(document.activeElement?.matches('[data-profile-nickname]'))return;
     this.challengeView=match.profile.challenges?.snapshot();this.saveWarning=match.profile.warning;
     const pending=(this.challengeView?.items||[]).filter(d=>!d.claimed&&d.progress>=d.target).length;const tab=this.root.querySelector('[data-route="challenges"]');tab.classList.toggle('has-rewards',pending>0);tab.dataset.rewards=String(pending);tab.setAttribute('aria-label',pending?`Défis · ${pending} récompenses disponibles`:'Défis');
     const key=JSON.stringify([this.model.route==='modes'?getCurrentArenaTheme().id:null,this.profile,ready,status,this.challengeView,this.profileStore.pass.snapshot(),this.profileStore.data.equipment,this.profileStore.data.openedCrates,this.profileStore.data.cosmeticColors,this.profileStore.data.cosmeticVariants,this.profileStore.data.pendingVariantChoices,this.profileStore.data.reactions,this.profileStore.data.coins,this.profileStore.data.capsuleInventory,this.saveWarning]);
