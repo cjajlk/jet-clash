@@ -67,7 +67,7 @@ export class Match {
     this.elapsed+=dt;
     if (this.state===STATES.PRE_ROUND || this.state===STATES.GOAL_SCORED) {
       this.phase-=dt;
-      if (this.phase<=0) { if (this.state===STATES.PRE_ROUND) this.state=STATES.PLAYING; else this.prepare({countdown:false}); }
+      if (this.phase<=0) { if (this.state===STATES.PRE_ROUND) this.state=STATES.PLAYING; else if(this.training){this.resetTrainingBall();this.state=STATES.PLAYING;} else this.prepare({countdown:false}); }
       return;
     }
     // The clock wins any same-tick conflict at 00:00; a tied match enters overtime.
@@ -126,7 +126,7 @@ export class Match {
     if (this.state!==STATES.PLAYING || this.finished || !['player','bot'].includes(scorer)) return false;
     this.goalEffect={side:scorer==='bot'?'left':'right',x:this.ball.x,y:this.ball.y,remaining:C.goalEffectDuration,cosmeticColor:scorer==='player'?cosmeticVisual(this.profile.collection?.equipped('explosion'))?.color:undefined};
     this.notify('goal',{scorer,training:this.training});
-    if(this.training){this.resetTrainingBall();this.control.release();this.lastGoal=null;return true;}
+    if(this.training){this.control.release();this.lastGoal=null;this.state=STATES.GOAL_SCORED;this.phase=C.goalEffectDuration;return true;}
     this.control.reset();this.score[scorer]++; this.lastGoal=scorer;
     if(scorer==='player'&&(this.mode!=='2v2'||this.lastTouch===this.player)){
       this.humanGoals++;this.profile.challenges?.record('goals');

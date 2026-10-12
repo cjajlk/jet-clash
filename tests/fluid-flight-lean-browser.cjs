@@ -1,0 +1,15 @@
+const {chromium}=require('C:/Users/User/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const assert=require('node:assert/strict');
+(async()=>{const browser=await chromium.launch({channel:'msedge',headless:true});try{for(const [width,height,touch] of [[1440,900,false],[844,390,true]]){
+ const context=await browser.newContext({viewport:{width,height},hasTouch:touch}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:4173/?test=1');await page.waitForFunction(()=>window.__jetclash&&!document.querySelector('#start').disabled);await page.locator('#mobile-play').click();await page.locator('#mobile-training').click();await page.locator('#mobile-launch').click();
+ const results=await page.evaluate(async()=>{
+ const {drive}=await import('/src/player.js'),{CONFIG:C}=await import('/src/config.js');const g=__jetclash;g.setPaused(true);const p=g.match.player,r=g.renderer,original=r.drawSprite,draws=[];
+ r.drawSprite=function(key,x,y,w,h,visual){if(key.startsWith('fluid_'))draws.push(visual.rotation);return original.call(this,key,x,y,w,h,visual);};
+ const states=[['jump',{footX:0,footY:1}],['vertical',{boosting:true,footX:0,footY:-1}],['right',{boosting:true,footX:-1,footY:0}],['left',{boosting:true,footX:1,footY:0}],['flip',{flipTimer:.1,rotateHeld:true,footX:-1,footY:0}],['ceiling',{grounded:true,contactSurface:'ceiling',footX:0,footY:-1}]],result=[];
+ for(const [name,state] of states){Object.assign(p,{x:640,y:300,grounded:false,contactSurface:null,boosting:false,rotateHeld:false,backPoseHeld:false,flipTimer:0,impulseCooldown:0},state);for(let i=0;i<60;i++){const before=JSON.stringify([g.match.players,g.match.ball,g.match.control]);r.render(g.match,{mobile:g.mobile.active,dt:1/60});if(before!==JSON.stringify([g.match.players,g.match.ball,g.match.control]))throw Error('Physical state mutated by render');}result.push([name,draws.at(-1)]);}
+ Object.assign(p,{grounded:false,contactSurface:null,rotateHeld:false,flipTimer:0,footX:-1,footY:0,boosting:true});for(let i=0;i<60;i++)r.render(g.match,{mobile:g.mobile.active,dt:1/60});const initial=draws.at(-1);drive(p,{axis:0,boost:true},1/60);r.render(g.match,{mobile:g.mobile.active,dt:1/60});const next=draws.at(-1);for(let i=0;i<180;i++){drive(p,{axis:0,boost:true},1/60);r.render(g.match,{mobile:g.mobile.active,dt:1/60});}result.push(['neutral',draws.at(-1)],['smooth',initial-next]);r.drawSprite=original;return result;
+ });
+ for(const [name,angle] of results){if(['jump','vertical','right','left'].includes(name))assert.ok(Math.abs(angle)<=Math.PI/10+1e-9);if(['jump','vertical','neutral'].includes(name))assert.ok(Math.abs(angle)<.001);if(name==='flip')assert.ok(Math.abs(angle)>1);if(name==='ceiling')assert.equal(angle,Math.PI);if(name==='smooth')assert.ok(angle>=0&&angle<.1);}
+ assert.deepEqual(errors,[]);console.log(`Rendered flight, boost, neutral, flip, ceiling and unchanged match state PASS ${width}x${height} touch=${touch}`);await context.close();
+ }}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

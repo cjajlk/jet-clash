@@ -11,7 +11,8 @@ export function goalScorer(ball,C=DEFAULT,previous=null) {
   // mouth by a few pixels is not enough to score.
   if(C.goalRequireCrossing){
     if(!previous)return null;
-    const left=C.goalLeft-C.goalLineInset-ball.r,right=C.goalRight+C.goalLineInset+ball.r;
+    const depth=goalEntryDepth(ball.r,C);
+    const left=C.goalLeft-depth,right=C.goalRight+depth;
     const scorer=previous.x>left&&ball.x<=left?'bot':previous.x<right&&ball.x>=right?'player':null;
     if(!scorer)return null;
     const line=scorer==='bot'?left:right,t=(line-previous.x)/(ball.x-previous.x);

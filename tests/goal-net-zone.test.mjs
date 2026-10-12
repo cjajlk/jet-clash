@@ -27,10 +27,10 @@ for(const side of ['left','right']){
       assert.equal(m.state,S.PLAYING);assert.deepEqual(m.score,{player:0,bot:0});assert.equal(m.goalEffect,null);assert.equal(m.boundaryRecoveries,0);
     }
     assert.deepEqual(events,[]);assert.deepEqual(recorded,[]);
-    Object.assign(m.ball,ballAt((C.goalScoreTop+C.goalScoreBottom)/2),{x:line+sign*(m.ball.r+12-1),vx:sign*500});m.lastTouch=m.player;m.update(C.step);
+    Object.assign(m.ball,ballAt((C.goalScoreTop+C.goalScoreBottom)/2),{x:line+sign*(m.ball.r*C.goalEntryRadiusFactor-1),vx:sign*500});m.lastTouch=m.player;m.update(C.step);
     assert.deepEqual(events,['goal']);assert.equal(m.goalEffect.side,side);
     assert.equal(m.score[scorer],mode==='training'?0:1);
-    assert.equal(m.state,mode==='training'?S.PLAYING:S.GOAL_SCORED);
+    assert.equal(m.state,S.GOAL_SCORED);
     assert.deepEqual(recorded,mode!=='training'&&!left?['goals']:[]);
   });
 }

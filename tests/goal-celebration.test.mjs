@@ -16,7 +16,7 @@ for(const side of ['left','right']){
   for(const y of [C.goalTop+b.r,C.goalBottom-b.r]){b.y=y;assert.equal(goalScorer(b),null);}
   const m=make();Object.assign(m.ball,{x:line+sign*(depth-1),y:245,vx:0,vy:0});m.update(C.step);
   assert.deepEqual(m.score,{player:0,bot:0});assert.equal(m.goalEffect,null);
-  Object.assign(m.ball,{x:line+sign*(m.ball.r+12-1),y:245,vx:sign*500,vy:0});m.update(C.step);
+  Object.assign(m.ball,{x:line+sign*(goalEntryDepth(m.ball.r,m.arena)-1),y:245,vx:sign*500,vy:0});m.update(C.step);
   assert.equal(m.score[scorer],1);assert.equal(m.goalEffect.side,side);assert.equal(m.goalEffect.remaining,C.goalEffectDuration);
   const ball={...m.ball},score={...m.score},players=[{...m.player},{...m.bot}];
   assert.equal(m.goal(scorer),false);
@@ -37,8 +37,9 @@ for(const side of ['left','right']){
 }
 test('entraînement : même seuil, effet sans score, remise à zéro habituelle et Fluid intact',()=>{
  const m=make();m.start('training');Object.assign(m.player,{x:640,y:C.floor-m.player.h/2});const p={...m.player};
- Object.assign(m.ball,{x:C.goalRight+m.ball.r+12-1,y:245,vx:500,vy:0});
+ Object.assign(m.ball,{x:C.goalRight+goalEntryDepth(m.ball.r,m.arena)-1,y:245,vx:500,vy:0});
  m.update(C.step);assert.equal(m.goalEffect.side,'right');assert.deepEqual(m.score,{player:0,bot:0});assert.equal(m.reward,0);
- assert.equal(m.ball.x,640);assert.equal(m.player.x,p.x);assert.equal(m.player.y,p.y);assert.equal(m.state,S.PLAYING);
+ assert.ok(m.ball.x>C.goalRight);assert.equal(m.player.x,p.x);assert.equal(m.player.y,p.y);assert.equal(m.state,S.GOAL_SCORED);
+ m.update(C.goalEffectDuration/2);assert.ok(m.ball.x>C.goalRight);m.update(C.goalEffectDuration);assert.equal(m.ball.x,640);assert.equal(m.state,S.PLAYING);assert.equal(m.player.x,p.x);assert.equal(m.player.y,p.y);
  m.menu();assert.equal(m.goalEffect,null);m.start();assert.equal(m.goalEffect,null);
 });

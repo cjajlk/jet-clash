@@ -34,6 +34,21 @@ export function coherentAirVisual(player){
   const rotation=player.contactSurface==='ceiling'?Math.PI:Math.atan2(-foot.x,foot.y);
   return {rotation,flip:player.facing<0};
 }
+// Sprite-only lean: foot orientation remains available to shots and physics.
+export function resolveFluidAirOrientation(player,cache={},dt=1/60){
+  const visual=coherentAirVisual(player);
+  const technical=player.contactSurface==='ceiling'||player.backPoseHeld||player.rotateHeld||player.flipTimer>0||player.impulseCooldown>C.airImpulseCooldown-FLUID_VISUAL.dashWindow;
+  if(technical){
+    cache.lean=visual.rotation;
+    return visual;
+  }
+  const foot=normalize(player.footX,player.footY)||{x:0,y:1};
+  const maxLean=Math.PI/10; // 18 degrees, independent of movement speed.
+  const target=-foot.x*maxLean;
+  const previous=clamp(Number.isFinite(cache.lean)?cache.lean:0,-maxLean,maxLean);
+  cache.lean=previous+(target-previous)*(1-Math.exp(-12*Math.max(0,Math.min(dt,.1))));
+  return {rotation:cache.lean,flip:visual.flip};
+}
 export function resolveFluidVisualPose(p,cache={}){
   const supported=!!p.grounded||p.contactSurface==='ceiling';
   const look=normalize(p.footX,p.footY)||{x:0,y:1};
@@ -216,7 +231,7 @@ export class Renderer{
         const cache=this.fluidVisuals.get(p)||{};this.fluidVisuals.set(p,cache);
         const visual=resolveFluidVisualPose(p,cache);
         const key=p.boosting?'fluid_jetpack':visual.key;
-        this.drawSprite(key,p.x-fluidW/2,p.y+p.h/2-fluidH,fluidW,fluidH,coherentAirVisual(p));
+        this.drawSprite(key,p.x-fluidW/2,p.y+p.h/2-fluidH,fluidW,fluidH,resolveFluidAirOrientation(p,cache,dt));
       }else{
         const pose=p.boosting?'jetpack':!p.grounded?'jump':Math.abs(p.vx)>45?'sprint':'walk';
         const visualW=displayCharacter==='fluid'?fluidW:86,visualH=displayCharacter==='fluid'?fluidH:h;
