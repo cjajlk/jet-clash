@@ -33,6 +33,7 @@ export class MobileMenu {
       if(button.dataset.route){if(button.hasAttribute('data-show-capsules'))this.inventoryFilter='crate';this.model.navigate(button.dataset.route);this.render();}
       else if(button.hasAttribute('data-back')){this.model.back();this.render();}
       else if(button.dataset.selectMode){this.model.selectMode(button.dataset.selectMode);this.render();}
+      else if(button.hasAttribute('data-launch-tutorial')&&this.ready)this.onLaunch({mode:'training',arena:this.trainingArenaId,tutorial:true});
       else if(button.dataset.launchMode&&this.model.canLaunch(button.dataset.launchMode,this.ready)){this.onLaunch({mode:button.dataset.launchMode,difficulty:this.difficulty,arena:this.trainingArenaId});}
       else if(button.dataset.challengeClaim){this.profileStore.challenges.claim(button.dataset.challengeClaim);this.last='';this.update({state:'MENU',profile:this.profileStore},this.ready,this.status);}
       else if(button.dataset.variantChoice){this.profileStore.collection.chooseVariant(button.dataset.variantChoice,Number(button.dataset.palette));this.last='';this.render();}

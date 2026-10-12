@@ -77,7 +77,19 @@ export function resolveFluidVisualPose(p,cache={}){
 }
 export class Renderer{
   constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.images={};this.camera=new MobileCamera();this.fluidVisuals=new WeakMap();this.cosmeticTrails=new WeakMap();}
-  async load(){await Promise.all(Object.entries(paths).map(([name,path])=>new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>{this.images[name]=im;resolve();};im.onerror=()=>reject(new Error(path));im.src=`assets/${path}`;})));}
+  async load(){
+    this.assetWarnings=[];
+    await Promise.all(Object.entries(paths).map(([name,path])=>new Promise(resolve=>{
+      const im=new Image();im.onload=()=>{this.images[name]=im;resolve();};
+      im.onerror=()=>{this.assetWarnings.push(path);resolve();};im.src=`assets/${path}`;
+    })));
+    // Optional cosmetics cannot prevent a match from starting. Keep base artwork available.
+    for(const character of ['fluid','heavy'])for(const pose of ['walk','sprint','jump','jetpack','attack'])
+      this.images[`${character}_${pose}`] ||= this.images[`${character}_idle`];
+    for(const pose of FLUID_AIR_POSES)this.images[`fluid_${pose}`] ||= this.images.fluid_jump;
+    this.images.impact ||= this.images.ball;
+    for(const key of ['backgroundFlat','ball','fluid_idle','heavy_idle'])if(!this.images[key])throw new Error(paths[key]);
+  }
   async setBackground(theme){
     const token=this.backgroundToken=(this.backgroundToken||0)+1;
     this.arenaTheme=theme||{id:'default',image:DEFAULT_BACKGROUND};

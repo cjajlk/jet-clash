@@ -1,6 +1,6 @@
 # JetClash — Étape 2 jouable
 
-Version de travail 0.2.0, 28 septembre 2026. **Validation finale réservée à CJ après essai réel.**
+Version de travail 0.2.0, guide actualisé le 12 octobre 2026. **Validation finale réservée à CJ après essai réel.**
 
 Cette version réalise un match Fluid contre Heavy dans La Cour de l’Aube : menu, difficulté, compte à rebours, jeu, buts et remises en jeu, chrono de cinq minutes, mort subite si égalité, résultat, XP, sauvegarde, rejeu et retour au menu sans recharger la page.
 
@@ -24,9 +24,10 @@ Toujours utiliser la même adresse et le même navigateur pour retrouver son pro
 | Saut | Espace ; alternatives Z, W ou flèche ↑ |
 | Jetpack | Maintenir Maj gauche ou droite |
 | Recharge | Relâcher Maj |
-| Frappe | Contact physique avec la balle, sans touche spéciale |
+| Tir visé | Maintenir F pour charger ; I/J/K/L pour viser ; relâcher F pour tirer |
+| Réactions | 1, 2, 3, 4 |
 
-Cliquer sur l’arène si nécessaire pour lui rendre le focus. Une pause automatique protège le match quand la fenêtre perd le focus ; le jeu reprend au retour. Les touches clavier sont alors relâchées automatiquement. Pour reprendre une commande manette qui était maintenue, ramener d’abord le stick et les boutons au repos.
+Cliquer sur l’arène si nécessaire pour lui rendre le focus. Une pause automatique protège le match quand la fenêtre perd le focus ; le jeu reprend au retour. Les touches clavier sont alors relâchées automatiquement. Le déplacement au stick reprend immédiatement ; les actions maintenues nécessitent un relâchement pour éviter une frappe accidentelle.
 
 ### Manette PS5 / DualSense sur PC
 
@@ -45,7 +46,7 @@ Le jeu utilise `navigator.getGamepads()` à chaque image et les événements de 
 
 Zone morte du stick : 18 %, puis amplitude analogique renormalisée jusqu’à 1. Seuil d’activation de gâchette : valeur supérieure à 12 % ou état pressé du navigateur. Rond/B commande le jetpack, Carré/X déclenche un flip aérien qui frappe la balle au contact, et L2/LT charge puis tire. En cas d’entrées simultanées, les directions clavier sont prioritaires et les actions saut/jetpack des deux méthodes se combinent. Débrancher la manette relâche ses commandes ; rebrancher permet de reprendre sans recharger.
 
-L’aide clavier reste toujours visible. L’aide manette affiche Croix, Rond, Carré et L2 à la détection, et la dernière méthode utilisée est mise en évidence. Les labels Xbox sont A, B, X et LT.
+Les anciennes aides textuelles sous l’arène sont masquées ; les commandes restent actives. L’aide manette affiche Croix, Rond, Carré et L2 à la détection, et la dernière méthode utilisée est mise en évidence. Les labels Xbox sont A, B, X et LT.
 
 Les changements de commandes et de flip sont couverts par les tests de manette, de joueur et de rendu. Aucun test matériel DualSense n’est revendiqué : la validation finale avec la vraie manette appartient à CJ.
 
@@ -54,9 +55,9 @@ Références techniques : [Gamepad API — utilisation](https://developer.mozill
 ## Règles mises en œuvre
 
 - Fluid et Heavy utilisent exactement les mêmes dimensions physiques, accélération, vitesse, saut, jetpack et réponse au contact. Les apparences ne donnent aucun bonus.
-- La balle est indépendante, soumise à la gravité, à l’inertie et aux collisions ; aucun aimant, guidage vers le but ou possession. Les repositionnements sont limités au lancement et aux remises en jeu.
+- La balle utilise la gravité, l’inertie et les collisions. Le contrôle de balle et le tir chargé sont gérés par le système de contact existant.
 - Facile / Normal / Élite changent uniquement la réaction, l’erreur de visée, l’anticipation et l’agressivité du bot.
-- Le but compte une fois lorsque toute la balle franchit la ligne à l’intérieur de l’ouverture. Après un but : annonce de 1,8 s, remise au centre, compte à rebours de 3 s.
+- Le but compte une fois lorsque toute la balle franchit la ligne à l’intérieur de l’ouverture. Après un but : annonce de 1,8 s et remise au centre sans nouveau compte à rebours. Le compte à rebours est réservé au début du match.
 - Cinq minutes de **temps de jeu actif** : le chrono s’arrête pendant les comptes à rebours, annonces de but et pauses de focus.
 - À 00:00, une avance termine le match avant tout nouveau contact du même pas de simulation. Une égalité active la mort subite à 00:00 ; le prochain but termine immédiatement le match.
 - XP : 100 pour un match terminé + 50 si victoire + 10 par but de Fluid. Niveau initial 1, puis un niveau par tranche de 1 000 XP. Attribution unique par identifiant de match, enregistrée avec le total dans le profil local.
@@ -105,3 +106,12 @@ Voir `docs/fichiers-livres.md` pour la liste exacte des fichiers.
 - L'ancienne arène est conservée intacte : `assets/arena/arena_background.png`.
 - Les anciennes cages V3 restent dans le pack mais ne sont pas superposées sur l'Arène 02.
 - Physique, buts, tir, ballon ×1.50 et gameplay inchangés.
+
+
+## État actuel et sauvegardes
+
+Le tir visé, les tirs spéciaux violet/or, le Pass, les Défis, la Collection et les capsules sont intégrés. Les réactions rapides utilisent 1–4 et ↑ → ↓ ← ; en entraînement, ↓ reste réservé à la remise au centre.
+
+La validation des buts exige une profondeur de deux rayons physiques (57 px actuellement), avec la balle dans l’ouverture verticale. En entraînement, la balle reste visible pendant l’effet de 0,8 seconde, sans score ni récompense.
+
+Le profil est stocké localement par navigateur et adresse. Une copie du précédent profil valide est conservée sous la clé `jetclash.etape2.profile.v1.backup`. Si le profil principal est illisible, cette copie est utilisée ; sans copie valide, l’original n’est pas écrasé et le jeu signale une progression limitée à la session. Cette protection ne remplace pas une sauvegarde externe et ne résiste pas à l’effacement des données du navigateur.
