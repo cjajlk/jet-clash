@@ -37,30 +37,26 @@ export class TouchControls {
     for(const name of ['contextmenu','dragstart'])shell.addEventListener(name,e=>{if(this.active)e.preventDefault();});
   }
   bind(el){
-    const origins=new Map();
     const coordinates=e=>{
-      if(el.dataset.touch==='shoot'){
-        const origin=origins.get(e.pointerId)||{x:e.clientX,y:e.clientY};
-        // 48 CSS pixels of travel, with the existing .18 radial deadzone (~9px).
-        return {x:(e.clientX-origin.x)/48,y:(e.clientY-origin.y)/48};
-      }
+      // Client coordinates and live bounds share CSS pixels; no canvas/DPR
+      // conversion is needed after zoom, fullscreen or rotation.
       const r=el.getBoundingClientRect(),radius=r.width*.35;
       const x=(e.clientX-r.left-r.width/2)/radius,y=(e.clientY-r.top-r.height/2)/radius;
       const length=Math.max(1,Math.hypot(x,y));return {x:x/length,y:y/length};
     };
     el.addEventListener('pointerdown',e=>{
       if(!this.active||this.portrait||e.pointerType==='mouse'&&e.button!==0)return;
-      e.preventDefault();origins.set(e.pointerId,{x:e.clientX,y:e.clientY});const {x,y}=coordinates(e);
+      e.preventDefault();const {x,y}=coordinates(e);
       if(this.input.start(e.pointerId,el.dataset.touch,x,y)){el.setPointerCapture(e.pointerId);this.paint();}
     });
     el.addEventListener('pointermove',e=>{
       if(!this.input.pointers.has(e.pointerId))return;e.preventDefault();const {x,y}=coordinates(e);this.input.move(e.pointerId,x,y);this.paint();
     });
     for(const name of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(name,e=>{
-      if(!this.input.pointers.has(e.pointerId)){origins.delete(e.pointerId);return;}
+      if(!this.input.pointers.has(e.pointerId))return;
       e.preventDefault();
       if(name==='pointerup'&&el.dataset.touch==='shoot'){const {x,y}=coordinates(e);this.input.move(e.pointerId,x,y);}
-      this.input.end(e.pointerId,name!=='pointerup');origins.delete(e.pointerId);this.paint();
+      this.input.end(e.pointerId,name!=='pointerup');this.paint();
     });
   }
   paint(){

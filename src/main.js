@@ -64,7 +64,7 @@ function frame(now){
   if(touch.cancelShot||touch.shoot)touchReleaseAim=null;
   // Keep the release direction until a physics tick consumes the release,
   // including on screens whose refresh rate exceeds the physics rate.
-  const released=touchReleaseAim?{aimX:touchReleaseAim.x,aimY:touchReleaseAim.y,aimActive:true}:{};
+  const released=touchReleaseAim?{aimX:touchReleaseAim.x,aimY:touchReleaseAim.y,aimActive:true,aimIntent:true}:{};
   const playerControls=input.read();
   const ballControls=input.readBallControls();
   // If a saved/custom gamepad profile assigns TIR and FLIP to the same button,

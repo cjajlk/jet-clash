@@ -6,23 +6,23 @@ export class TouchInput {
   constructor(){this.pointers=new Map();this.cancelled=false;this.releaseAim=null;}
   start(id,control,x=0,y=0){
     if(this.pointers.has(id)||!['move','aim','jump','boost','shoot','rot','back'].includes(control))return false;
-    if(['move','aim'].includes(control)&&[...this.pointers.values()].some(p=>p.control===control))return false;
+    if(['move','aim','shoot'].includes(control)&&[...this.pointers.values()].some(p=>p.control===control))return false;
     if(control==='shoot')this.releaseAim=null;
-    this.pointers.set(id,{control,x,y});return true;
+    this.pointers.set(id,{control,x,y,lastAim:control==='shoot'?aimDirection(x,y,STICK_DEADZONE):null});return true;
   }
-  move(id,x,y){const p=this.pointers.get(id);if(p){p.x=x;p.y=y;}}
+  move(id,x,y){const p=this.pointers.get(id);if(p){p.x=x;p.y=y;if(p.control==='shoot')p.lastAim=aimDirection(x,y,STICK_DEADZONE)||p.lastAim;}}
   end(id,cancel=false){
     const p=this.pointers.get(id);
     if(p?.control==='shoot'){
       if(cancel){this.cancelled=true;this.releaseAim=null;}
-      else this.releaseAim=aimDirection(p.x,p.y,STICK_DEADZONE);
+      else this.releaseAim=p.lastAim;
     }
     this.pointers.delete(id);
   }
   clear(){this.pointers.clear();this.cancelled=true;this.releaseAim=null;}
   read(){
     const pointers=[...this.pointers.values()],move=pointers.find(p=>p.control==='move'),aim=pointers.find(p=>p.control==='aim'),shot=pointers.find(p=>p.control==='shoot');
-    const drag=aimDirection(shot?.x,shot?.y,STICK_DEADZONE),releaseAim=this.releaseAim;
+    const drag=shot?.lastAim,releaseAim=this.releaseAim;
     const direction=drag||releaseAim||aimDirection(aim?.x,aim?.y,STICK_DEADZONE),cancelShot=this.cancelled;this.cancelled=false;this.releaseAim=null;
     return {axis:stickAxis(move?.x),aimX:direction?.x||0,aimY:direction?.y||0,
       aimIntent:!!direction,
