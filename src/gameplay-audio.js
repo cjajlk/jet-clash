@@ -18,6 +18,9 @@ export function scheduleEffect(context, destination, kind, detail={}, register=(
     tone('triangle',210+power*100,55,0,.13+power*.05,.14);
     tone('sine',95,42,0,.18,.12);
     tone('triangle',1400+power*600,240,0,.075,.025+power*.025);
+  }else if(kind==='reset'){
+    tone('sine',660,990,0,.09,.06);
+    tone('sine',990,1320,.07,.10,.045);
   }else if(kind==='goal'){
     const pitch=detail.scorer==='bot'?.75:1;
     tone('sine',100,38,0,.28,.12);
@@ -51,7 +54,7 @@ export class GameplayAudio {
     }catch{this.context=null;this.master=null;}
   }
   play(kind,detail={}){
-    if(!this.enabled||this.paused||this.context?.state!=='running'||!['shot','goal'].includes(kind))return false;
+    if(!this.enabled||this.paused||this.context?.state!=='running'||!['shot','goal','reset'].includes(kind))return false;
     try{
       scheduleEffect(this.context,this.master,kind,detail,source=>{
         this.voices.add(source);

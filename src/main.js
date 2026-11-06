@@ -1,3 +1,5 @@
+import {ContactFeedback} from './contact-feedback.js';
+import {TrainingDrills} from './training-drills.js';
 import {Tutorial} from './tutorial.js';
 import {getCurrentArenaTheme} from './arena-backgrounds.js';
 import { CONFIG as C } from './config.js';
@@ -21,18 +23,20 @@ const quickChat=new QuickReactionUI(document.getElementById('game-shell'),profil
 const audio=new GameplayAudio({enabled:profile.data.settings?.sound!==false,onEnabledChange:enabled=>{
   profile.data.settings={...profile.data.settings,sound:enabled};profile.save();
 }});
-let tutorial;
-const match=new Match(profile,(kind,detail)=>{audio.play(kind,detail);tutorial?.onEvent(kind,detail);});const start=document.getElementById('start');let ready=false;
+let tutorial,drills;
+const contactFeedback=new ContactFeedback(kind=>audio.play(kind));
+const match=new Match(profile,(kind,detail)=>{audio.play(kind,detail);tutorial?.onEvent(kind,detail);drills?.onEvent(kind,detail);});const start=document.getElementById('start');let ready=false;
 for(const event of ['pointerdown','keydown'])document.addEventListener(event,e=>{if(e.isTrusted)audio.unlock();},{capture:true});
 // A touch/layout change cancels pending shots but must not lock a held gamepad stick.
 mobile.onCancel=()=>{match.control.release();input.clear();input.resumeGamepad();};
-mobile.onReset=()=>{if(match.training)match.resetTrainingBall();};
-const launch=payload=>{if(!ready)return;tutorial.stop();setPaused(false);input.resumeGamepad();touchCancelled=false;touchReleaseAim=null;const mode=payload?.mode||'duel';if(mode==='training')match.start('training',undefined,payload?.arena);else{const difficulty=payload?.difficulty||document.getElementById('difficulty').value;document.getElementById('difficulty').value=difficulty;match.start(mode==='2v2'?'2v2':difficulty,difficulty);}if(payload?.tutorial&&mode==='training')tutorial.start();renderer.setBackground(mode==='training'?null:getCurrentArenaTheme());mobileMenu.update(match,ready);hud.update(match);canvas.focus();};
+mobile.onReset=()=>{if(drills?.active)drills.retry();else if(match.training)match.resetTrainingBall();};
+const launch=payload=>{if(!ready)return;tutorial.stop();drills.stop();contactFeedback.reset();setPaused(false);input.resumeGamepad();touchCancelled=false;touchReleaseAim=null;const mode=payload?.mode||'duel';if(mode==='training')match.start('training',undefined,payload?.arena);else{const difficulty=payload?.difficulty||document.getElementById('difficulty').value;document.getElementById('difficulty').value=difficulty;match.start(mode==='2v2'?'2v2':difficulty,difficulty);}if(payload?.tutorial&&mode==='training')tutorial.start();if(payload?.drill&&mode==='training')drills.start(payload.drill);renderer.setBackground(mode==='training'?null:getCurrentArenaTheme());mobileMenu.update(match,ready);hud.update(match);canvas.focus();};
 tutorial=new Tutorial(match,document.getElementById('game-shell'));
+drills=new TrainingDrills(match,document.getElementById('game-shell'));
 const mobileMenu=new MobileMenu({enabled:true,onLaunch:payload=>launch(payload),audio});
 mobileMenu.update(match,false,'Chargement de l’arène…');
 const returnToMenu=()=>{
-  tutorial.stop();
+  tutorial.stop();drills.stop();contactFeedback.reset();
   window.CJGameIntegration?.suspend();
   setPaused(false);touchCancelled=false;touchReleaseAim=null;
   audio.stop();match.menu();renderer.camera.reset();document.getElementById('pause').hidden=true;
@@ -76,13 +80,13 @@ function frame(now){
   const controls=combineTouch({...playerControls,...ballControls},{...touch,...released,cancelShot:touchCancelled});
   controlsHelp.update(input);
   const gamepadActive=input.gamepad.status.connected;
-  if(controls.resetBall&&match.training)match.resetTrainingBall();
-  mobile.update(match.state,gamepadActive?'gamepad':'touch',match.training);
+  if(controls.resetBall&&match.training){if(drills.active)drills.retry();else match.resetTrainingBall();}
+  mobile.update(match.state,gamepadActive?'gamepad':'touch',match.training,tutorial.active&&tutorial.step===3);
   if(ready&&!paused&&!mobile.portrait){
     accumulator+=delta;
-    while(accumulator>=C.step){tutorial.before(controls);match.update(C.step,controls);tutorial.after(controls,C.step);accumulator-=C.step;touchCancelled=false;touchReleaseAim=null;}
+    while(accumulator>=C.step){tutorial.before(controls);drills.before(controls);if(!drills.active||(drills.running&&!drills.done&&!drills.failed))match.update(C.step,controls);contactFeedback.update(match,C.step);tutorial.after(controls,C.step);drills.after(controls,C.step);accumulator-=C.step;touchCancelled=false;touchReleaseAim=null;}
   }else accumulator=0;
   if(!mobileMenu.visible)renderer.render(match,{mobile:mobile.active&&!mobile.portrait,dt:delta});hud.update(match);quickChat.update(match,input.gamepad.index);
 }requestAnimationFrame(frame);
 // Explicitly enabled only for automated local test sessions.
-if(new URLSearchParams(location.search).get('test')==='1')window.__jetclash={match,input,renderer,setPaused,mobile,audio,tutorial};
+if(new URLSearchParams(location.search).get('test')==='1')window.__jetclash={match,input,renderer,setPaused,mobile,audio,tutorial,drills,contactFeedback};

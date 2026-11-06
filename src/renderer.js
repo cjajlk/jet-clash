@@ -21,7 +21,7 @@ export function resolveFluidContactIndicator(player,control){
   const direction=normalize(control.indicator?.x,control.indicator?.y)||normalize(player.controlX,player.controlY)||{x:player.facing||1,y:0};
   const charge=control.indicator?.charge??0;
   const offset=Math.max(player.w*.36,player.h*.18)*(C.fluidVisualScale||1);
-  return {x:player.x+direction.x*offset,y:player.y+direction.y*offset,direction,charge};
+  return {x:player.x+direction.x*offset,y:player.y+direction.y*offset,direction,charge,ready:!!control.shotContact};
 }
 // Reuse the established wolf silhouette instead of the old astronaut aerial artwork.
 for(const pose of FLUID_AIR_POSES)paths[`fluid_${pose}`]=`characters/fluid/fluid_${pose==='air_dash'?'jetpack':'jump'}.png`;
@@ -169,9 +169,9 @@ export class Renderer{
     c.beginPath();c.arc(effect.x,effect.y,C.ballRadius*C.ballScale*(1+progress*2),0,Math.PI*2);c.stroke();
     c.restore();
   }
-  fluidIndicator(player,control){
-    const anchor=resolveFluidContactIndicator(player,control);if(!anchor)return;const c=this.ctx;const {x,y,direction,charge}=anchor;
-    c.save();c.translate(x,y);c.rotate(Math.atan2(direction.y,direction.x));c.lineJoin='round';c.shadowColor='#43dcff';c.shadowBlur=6+8*charge;
+  fluidIndicator(player,control,feedback){
+    const anchor=resolveFluidContactIndicator(player,control);if(!anchor)return;const c=this.ctx;const {x,y,direction,charge}=anchor;const ready=feedback?.contact??anchor.ready;
+    c.save();c.globalAlpha=ready?1:.4;c.setLineDash(ready?[]:[4,4]);c.translate(x,y);c.rotate(Math.atan2(direction.y,direction.x));c.lineJoin='round';c.shadowColor='#43dcff';c.shadowBlur=6+8*charge;
     const shaft=player.w*.28,head=player.w*.44,spread=8+charge*2;
     c.beginPath();c.moveTo(-shaft,0);c.lineTo(head,0);c.strokeStyle='#07243b';c.lineWidth=6;c.stroke();
     c.beginPath();c.moveTo(head,0);c.lineTo(head-12,-spread);c.lineTo(head-12,spread);c.closePath();c.fillStyle=`rgba(144,248,255,${.86+.14*charge})`;c.fill();
@@ -263,7 +263,14 @@ export class Renderer{
         c.restore();
     }
     drawBallShotTint(c,b);
-    this.fluidIndicator(m.player,m.control);
+    this.fluidIndicator(m.player,m.control,m.contactFeedback);
+    if(m.contactFeedback?.contact||m.contactFeedback?.resetTime>0){
+      c.save();c.font='bold 13px sans-serif';c.textAlign='center';c.fillStyle='#80ffcf';c.strokeStyle='#071825';c.lineWidth=4;
+      const label=m.contactFeedback.resetTime>0?'SAUT RÉCUPÉRÉ':'CONTACT';const y=m.player.y-m.player.h/2-22;
+      c.strokeText(label,m.player.x,y);c.fillText(label,m.player.x,y);c.restore();
+    }
+    const target=m.trainingExercise?.target;
+    if(target){c.save();c.strokeStyle=m.trainingExercise.done?'#80ffcf':'#ffdf70';c.lineWidth=3;c.setLineDash([7,5]);c.beginPath();c.arc(target.x,target.y,target.r,0,Math.PI*2);c.stroke();c.restore();}
     c.restore();
     if(camera.active)this.offscreenPlayers(m);
   }

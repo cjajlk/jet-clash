@@ -26,6 +26,8 @@ export const TOUCH_LAYOUT_OPTIONS=Object.freeze([
   {value:'mirrored',label:'Miroir gauche/droite'},
 ]);
 
+export const TOUCH_PRESET_OPTIONS=Object.freeze([{value:'simple',label:'Simple · Saut, Jet, Tir'},{value:'advanced',label:'Avancé · avec Flip et Dos'}]);
+
 const DEFAULT_SETTINGS=Object.freeze({
   keyboard:{
     moveLeft:['ArrowLeft','KeyA','KeyQ'],
@@ -42,7 +44,7 @@ const DEFAULT_SETTINGS=Object.freeze({
     aimRight:['KeyL'],
   },
   gamepad:{movementStick:'right',jump:0,boost:1,shoot:6,rotate:2,backPose:5,resetBall:13},
-  touch:{layout:'standard'},
+  touch:{layout:'standard',preset:'simple'},
 });
 
 const clone=value=>typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));
@@ -78,7 +80,7 @@ function normalize(saved){
       backPose:asNumber(gamepad.backPose)??DEFAULT_SETTINGS.gamepad.backPose,
       resetBall:asNumber(gamepad.resetBall)??DEFAULT_SETTINGS.gamepad.resetBall,
     },
-    touch:{layout:touch.layout==='mirrored'?'mirrored':'standard'},
+    touch:{layout:touch.layout==='mirrored'?'mirrored':'standard',preset:touch.preset==='simple'?'simple':'advanced'},
   };
 }
 
@@ -97,6 +99,7 @@ class ControlSettingsStore {
   setKeyboard(action,value){if(!(action in this.data.keyboard))return false;this.data.keyboard[action]=arrayOf(value);this.save();return true;}
   setGamepad(action,value){if(!(action in this.data.gamepad))return false;if(action==='movementStick'){this.data.gamepad[action]=value==='left'?'left':'right';this.save();return true;}const number=asNumber(value);if(number===null)return false;this.data.gamepad[action]=number;this.save();return true;}
   setTouchLayout(value){this.data.touch.layout=value==='mirrored'?'mirrored':'standard';this.save();return true;}
+  setTouchPreset(value){this.data.touch.preset=value==='advanced'?'advanced':'simple';this.save();return true;}
   get keyboard(){return this.data.keyboard;}
   get gamepad(){return this.data.gamepad;}
   get touch(){return this.data.touch;}

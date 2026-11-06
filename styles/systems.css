@@ -45,3 +45,9 @@
 
 .tutorial-panel{position:absolute;z-index:8;top:85px;left:50%;transform:translateX(-50%);width:min(420px,calc(100% - 32px));padding:12px;border:1px solid #65e8ff80;border-radius:12px;background:#0b1029ed;color:#eaf6ff;box-sizing:border-box;font-size:13px}.tutorial-panel strong{color:#65e8ff}.tutorial-panel p{margin:7px 0}.tutorial-panel small{display:block;color:#bfc5e0}.tutorial-panel div{display:flex;gap:8px}.tutorial-panel button{padding:7px 12px;border:1px solid #65e8ff70;border-radius:7px;background:#242345;color:white}.tutorial-panel button:disabled{opacity:.4}
 @media(max-height:500px){.tutorial-panel{top:60px;width:min(440px,calc(100% - 120px));padding:7px;font-size:11px}.tutorial-panel p{margin:3px 0}.tutorial-panel button{padding:4px 9px}}
+
+/* Leave the ball and target visible while an exercise is running. */
+.drill-panel.drill-running [data-drill-help]{display:none}
+.drill-panel button{letter-spacing:.3px}
+.drill-panel div{flex-wrap:wrap}
+@media(max-height:500px){.drill-panel.drill-running{top:48px;width:min(400px,calc(100% - 180px));font-size:10px}.drill-panel.drill-running div{gap:4px}.drill-panel.drill-running button{padding:3px 7px}}

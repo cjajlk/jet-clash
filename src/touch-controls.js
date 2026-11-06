@@ -67,10 +67,13 @@ export class TouchControls {
     }
   }
   clear(){this.input.clear();this.paint();}
-  update(state,mode='touch',training=false){
+  update(state,mode='touch',training=false,advancedLesson=false){
     const active=this.enabled&&['PRE_ROUND','PLAYING','GOAL_SCORED'].includes(state);
     const portrait=active&&innerHeight>innerWidth;
-    const gamepad=mode==='gamepad';
+    const gamepad=mode==='gamepad',preset=advancedLesson?'advanced':controlSettings.touch.preset;
+    if(this.preset!==preset){this.clear();this.onCancel();}this.preset=preset;
+    this.layer.dataset.preset=preset;
+    for(const action of ['rot','back'])this.layer.querySelector(`[data-touch="${action}"]`).hidden=preset==='simple';
     if(active!==this.active||portrait!==this.portrait||gamepad!==this.gamepadMode){this.clear();this.onCancel();}
     this.active=active;this.portrait=portrait;
     this.gamepadMode=gamepad;
