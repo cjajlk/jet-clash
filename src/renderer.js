@@ -1,3 +1,4 @@
+import {SPECIAL_SHOT_STYLES} from './aerial-shots.js';
 import {DEFAULT_BACKGROUND} from './arena-backgrounds.js';
 import { characterCosmetic } from './character-cosmetics.js';
 import { CAPSULE_CATALOG, CAPSULE_COLORS, capsuleAssetKey, capsuleImage, capsuleModel } from './capsules.js';
@@ -170,12 +171,12 @@ export class Renderer{
     c.restore();
   }
   fluidIndicator(player,control,feedback){
-    const anchor=resolveFluidContactIndicator(player,control);if(!anchor)return;const c=this.ctx;const {x,y,direction,charge}=anchor;const ready=feedback?.contact??anchor.ready;
-    c.save();c.globalAlpha=ready?1:.4;c.setLineDash(ready?[]:[4,4]);c.translate(x,y);c.rotate(Math.atan2(direction.y,direction.x));c.lineJoin='round';c.shadowColor='#43dcff';c.shadowBlur=6+8*charge;
+    const anchor=resolveFluidContactIndicator(player,control);if(!anchor)return;const c=this.ctx;const {x,y,direction,charge}=anchor;const ready=feedback?.contact??anchor.ready;const tint=SPECIAL_SHOT_STYLES[feedback?.specialType]?.color||'#90f8ff';
+    c.save();c.globalAlpha=ready?1:.4;c.setLineDash(ready?[]:[4,4]);c.translate(x,y);c.rotate(Math.atan2(direction.y,direction.x));c.lineJoin='round';c.shadowColor=tint;c.shadowBlur=6+8*charge;
     const shaft=player.w*.28,head=player.w*.44,spread=8+charge*2;
     c.beginPath();c.moveTo(-shaft,0);c.lineTo(head,0);c.strokeStyle='#07243b';c.lineWidth=6;c.stroke();
-    c.beginPath();c.moveTo(head,0);c.lineTo(head-12,-spread);c.lineTo(head-12,spread);c.closePath();c.fillStyle=`rgba(144,248,255,${.86+.14*charge})`;c.fill();
-    c.beginPath();c.moveTo(-shaft,0);c.lineTo(head,0);c.strokeStyle=`rgba(144,248,255,${.8+.2*charge})`;c.lineWidth=3+charge*.8;c.stroke();
+    c.beginPath();c.moveTo(head,0);c.lineTo(head-12,-spread);c.lineTo(head-12,spread);c.closePath();c.fillStyle=tint;c.fill();
+    c.beginPath();c.moveTo(-shaft,0);c.lineTo(head,0);c.strokeStyle=tint;c.lineWidth=3+charge*.8;c.stroke();
     c.restore();
   }
   capsulePlayerEffects(player,equipment){
@@ -264,10 +265,12 @@ export class Renderer{
     }
     drawBallShotTint(c,b);
     this.fluidIndicator(m.player,m.control,m.contactFeedback);
-    if(m.contactFeedback?.contact||m.contactFeedback?.resetTime>0){
-      c.save();c.font='bold 13px sans-serif';c.textAlign='center';c.fillStyle='#80ffcf';c.strokeStyle='#071825';c.lineWidth=4;
-      const label=m.contactFeedback.resetTime>0?'SAUT RÉCUPÉRÉ':'CONTACT';const y=m.player.y-m.player.h/2-22;
-      c.strokeText(label,m.player.x,y);c.fillText(label,m.player.x,y);c.restore();
+    if(m.contactFeedback?.contact||m.contactFeedback?.resetTime>0||m.contactFeedback?.resultLabel){
+      const labelScale=Math.max(1,C.width/((this.canvas.clientWidth||C.width)*(camera.zoom||1)));
+      c.save();c.font=`bold ${12*labelScale}px sans-serif`;c.textAlign='center';c.fillStyle=SPECIAL_SHOT_STYLES[m.contactFeedback.resultType||m.contactFeedback.specialType]?.color||'#80ffcf';c.strokeStyle='#071825';c.lineWidth=4;
+      const label=m.contactFeedback.resultLabel||(m.contactFeedback.specialType?SPECIAL_SHOT_STYLES[m.contactFeedback.specialType].label+' · CONTACT':m.contactFeedback.resetTime>0?'SAUT RÉCUPÉRÉ':'CONTACT');const y=m.player.y-m.player.h/2-30*labelScale;
+      c.strokeText(label,m.player.x,y);c.fillText(label,m.player.x,y);
+      if(m.contactFeedback.resetTime>0&&label!=='SAUT RÉCUPÉRÉ'){c.fillStyle='#80ffcf';c.font=`bold ${10*labelScale}px sans-serif`;c.strokeText('SAUT RÉCUPÉRÉ',m.player.x,y+15*labelScale);c.fillText('SAUT RÉCUPÉRÉ',m.player.x,y+15*labelScale);}c.restore();
     }
     const target=m.trainingExercise?.target;
     if(target){c.save();c.strokeStyle=m.trainingExercise.done?'#80ffcf':'#ffdf70';c.lineWidth=3;c.setLineDash([7,5]);c.beginPath();c.arc(target.x,target.y,target.r,0,Math.PI*2);c.stroke();c.restore();}

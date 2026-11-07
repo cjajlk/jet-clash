@@ -18,6 +18,8 @@ export function scheduleEffect(context, destination, kind, detail={}, register=(
     tone('triangle',210+power*100,55,0,.13+power*.05,.14);
     tone('sine',95,42,0,.18,.12);
     tone('triangle',1400+power*600,240,0,.075,.025+power*.025);
+    if(detail.type==='gold')tone('sine',1046,1568,.02,.12,.045);
+    else if(detail.type==='purple')tone('sine',784,392,.02,.14,.045);
   }else if(kind==='reset'){
     tone('sine',660,990,0,.09,.06);
     tone('sine',990,1320,.07,.10,.045);

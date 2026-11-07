@@ -9,7 +9,7 @@ import { movePlayer, collideBall, hitPlayer, ballOutsideArena } from './physics.
 import { Bot } from './bot.js';
 import { goalScorer } from './goals.js';
 import { TeamBot, createTeamExtras, resetTeamPositions } from './team-mode.js';
-import {prepareAerialShot,applyAerialShot} from './aerial-shots.js';
+import {prepareAerialShot,applyAerialShot,clearSpecialShot} from './aerial-shots.js';
 export const STATES=Object.freeze({ MENU:'MENU', PRE_ROUND:'PRE_ROUND', PLAYING:'PLAYING', GOAL_SCORED:'GOAL_SCORED', POST_MATCH:'POST_MATCH' });
 export class Match {
   constructor(profile,onEvent=()=>{}) {
@@ -42,7 +42,7 @@ export class Match {
     if(this.training){this.state=STATES.PLAYING;this.phase=0;this.bot=null;this.remaining=0;this.profile.challenges?.record('training');}
   }
   prepare({countdown=true}={}) {
-    this.ball.shotColor=null;this.ball.shotTimer=0;this.ball.shotTrail=[];
+    this.ball.shotColor=null;this.ball.shotMode=null;this.ball.shotTimer=0;this.ball.shotTrail=[];
     for(const p of this.players){p.aerialContactLatched=false;p.backPoseHeld=false;p.aerialInputTime=0;p.aerialRecentTime=0;p.aerialReadyType=null;}
     this.goalEffect=null;
     this.lastTouch=null;
@@ -57,7 +57,7 @@ export class Match {
     if(this.training){this.bot=null;this.remaining=0;}
   }
   menu() { this.goalEffect=null;this.control.reset();this.state=STATES.MENU; for(const player of this.players)player.boosting=false; }
-  resetTrainingBall(){ if(!this.training) return false; Object.assign(this.ball,{x:640,y:278,vx:0,vy:0,angle:0,flash:0,shotTimer:0,shotColor:null,shotTrail:[]}); return true; }
+  resetTrainingBall(){ if(!this.training) return false; Object.assign(this.ball,{x:640,y:278,vx:0,vy:0,angle:0,flash:0,shotTimer:0,shotColor:null,shotMode:null,shotTrail:[]}); return true; }
   update(dt, input={}) {
     if(this.goalEffect){
       this.goalEffect.remaining=Math.max(0,this.goalEffect.remaining-dt);
@@ -100,7 +100,7 @@ export class Match {
     // Briefly ignore only that body so the chosen direction survives the release.
     const playerContact=this.control.specialShotGrace>0?false:hitPlayer(this.ball,this.player,this.control.softContact&&!this.control.pressure?BALL_CONTROL.contactBounce:.88,flipStrike);
     if(this.mode==='2v2'&&playerContact)this.lastTouch=this.player;
-    if(flipStrike&&playerContact){this.player.flipHit=true;this.control.release();this.notify('shot',{power:.65});}
+    if(flipStrike&&playerContact){clearSpecialShot(this.ball);this.player.flipHit=true;this.control.release();this.notify('shot',{power:.65});}
     const beforeOtherContacts={vx:this.ball.vx,vy:this.ball.vy};
     let heavyContact=false;
     for(const entry of bots)if(hitPlayer(this.ball,entry.body)){

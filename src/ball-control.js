@@ -1,6 +1,6 @@
 import { CONFIG as C } from './config.js';
 import { circlePolygonContact } from './collision-shapes.js';
-import {aimedSpecialShotType,markSpecialShot} from './aerial-shots.js';
+import {aimedSpecialShotType,markSpecialShot,clearSpecialShot} from './aerial-shots.js';
 
 // Local contact assistance only: never a spring, position constraint or attraction.
 export const BALL_CONTROL = Object.freeze({captureSpeed:430, releaseSpeed:600,
@@ -152,7 +152,7 @@ export class BallControl {
   applyShot(b,shot){
     b.vx=shot.vx;b.vy=shot.vy;const speed=Math.hypot(b.vx,b.vy);
     if(speed>C.maxBallSpeed){b.vx*=C.maxBallSpeed/speed;b.vy*=C.maxBallSpeed/speed;}b.flash=.12;
-    if(shot.type){markSpecialShot(b,shot.type);this.specialShotGrace=.25;}
+    if(shot.type){markSpecialShot(b,shot.type,'aimed');this.specialShotGrace=.25;}else{clearSpecialShot(b);this.specialShotGrace=0;}
     this.onShot(Math.min(1,speed/C.maxBallSpeed),shot.type||null);
   }
   finishContacts(b,p,physicalPlayerContact=false){
@@ -163,7 +163,9 @@ export class BallControl {
     const genuineEntry=!!physicalPlayerContact||(!p||this.contact(p,b));
     if(genuineEntry)this.recentContactTime=BALL_CONTROL.recentContactSeconds;
     if(this.pendingShot&&this.pendingShotTime>0&&genuineEntry){
-      this.pendingShot.type=aimedSpecialShotType(p,b)||this.pendingShot.type;
+      // A queued release can meet a different surface: classify the real hit,
+      // never inherit a rear/feet color from an earlier encounter.
+      this.pendingShot.type=aimedSpecialShotType(p,b);
       this.applyShot(b,this.pendingShot);this.pendingShot=null;this.pendingShotTime=0;
     }
   }

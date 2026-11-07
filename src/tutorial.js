@@ -4,8 +4,8 @@ const STEPS=[
  ['Saut simple','Appuie une fois sur Saut depuis le sol.'],
  ['Double saut','Saute, relâche Saut, puis appuie une deuxième fois en l’air. Garde le joystick au neutre.'],
  ['BOOST','Saute puis maintiens BOOST pendant une demi-seconde en vol.'],
- ['Tir or','Le ballon est placé contre ton dos. Maintiens Dos, puis maintiens Tir et relâche-le. Garde le joystick au neutre. Tu peux aussi appuyer sur Saut au contact en maintenant Dos.'],
- ['Tir violet','Le ballon est placé sous tes pieds. Maintiens Tir puis relâche-le, ou appuie sur Saut au contact, joystick au neutre.']
+ ['Tir or','Dos au ballon en vol : TIR permet de charger et de viser librement. DOS + SAUT au neutre produit une impulsion fixe dans le sens du contact et fait reculer CJ. La couleur or indique le contact dos.'],
+ ['Tir violet','Ballon sous les pieds en vol : TIR permet de charger et de viser librement. SAUT au neutre produit une impulsion fixe dans le sens du contact et fait rebondir CJ. La couleur violette indique le contact pieds.']
 ];
 export class Tutorial {
  constructor(match,shell){this.match=match;this.active=false;this.root=document.createElement('section');this.root.className='tutorial-panel';this.root.hidden=true;this.root.setAttribute('aria-label','Tutoriel');this.root.innerHTML='<strong data-tutorial-title></strong><p data-tutorial-help></p><small data-tutorial-keys></small><p data-tutorial-status role="status"></p><div><button type="button" data-tutorial-retry>Réessayer</button><button type="button" data-tutorial-next>Suivant</button></div>';shell.append(this.root);this.root.querySelector('[data-tutorial-retry]').onclick=()=>this.setup();this.root.querySelector('[data-tutorial-next]').onclick=()=>{if(!this.done)return;if(this.step===4){this.active=false;this.root.hidden=true;}else{this.step++;this.setup();}};}

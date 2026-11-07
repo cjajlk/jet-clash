@@ -1,5 +1,9 @@
 import {CONFIG as C} from './config.js';
 export const AERIAL_SHOTS=Object.freeze({rearPadding:10,rearMargin:8,inputSeconds:.18,contactSeconds:.16});
+export const SPECIAL_SHOT_STYLES=Object.freeze({gold:Object.freeze({label:'OR',color:'#ffd34d'}),purple:Object.freeze({label:'VIOLET',color:'#c58aff'})});
+export function clearSpecialShot(ball){
+  if(ball.shotColor||ball.shotTimer||ball.shotMode){ball.shotColor=null;ball.shotMode=null;ball.shotTimer=0;ball.shotTrail=[];}
+}
 export function aerialContact(p,b,margin=2){
   const dx=b.x-p.x,dy=b.y-p.y,length=Math.hypot(dx,dy);if(!length)return null;
   const footLength=Math.hypot(p.footX,p.footY)||1;
@@ -50,9 +54,9 @@ export function applyAerialShot(p,b,shot){
   b.vx=shot.x*speed;b.vy=shot.y*speed;markSpecialShot(b,shot.type);
   p.vx-=shot.x*180;p.vy-=shot.y*180;
 }
-export function markSpecialShot(b,type){
+export function markSpecialShot(b,type,mode='impulse'){
   if(!['gold','purple'].includes(type))return;
-  b.flash=.35;b.shotColor=type;b.shotTimer=1.1;b.shotTrail=[{x:b.x,y:b.y}];
+  b.flash=.35;b.shotColor=type;b.shotMode=mode;b.shotTimer=1.1;b.shotTrail=[{x:b.x,y:b.y}];
 }
 export function aimedSpecialShotType(p,b){
   if(!p||p.grounded||p.contactSurface)return null;
