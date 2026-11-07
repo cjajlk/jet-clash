@@ -28,7 +28,7 @@ test('stick droit : deadzone sans dérive, analogique borné, pleine amplitude',
   assert.equal(stickAxis(1),1);assert.equal(stickAxis(-1),-1);assert.equal(stickAxis(3),1);assert.ok(Math.abs(stickAxis(.59)-.5)<1e-9);
   const p=pad(),s=setup([p]);p.axes[2]=.1;p.axes[1]=1;assert.deepEqual(s.input.read(),empty);
 });
-test('stick principal 360° : axes X et Y sont transmis au gameplay',()=>{const p=pad(),s=setup([p]);p.axes[2]=.7;p.axes[3]=-.8;const i=s.input.read();assert.ok(i.directionX>0);assert.ok(i.directionY<0);assert.equal(i.axis,i.directionX);});
+test('stick principal 360° : axes X et Y sont transmis au gameplay',()=>{const p=pad(),s=setup([p]);p.axes[2]=.7;p.axes[3]=-.8;const i=s.input.read();assert.ok(i.directionX>0);assert.ok(i.directionY<0);assert.ok(Math.abs(i.axis-(.7-.18)/.82)<1e-9);assert.ok(Math.abs(i.directionY/i.directionX-(-.8/.7))<1e-9);});
 test('Croix/A : bouton standard 0 ; Carré, Rond, R1 ne sautent pas',()=>{const p=pad(),s=setup([p]);for(const i of [1,2,5])p.buttons[i].pressed=true;assert.equal(s.input.read().jump,false);p.buttons[0].pressed=true;assert.equal(s.input.read().jump,true);p.buttons[0].pressed=false;assert.equal(s.input.read().jump,false);});
 test('Croix/A : saut au sol puis second saut aérien sans bouton séparé',()=>{const p=pad(),s=setup([p]),body=createPlayer('fluid');body.grounded=true;p.buttons[0].pressed=true;drive(body,s.input.read(),C.step);body.grounded=false;p.buttons[0].pressed=false;drive(body,s.input.read(),C.step);p.buttons[0].pressed=true;drive(body,s.input.read(),C.step);assert.equal(body.impulseReady,false);assert.equal(body.vy,-C.maxRise);});
 test('stick principal déplace et le second stick ne pilote pas la visée',()=>{

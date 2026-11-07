@@ -1,4 +1,4 @@
-import { stickAxis, STICK_DEADZONE } from './gamepad-input.js';
+import { stickAxis, stickDirection, STICK_DEADZONE } from './gamepad-input.js';
 import { aimDirection } from './ball-control.js';
 
 // Device adapter only. These values feed the existing gameplay unchanged.
@@ -28,7 +28,7 @@ export class TouchInput {
       aimIntent:!!direction,
       jump:pointers.some(p=>p.control==='jump'),boost:pointers.some(p=>p.control==='boost'),shoot:pointers.some(p=>p.control==='shoot'),rotate:pointers.some(p=>p.control==='rot'),backPose:pointers.some(p=>p.control==='back'),
       moveActive:!!move,aimActive:!!(aim||drag||releaseAim),cancelShot,releaseAim,
-      direction:aimDirection(move?.x,move?.y,STICK_DEADZONE)};
+      direction:stickDirection(move?.x,move?.y)};
   }
 }
 
@@ -36,6 +36,7 @@ export function combineTouch(base,touch){
   // A held touch stick controls only its own channel. Lifting it restores the
   // keyboard/gamepad immediately; action buttons combine without disabling them.
   return {...base,...(touch.direction?{touchDirection:touch.direction}:{}),axis:touch.moveActive?touch.axis:base.axis,
+    ...(touch.moveActive?{directionX:touch.direction?.x||0,directionY:touch.direction?.y||0}:{}),
     aimX:touch.aimActive?touch.aimX:base.aimX,aimY:touch.aimActive?touch.aimY:base.aimY,
     aimIntent:base.aimIntent||touch.aimIntent,
     jump:base.jump||touch.jump,boost:base.boost||touch.boost,shoot:base.shoot||touch.shoot,rotate:base.rotate||touch.rotate,backPose:base.backPose||touch.backPose,

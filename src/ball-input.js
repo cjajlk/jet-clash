@@ -1,5 +1,5 @@
 import { aimDirection } from './ball-control.js';
-import { stickAxis, STICK_DEADZONE } from './gamepad-input.js';
+import { stickDirection } from './gamepad-input.js';
 import { controlSettings } from './control-settings.js';
 
 // Separate channel keeps the validated movement/jump/jetpack interface intact.
@@ -36,7 +36,7 @@ export class BallInput {
     // becomes the 360° shot-aim stick. Outside a shot it stays exclusively a
     // movement/orientation control, so ordinary aerial handling is unchanged.
     const useLeft=controlSettings.gamepad.movementStick==='left';
-    const padVector=aimDirection(stickAxis(pad?.axes?.[useLeft?0:2]),stickAxis(pad?.axes?.[useLeft?1:3]),STICK_DEADZONE);
+    const padVector=stickDirection(pad?.axes?.[useLeft?0:2],pad?.axes?.[useLeft?1:3]);
     const padAim=(padShoot||wasPadShooting)?padVector:null;
     if(keyboard||padAim)this.lastAim=keyboard||padAim;
     const direction=keyboard||padAim||((padShoot||wasPadShooting)?this.lastAim:null);

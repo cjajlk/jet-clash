@@ -20,7 +20,8 @@ export function drive(body, input, dt) {
   setBackPose(body,input);
   const rawTouch=input.touchDirection;
   const rawAim=normalize(input.aimX,input.aimY);
-  const rawDirection=normalize(input.directionX,input.directionY)||normalize(rawTouch?.x,rawTouch?.y)||rawAim;
+  const movementDirection=normalize(rawTouch?.x,rawTouch?.y)||normalize(input.directionX,input.directionY);
+  const rawDirection=movementDirection||rawAim;
   const support=body.contactSurface;
   const supported=body.grounded||!!support;
   const horizontal=body.facing||1;
@@ -102,13 +103,10 @@ export function drive(body, input, dt) {
   body.boosting = !!input.boost && body.fuel >= C.fuelUse * dt;
   body.vy += C.gravity * dt;
   if (body.boosting) {
-    // Jet V4: in the air, thrust follows Fluid's actual facing/orientation instead
-    // of always pulling vertically.  The feet vector points away from the head,
-    // therefore the propulsion direction is its opposite. Touch keeps its direct
-    // 360° vector so the existing mobile control remains immediate.
-    const touchJet=normalize(rawTouch?.x,rawTouch?.y);
+    // All devices steer thrust immediately with the movement stick. Body rotation
+    // remains progressive; releasing the stick retains the existing body-based jet.
     const bodyJet=normalize(-body.footX,-body.footY)||{x:0,y:-1};
-    const jetDirection=!supported&&body.skin==='fluid'?(touchJet||bodyJet):{x:0,y:-1};
+    const jetDirection=!supported&&body.skin==='fluid'?(movementDirection||bodyJet):{x:0,y:-1};
     // Bound powered horizontal flight to the existing run + flip speed.
     const jetLimit=C.runSpeed+C.airImpulseSpeed;
     const beforeJet=body.vx;
