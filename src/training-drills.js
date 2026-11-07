@@ -55,7 +55,7 @@ export class TrainingDrill {
 export class TrainingDrills extends TrainingDrill {
   constructor(match,shell){
     super(match);this.root=document.createElement('section');this.root.className='tutorial-panel drill-panel';this.root.hidden=true;
-    this.root.innerHTML='<strong data-drill-title></strong><p data-drill-help></p><small data-drill-status role="status"></small><div><button type="button" data-drill-begin>Commencer</button><button type="button" data-drill-retry>Réessayer</button><button type="button" data-drill-next>Exercice suivant</button><button type="button" data-drill-exit>Jeu libre</button></div>';
+    this.root.innerHTML='<strong data-drill-title></strong><p data-drill-help></p><small data-drill-status role="status"></small><small data-drill-time aria-hidden="true"></small><div><button type="button" data-drill-begin>Commencer</button><button type="button" data-drill-retry>Réessayer</button><button type="button" data-drill-next>Exercice suivant</button><button type="button" data-drill-exit>Jeu libre</button></div>';
     shell.append(this.root);
     this.root.querySelector('[data-drill-begin]').onclick=()=>{this.begin();this.update();};
     this.root.querySelector('[data-drill-retry]').onclick=()=>this.retry();
@@ -71,6 +71,11 @@ export class TrainingDrills extends TrainingDrill {
     this.root.querySelector('[data-drill-title]').textContent=DRILLS[this.id].title;
     this.root.querySelector('[data-drill-help]').textContent=DRILLS[this.id].help;
     this.root.querySelector('[data-drill-begin]').hidden=this.running;
-    this.root.querySelector('[data-drill-status]').textContent=!this.running?'Lis la consigne puis appuie sur Commencer.':this.done?'Réussi ! Rejoue ou passe au suivant.':this.failed?'Réessaie : la même situation sera replacée.':this.id==='reset'&&this.resetEarned?'Saut récupéré : appuie sur SAUT !':'À toi de jouer !';
+    const status=this.root.querySelector('[data-drill-status]');
+    const message=!this.running?'Tu as 10 secondes. Lis la consigne puis appuie sur Commencer.':this.done?'Réussi ! Rejoue ou passe au suivant.':this.failed?(this.time>=10?'Temps écoulé. Appuie sur Réessayer.':'Réessaie : la même situation sera replacée.'):this.id==='reset'&&this.resetEarned?'Saut récupéré : appuie sur SAUT !':'À toi de jouer !';
+    if(status.textContent!==message)status.textContent=message;
+    const timer=this.root.querySelector('[data-drill-time]');
+    const remaining=this.running&&!this.done&&!this.failed?Math.max(0,Math.ceil(10-this.time))+' s restantes':'';
+    if(timer.textContent!==remaining)timer.textContent=remaining;
   }
 }
