@@ -233,7 +233,7 @@ export class MobileMenu {
     const hero=this.root.querySelector('#mobile-fluid'),character=characterCosmetic(this.profileStore?.collection.equipped('skin'));if(hero){hero.classList.toggle('is-prismatic',!!skin?.prismatic);if(character){hero.src=character.preview;hero.alt=character.label;const label=this.root.querySelector('.mm-pilot-label');if(label)label.firstChild.textContent=character.character.toUpperCase()+' ';}hero.style.filter=skin?`grayscale(1) sepia(1) saturate(5) hue-rotate(${skin.hue}deg)`:'';}
     if(route==='modes'){
       this.selectDifficulty(this.difficulty);
-      const status=this.root.querySelector('#mobile-load-status');if(status)status.textContent=this.ready?(this.model.selectedMode==='training'?'Jeu libre · Sans récompenses de match':'Match local · 5 minutes'):this.status||'Chargement de l’arène…';
+      const status=this.root.querySelector('#mobile-load-status');if(status)status.textContent=this.ready?(this.model.selectedMode==='training'?'Jeu libre · Sans récompenses de match':'Match local · 2 minutes'):this.status||'Chargement de l’arène…';
     }
   }
 }

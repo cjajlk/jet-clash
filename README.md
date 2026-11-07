@@ -2,7 +2,7 @@
 
 Version de travail 0.2.0, guide actualisé le 12 octobre 2026. **Validation finale réservée à CJ après essai réel.**
 
-Cette version réalise un match Fluid contre Heavy dans La Cour de l’Aube : menu, difficulté, compte à rebours, jeu, buts et remises en jeu, chrono de cinq minutes, mort subite si égalité, résultat, XP, sauvegarde, rejeu et retour au menu sans recharger la page.
+Cette version réalise un match Fluid contre Heavy dans La Cour de l’Aube : menu, difficulté, compte à rebours, jeu, buts et remises en jeu, chrono de deux minutes, mort subite si égalité, résultat, XP, sauvegarde, rejeu et retour au menu sans recharger la page.
 
 ## Lancer sur PC
 
@@ -58,7 +58,7 @@ Références techniques : [Gamepad API — utilisation](https://developer.mozill
 - La balle utilise la gravité, l’inertie et les collisions. Le contrôle de balle et le tir chargé sont gérés par le système de contact existant.
 - Facile / Normal / Élite changent uniquement la réaction, l’erreur de visée, l’anticipation et l’agressivité du bot.
 - Le but compte une fois lorsque toute la balle franchit la ligne à l’intérieur de l’ouverture. Après un but : annonce de 1,8 s et remise au centre sans nouveau compte à rebours. Le compte à rebours est réservé au début du match.
-- Cinq minutes de **temps de jeu actif** : le chrono s’arrête pendant les comptes à rebours, annonces de but et pauses de focus.
+- Deux minutes de **temps de jeu actif** : le chrono s’arrête pendant les comptes à rebours, annonces de but et pauses de focus.
 - À 00:00, une avance termine le match avant tout nouveau contact du même pas de simulation. Une égalité active la mort subite à 00:00 ; le prochain but termine immédiatement le match.
 - XP : 100 pour un match terminé + 50 si victoire + 10 par but de Fluid. Niveau initial 1, puis un niveau par tranche de 1 000 XP. Attribution unique par identifiant de match, enregistrée avec le total dans le profil local.
 - Le profil est stocké sous `jetclash.etape2.profile.v1`. Si le stockage est refusé, un avertissement apparaît et le jeu reste jouable avec une progression de session. Fermer ou recharger une partie en cours l’abandonne sans récompense.
@@ -94,7 +94,7 @@ Le clavier et la manette produisent le même objet `{axis, jump, boost}`. Les co
 
 `npm test` ou `node --test tests/match.test.mjs` : **15 tests de logique réussis**. Parcours navigateur automatisé vérifié sous Edge : menu, difficulté, clavier, saut, jetpack/recharge, buts des deux équipes, remise en jeu, mort subite, résultat, XP, rejeu, retour menu et rechargement du profil. Aucun message d’erreur JavaScript relevé. Détails dans `docs/tests-et-limites.md`.
 
-Le bot reste simple, les collisions utilisent des formes géométriques simplifiées et les PNG sont des poses, pas des animations squelettiques. La précision visuelle des contacts et l’équilibrage sont à éprouver en jouant. La durée complète est couverte par une simulation déterministe, pas par un essai humain de cinq minutes. La validation de confort et de difficulté appartient à CJ.
+Le bot reste simple, les collisions utilisent des formes géométriques simplifiées et les PNG sont des poses, pas des animations squelettiques. La précision visuelle des contacts et l’équilibrage sont à éprouver en jouant. La durée complète est couverte par une simulation déterministe, pas par un essai humain de deux minutes. La validation de confort et de difficulté appartient à CJ.
 
 Pas de multijoueur, boutique, pass complet, capacités spéciales, nouvelles arènes, nouveaux personnages ou intégration CJEngine. Aucun commit ni push effectué. **Prochaine étape : test réel de CJ, puis corrections sur son retour uniquement.**
 

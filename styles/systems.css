@@ -51,3 +51,8 @@
 .drill-panel button{letter-spacing:.3px}
 .drill-panel div{flex-wrap:wrap}
 @media(max-height:500px){.drill-panel.drill-running{top:48px;width:min(400px,calc(100% - 180px));font-size:10px}.drill-panel.drill-running div{gap:4px}.drill-panel.drill-running button{padding:3px 7px}}
+
+/* Sent reactions use the same artwork as the equipped quick-chat buttons. */
+.quick-chat-bubble img{display:block;width:140px;height:84px;object-fit:contain}
+@media(max-height:500px){.quick-chat-bubble{padding:4px 8px}.quick-chat-bubble img{width:112px;height:68px}}
+@media(max-height:500px){.touch-capable:not(.touch-match) .quick-chat-bubble{position:fixed;bottom:64px}}

@@ -16,7 +16,7 @@ test('2v2 : un humain, un bot allié, deux adversaires, mêmes capacités',()=>{
   const m=make();assert.equal(m.mode,'2v2');assert.equal(m.players.length,4);assert.equal(m.bots.length,3);
   assert.equal(m.players.filter(p=>p.team==='player').length,2);assert.equal(m.players.filter(p=>p.team==='bot').length,2);
   assert.equal(new Set(m.players).size,4);assert.equal(new Set(m.bots.map(e=>e.ai)).size,3);
-  assert.equal(m.state,S.PRE_ROUND);assert.equal(m.remaining,300);
+  assert.equal(m.state,S.PRE_ROUND);assert.equal(m.remaining,120);
   for(const p of m.players){assert.equal(p.w,C.playerWidth);assert.equal(p.h,C.playerHeight);assert.equal(p.fuel,100);assert.ok(p.jumpReady&&p.impulseReady);assert.equal(p.y,C.floor-p.h/2);}
   for(const entry of m.bots)assert.equal(entry.ai.base.settings,DIFFICULTIES.elite);
   assert.deepEqual(m.players.map(p=>p.x),[480,800,360,920]);

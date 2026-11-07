@@ -1,6 +1,6 @@
 // NOUVEAU code Étape 2. Aucun lien de version avec les modules historiques absents.
 export const CONFIG = Object.freeze({
-  width: 1280, height: 720, ceiling: 90, floor: 556, duration: 300,
+  width: 1280, height: 720, ceiling: 90, floor: 556, duration: 120,
   step: 1 / 120, countdown: 3, goalPause: 1.8,
   goalEntryRadiusFactor: 2, goalEffectDuration: .8,
   gravity: 1120, runAcceleration: 1750, airAcceleration: 1000, airHorizontalDrag: .8,
